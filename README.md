@@ -2,7 +2,9 @@
 
 Bolin 的个人学习资料站，公开记录 Android、Linux、Binder、Framework 与 Native 开发的学习过程。
 
-线上由 **Cloudflare Pages** 托管，推送到 `main` 后自动部署。
+**线上地址：** <https://home.bolinlab.top/>
+
+由 **Cloudflare Pages** 托管，推送到 `main` 后自动部署。
 
 ## 技术栈
 
@@ -24,10 +26,12 @@ Bolin 的个人学习资料站，公开记录 Android、Linux、Binder、Framewo
 │   └── binder-driver.html           # Binder 驱动数据结构交互图解
 ├── assets/
 │   ├── css/site.css                 # 站点样式
-│   └── js/site.js                   # 主题、筛选、目录、进度条
+│   ├── js/site.js                   # 主题、筛选、目录、进度条
+│   └── og-image.png                 # 1200×630 社交分享图
 ├── avatar.png
 ├── 404.html
 ├── robots.txt
+├── sitemap.xml
 └── _headers                         # Cloudflare Pages 安全 / 缓存头
 ```
 
@@ -65,6 +69,6 @@ Cloudflare Pages 配置建议：
 
 ## 待补充
 
-- 自定义域名确定后，添加 `sitemap.xml` 和绝对 canonical URL。
 - 增加 RSS / Atom 订阅。
 - 把学习路线中的“计划中”内容逐步补成正式笔记。
+- 如需更完整的分享预览，可继续为每篇长文生成独立 OG 封面。
