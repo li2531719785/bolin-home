@@ -37,6 +37,8 @@ Bolin 的个人学习资料站，公开记录 Android、Linux、Binder、Framewo
 
 `notes/binder-driver.html` 是一份自包含的交互长文，使用独立的内联样式和脚本，方便单独分享。
 
+> Cloudflare Pages 默认启用 pretty URLs：访问 `*.html` 会 308 到无扩展名地址。页面里的本地链接保留 `.html` 方便本地预览，canonical / sitemap 使用线上最终地址（无 `.html`）。
+
 ## 本地预览
 
 在仓库根目录启动一个静态服务器即可：
