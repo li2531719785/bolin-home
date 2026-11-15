@@ -33,6 +33,7 @@
 ├── notes/index.html                 # 笔记库（搜索 / 标签筛选）
 ├── notes/binder-driver.html         # Binder 驱动数据结构交互长文（自包含）
 ├── notes/binder-learning-path.html  # Binder 学习路线
+├── notes/binder-chapter-0.html      # Binder 学习路线第 0 章：预备知识
 ├── assets/
 │   ├── css/site.css                 # 全站样式（含深色主题）
 │   ├── js/site.js                   # 主题、筛选、TOC、阅读进度
@@ -95,10 +96,11 @@
   `data-search`，否则搜索和筛选找不到它。
 - 笔记页：文章类页面使用 `.article-hero` + `.article-layout` + `.article-body`
   结构，自动生成 TOC 和阅读进度。
-- 目前正式笔记只有两篇：
+- 目前正式笔记有三篇：
   1. `notes/binder-driver.html` — Binder 驱动数据结构图解
   2. `notes/binder-learning-path.html` — Binder 学习路线
-- 首页和笔记库里的统计数字（02 篇、04 个方向等）必须与真实内容一致。
+  3. `notes/binder-chapter-0.html` — 第 0 章：Binder 的预备知识
+- 首页和笔记库里的统计数字（03 篇、04 个方向等）必须与真实内容一致。
 - 不要把“计划中”的内容写成已完成；不确定的内容标注为整理中。
 - 作者信息以仓库现有内容为准：Bolin、GitHub `li2531719785`、
   `2531719785@qq.com`。不要编造公司、学历或项目经历。
@@ -114,6 +116,7 @@
   - 关于：`https://home.bolinlab.top/about/`
   - Binder 图解：`https://home.bolinlab.top/notes/binder-driver`
   - Binder 路线：`https://home.bolinlab.top/notes/binder-learning-path`
+  - Binder 第 0 章：`https://home.bolinlab.top/notes/binder-chapter-0`
 - 页面内部链接仍可保留 `.html`，方便 `python -m http.server` 本地预览；
   线上会 308 跳转，功能正常。
 - 新增页面后必须：
@@ -169,9 +172,10 @@
 ## 9. 当前状态（2026-11-15）
 
 - 线上站点正常，HTTP 200，Cloudflare 安全头生效。
-- 首页 / 笔记库 / 关于 / 404 / 两篇笔记全部可访问。
+- 首页 / 笔记库 / 关于 / 404 / 三篇笔记全部可访问。
 - 浅色 + 深色主题、移动端适配、搜索筛选、文章 TOC、阅读进度均已实现。
-- GSC 验证成功；sitemap 提交成功，发现 5 个页面，等待索引。
+- GSC 验证成功；sitemap 已提交成功。新增第 0 章后 sitemap 现有 6 个 URL，
+  等待 Google 重新抓取；GSC 上次读取为 5 个页面。
 - 工作区干净，`main` 与 `origin/main` 同步。
 - 最近关键提交：
   - `b5c2904` 固定 Google 验证文件的 200 路径
@@ -183,9 +187,10 @@
 ## 10. 下一步建议
 
 1. 等待 Google 收录；用 GSC “网页”报告观察索引状态。
-2. 继续把 `notes/index.html` 中“在整理中”的主题写成正式笔记。
-3. 可选：RSS / Atom、每篇文章独立 OG 封面、Bing Webmaster。
-4. 新笔记优先保证：可读性 > 结构图 > 源码细节 > SEO。
+2. 继续写 Binder 学习路线第 1 章：Android 为什么需要 Binder。
+3. 继续把 `notes/index.html` 中“在整理中”的主题写成正式笔记。
+4. 可选：RSS / Atom、每篇文章独立 OG 封面、Bing Webmaster。
+5. 新笔记优先保证：可读性 > 结构图 > 源码细节 > SEO。
 
 ## 11. 给下一个 AI 的启动提示
 

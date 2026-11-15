@@ -15,6 +15,44 @@ Bolin Lab 的开发记录。每次完成一轮开发后追加一条，至少包�
 
 ## 2026-11-15
 
+### 发布 Binder 学习路线第 0 章
+
+**目标：** 完成《给 Android 新手的 Binder 学习路线》第 0 章，并接入站点。
+
+**改动：**
+
+- 新增 `notes/binder-chapter-0.html`：进程、线程、虚拟内存、fd、系统调用、
+  ioctl / mmap、Parcel、Android 进程模型、实验与自测题。
+- 笔记库新增第 0 章卡片，已发布数量更新为 03。
+- 首页已发布笔记数量更新为 03，新增 NOTE 003 最新笔记入口。
+- Binder 学习路线第 0 章添加“完整展开”链接。
+- sitemap 新增 `https://home.bolinlab.top/notes/binder-chapter-0`。
+- 笔记库在桌面改为三列布局，1060px 以下回退两列，手机单列。
+
+**涉及文件：**
+
+- `notes/binder-chapter-0.html`
+- `notes/index.html`
+- `notes/binder-learning-path.html`
+- `index.html`
+- `assets/css/site.css`
+- `sitemap.xml`
+- `AGENTS.md`
+- `README.md`
+
+**验证：**
+
+- 第 0 章页面 200；TOC 26 项、7 个可展开自测答案；阅读进度正常。
+- 1440px / 390px 无页面级横向溢出。
+- 笔记库 3 张卡片；roadmap 筛选 2 篇；搜索“虚拟内存”命中第 0 章。
+- 控制台无 JS 错误。
+
+**Commit：** 本次提交（见 GitHub history）。
+
+**下一步：** 第 1 章：Android 为什么需要 Binder。
+
+---
+
 ### 增加 AI 开发交接文档
 
 **目标：** 换 AI、重开会话或隔一段时间回来时，能快速恢复项目上下文。
@@ -138,8 +176,9 @@ Bolin Lab 的开发记录。每次完成一轮开发后追加一条，至少包�
 
 - 线上地址：<https://home.bolinlab.top/>
 - 最近部署：Cloudflare Pages，`main` 分支自动部署
-- 已发布页面：首页、笔记库、关于、404、Binder 图解、Binder 学习路线
-- GSC：所有权验证成功；sitemap 成功，发现 5 个页面；索引等待中
+- 已发布页面：首页、笔记库、关于、404、Binder 图解、Binder 学习路线、第 0 章
+- GSC：所有权验证成功；sitemap 成功。新增第 0 章后 sitemap 有 6 个 URL，
+  等待 Google 重新抓取；上次读取为 5 个页面
 - 工作区：干净，`main` 与 `origin/main` 同步
 - 已知注意点：
   - 不要删除 Google 验证文件与 `_redirects` 规则。
@@ -149,6 +188,7 @@ Bolin Lab 的开发记录。每次完成一轮开发后追加一条，至少包�
 ## 后续计划
 
 - [ ] 等待 Google 索引，观察 GSC “网页”报告
+- [ ] 写 Binder 学习路线第 1 章：Android 为什么需要 Binder
 - [ ] 增加 RSS / Atom
 - [ ] 补齐“在整理中”的 Linux 驱动、Framework、JNI 笔记
 - [ ] 为两篇长文制作独立分享封面（可选）

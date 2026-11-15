@@ -593,7 +593,7 @@ pre { margin: 0; }
 }
 .filter-chip:hover { color: var(--ink); background: var(--surface); }
 .filter-chip[aria-pressed="true"] { color: var(--bg); background: var(--ink); border-color: var(--ink); }
-.note-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; padding-top: 26px; }
+.note-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; padding-top: 26px; }
 .note-card {
   position: relative;
   display: flex;
@@ -737,6 +737,11 @@ pre { margin: 0; }
 .article-body tr:last-child td { border-bottom: none; }
 .article-body pre { margin: 18px 0; padding: 16px; overflow: auto; border-radius: 9px; background: var(--code-bg); color: var(--code-fg); font-size: 10.5px; line-height: 1.8; }
 .article-body pre code { padding: 0; border: 0; background: none; color: inherit; font-size: inherit; white-space: pre; }
+.article-body details { margin: 16px 0; padding: 0 16px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); }
+.article-body summary { padding: 12px 0; cursor: pointer; color: var(--ink); font-size: 13px; font-weight: 600; }
+.article-body details[open] summary { border-bottom: 1px solid var(--line); margin-bottom: 12px; }
+.article-body details p, .article-body details ul { margin-bottom: 12px; }
+.article-body details > :last-child { margin-bottom: 14px; }
 .article-toc { position: sticky; top: calc(var(--header-h) + 24px); padding-left: 18px; border-left: 1px solid var(--line); }
 .toc-label { margin-bottom: 10px; font-family: var(--mono); font-size: 8px; letter-spacing: .13em; text-transform: uppercase; color: var(--faint); }
 .toc-list { list-style: none; display: flex; flex-direction: column; gap: 1px; max-height: calc(100vh - 160px); overflow-y: auto; padding-right: 5px; }
@@ -784,6 +789,7 @@ pre { margin: 0; }
   .hero h1 { font-size: clamp(42px, 6vw, 68px); }
   .profile-stack { margin-left: auto; }
   .focus-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .note-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .article-layout { grid-template-columns: minmax(0, 1fr) 200px; gap: 36px; }
 }
 @media (max-width: 900px) {
