@@ -1,0 +1,185 @@
+# Changelog
+
+Bolin Lab 的开发记录。每次完成一轮开发后追加一条，至少包含：
+
+- 日期
+- 本次目标
+- 改动摘要
+- 涉及文件
+- 验证结果
+- 对应 commit（如果有）
+- 遗留问题 / 下一步
+
+> 给 AI 的提示：开始工作前先读最新一条；完成后不要忘记追加记录并更新
+> `AGENTS.md` 的“当前状态”。
+
+## 2026-11-15
+
+### 增加 AI 开发交接文档
+
+**目标：** 换 AI、重开会话或隔一段时间回来时，能快速恢复项目上下文。
+
+**改动：**
+
+- 新增 `AGENTS.md`：项目结构、设计系统、内容约定、SEO、部署方式、当前状态、
+  常见陷阱和给下一个 AI 的启动提示。
+- 新增 `CHANGELOG.md`：按日期记录每次开发的目标、改动、验证和 commit。
+- README 增加“AI 开发交接”说明和交接提示语。
+- 明确约定：每次开发完成后更新 CHANGELOG，并在需要时同步 AGENTS 的当前状态。
+
+**涉及文件：**
+
+- `AGENTS.md`
+- `CHANGELOG.md`
+- `README.md`
+
+**下一步：** 之后每次修改都按本文件模板记录并提交。
+
+---
+
+### Google Search Console 验证与 sitemap 提交
+
+**目标：** 完成 Google 所有权验证，让 sitemap 被正确读取。
+
+**改动：**
+
+- 添加 `google85aa571083e49c47.html` 验证文件。
+- 发现 Cloudflare Pages 会把 `.html` 验证路径 308 到无扩展名地址，Google
+  验证要求精确 200。
+- 添加 `google85aa571083e49c47.txt` 和 `_redirects` 200 rewrite，使
+  `/google85aa571083e49c47.html` 精确返回验证文本。
+- 在 GSC 完成 URL 前缀属性验证。
+- 提交 `sitemap.xml`，GSC 显示“成功”，发现 5 个页面。
+- 修正文章 canonical / og:url / sitemap 地址，统一使用无 `.html` 的最终 URL。
+
+**涉及文件：**
+
+- `google85aa571083e49c47.html`
+- `google85aa571083e49c47.txt`
+- `_redirects`
+- `sitemap.xml`
+- `notes/binder-driver.html`
+- `notes/binder-learning-path.html`
+
+**验证：**
+
+- `https://home.bolinlab.top/google85aa571083e49c47.html` → 200，内容正确。
+- `https://home.bolinlab.top/sitemap.xml` → 200，`application/xml`。
+- GSC sitemap 状态：成功，5 个页面已发现。
+- 生产站点首页 / 笔记 / 关于 / 两篇文章均 200。
+
+**Commit：**
+
+- `83f440f` Add Google Search Console site verification file
+- `b5c2904` Serve Google verification file at exact HTML path
+
+**下一步：** 等待 Google 索引；之后在 GSC “网页”报告中观察收录情况。
+
+---
+
+### 域名 SEO 与社交分享配置
+
+**目标：** 绑定正式域名 `https://home.bolinlab.top/` 后的 SEO 基础设施。
+
+**改动：**
+
+- 为所有主要页面添加 canonical、`og:url`、`og:image`、Twitter Card。
+- 生成 1200×630 分享图 `assets/og-image.png`。
+- 新增 `sitemap.xml`，并在 `robots.txt` 中声明。
+- 更新 README 的线上地址和目录说明。
+- 补充 `_headers` 的 Cloudflare 安全头。
+
+**Commit：**
+
+- `b49e083` Add production domain SEO and social preview
+- `f552f01` Use clean canonical URLs for published notes
+
+**验证：**
+
+- sitemap、robots、OG 图片均可访问。
+- canonical / og:url 与 Cloudflare 最终 URL 一致。
+
+---
+
+### 搭建 Bolin Lab 个人学习站
+
+**目标：** 把原来的单页 index.html 升级为可长期维护的个人学习资料站。
+
+**改动：**
+
+- 重构首页：个人介绍、精选笔记、学习方向、站点理念。
+- 新增笔记库 `/notes/`：搜索、主题筛选、在整理列表。
+- 新增关于页 `/about/`：个人介绍、关注方向、时间线、联系方式。
+- 接入 Binder 驱动数据结构交互长文。
+- 新增《给 Android 新手的 Binder 学习路线》。
+- 新增 404 页面。
+- 建立公共样式 / 脚本：
+  - 浅色 / 深色主题切换与记忆
+  - 响应式布局
+  - 搜索 / 筛选
+  - 文章自动目录、阅读进度
+  - Cloudflare `_headers`、`robots.txt`
+- 更新 README、目录说明和本地预览方式。
+
+**Commit：**
+
+- `395da4f` Build Bolin Lab personal learning site
+
+**验证：**
+
+- 桌面 1440px / 手机 390px 无页面级横向溢出。
+- 所有内部链接 200，无控制台错误。
+- 主题切换、笔记筛选、TOC、阅读进度正常。
+- 生产站点部署成功。
+
+---
+
+## 当前状态
+
+- 线上地址：<https://home.bolinlab.top/>
+- 最近部署：Cloudflare Pages，`main` 分支自动部署
+- 已发布页面：首页、笔记库、关于、404、Binder 图解、Binder 学习路线
+- GSC：所有权验证成功；sitemap 成功，发现 5 个页面；索引等待中
+- 工作区：干净，`main` 与 `origin/main` 同步
+- 已知注意点：
+  - 不要删除 Google 验证文件与 `_redirects` 规则。
+  - Cloudflare 会把 `*.html` 308 到无扩展名地址；canonical / sitemap 使用最终地址。
+  - 新增页面后同步更新首页 / 笔记库 / sitemap。
+
+## 后续计划
+
+- [ ] 等待 Google 索引，观察 GSC “网页”报告
+- [ ] 增加 RSS / Atom
+- [ ] 补齐“在整理中”的 Linux 驱动、Framework、JNI 笔记
+- [ ] 为两篇长文制作独立分享封面（可选）
+- [ ] 提交 Bing Webmaster / IndexNow（可选）
+
+## 新记录模板
+
+```md
+## YYYY-MM-DD
+
+### 本次目标
+
+...
+
+### 改动
+
+- ...
+
+### 涉及文件
+
+- ...
+
+### 验证
+
+- ...
+
+### Commit
+
+- `xxxxxxx` ...
+
+### 下一步
+
+- ...
+```

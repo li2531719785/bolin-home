@@ -32,7 +32,13 @@ Bolin 的个人学习资料站，公开记录 Android、Linux、Binder、Framewo
 ├── 404.html
 ├── robots.txt
 ├── sitemap.xml
-└── _headers                         # Cloudflare Pages 安全 / 缓存头
+├── _headers                         # Cloudflare Pages 安全 / 缓存头
+├── _redirects                       # Google 验证文件的精确 200 响应
+├── google85aa571083e49c47.html      # Google Search Console 验证文件
+├── google85aa571083e49c47.txt
+├── README.md
+├── AGENTS.md                        # 给 AI 助手的项目上下文 / 交接说明
+└── CHANGELOG.md                     # 每次开发完成后的记录
 ```
 
 `notes/binder-driver.html` 是一份自包含的交互长文，使用独立的内联样式和脚本，方便单独分享。
@@ -67,7 +73,24 @@ Cloudflare Pages 配置建议：
 1. 在 `notes/` 下新增 HTML 页面。
 2. 在 `notes/index.html` 的笔记网格中加入卡片，并设置 `data-tags` / `data-search`。
 3. 如果首页需要展示，在 `index.html` 中更新精选卡片或 `latest-note`。
-4. 提交并推送到 `main`。
+4. 补充 canonical、分享信息和 `sitemap.xml`。
+5. 本地检查桌面 / 手机布局和控制台错误。
+6. 在 `CHANGELOG.md` 追加本次记录。
+7. 提交并推送到 `main`。
+
+## AI 开发交接
+
+这个仓库是使用 AI 辅助开发的，根目录保留了两份关键上下文：
+
+- **`AGENTS.md`**：项目结构、设计约定、部署流程、当前状态和 AI 启动提示。
+- **`CHANGELOG.md`**：按日期记录每次开发的目标、改动、验证和 commit。
+
+换 AI 或重开会话时，可以直接说：
+
+> 先读仓库根目录的 `AGENTS.md` 和 `CHANGELOG.md`，再执行 `git log -5`，
+> 了解当前状态后开始修改。完成后更新 CHANGELOG 并提交推送。
+
+每次开发结束都要 commit + push；Cloudflare Pages 会保留对应部署记录。
 
 ## 待补充
 
