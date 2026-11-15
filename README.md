@@ -24,6 +24,7 @@ Bolin 的个人学习资料站，公开记录 Android、Linux、Binder、Framewo
 │   ├── index.html                   # 笔记库（搜索 / 标签筛选）
 │   ├── binder-learning-path.html    # Binder 学习路线
 │   ├── binder-chapter-0.html        # 第 0 章：Binder 预备知识
+│   ├── binder-chapter-1.html        # 第 1 章：为什么需要 Binder
 │   └── binder-driver.html           # Binder 驱动数据结构交互图解
 ├── assets/
 │   ├── css/site.css                 # 站点样式

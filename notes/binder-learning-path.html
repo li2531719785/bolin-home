@@ -106,6 +106,7 @@
         <h3>第 1 章：Android 为什么需要 Binder</h3>
         <p>从 Linux 已有 IPC 出发：pipe、socket、共享内存、信号各自解决什么问题，又为什么不够。然后讲 Binder 的设计目标：性能、安全、面向对象语义、引用计数和死亡通知。</p>
         <p>这一章要解释“一次拷贝”说法的边界，但不要陷入内核细节。新手只需要先建立：Binder 是为 Android 的进程模型和对象模型量身定制的 IPC。</p>
+        <p><strong>完整展开：</strong> <a href="binder-chapter-1.html">第 1 章：Android 为什么需要 Binder</a>。从 Linux IPC、对象引用、生命周期、安全和线程模型几个角度比较，最后给出 Binder 的适用边界。</p>
 
         <h3>第 2 章：Binder 的心智模型</h3>
         <p>用一张图讲清 Client / Server、Proxy / Stub、handle、Parcel、同步调用、oneway 和线程池。可以先用“寄快递”比喻：进程是邮局，handle 是取件码，node 是收件人，transaction 是包裹。</p>
