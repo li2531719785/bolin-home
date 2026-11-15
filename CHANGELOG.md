@@ -15,6 +15,42 @@ Bolin Lab 的开发记录。每次完成一轮开发后追加一条，至少包�
 
 ## 2026-11-15
 
+### 发布 Binder 学习路线第 4 章
+
+**目标：** 把最小 AIDL Demo 扩展到真实接口常见能力。
+
+**改动：**
+
+- 新增 `notes/binder-chapter-4.html`：Parcelable（@Parcelize + AIDL 声明）、
+  in/out/inout、oneway、callback、DeathRecipient、线程与常见错误。
+- 新增 callback 反向调用流程图，沿用 `.flow-diagram` 自适应组件。
+- 笔记库加入第 4 章卡片，已发布数量更新为 07。
+- 首页更新为 07 篇，新增 NOTE 007 最新笔记入口；首页“最近更新”收敛为最新 3 篇。
+- 学习路线第 4 章添加“完整展开”链接，sitemap 新增第 4 章 URL。
+
+**涉及文件：**
+
+- `notes/binder-chapter-4.html`
+- `notes/index.html`
+- `notes/binder-learning-path.html`
+- `index.html`
+- `sitemap.xml`
+- `AGENTS.md`
+- `README.md`
+
+**验证：**
+
+- 页面 200；目录、自测答案、代码块、callback 流程图正常。
+- 1440px / 390px 无页面级横向溢出。
+- 笔记库 7 张卡片；搜索“oneway”“DeathRecipient”等关键词可命中。
+- 控制台无 JS 错误。
+
+**Commit：** 本次提交（见 GitHub history）。
+
+**下一步：** 第 5 章：ServiceManager 与服务注册。
+
+---
+
 ### 发布 Binder 学习路线第 3 章
 
 **目标：** 从概念进入实践，跑通第一个真实跨进程 AIDL 调用。
@@ -291,11 +327,11 @@ Bolin Lab 的开发记录。每次完成一轮开发后追加一条，至少包�
 
 - 线上地址：<https://home.bolinlab.top/>
 - 最近部署：Cloudflare Pages，`main` 分支自动部署
-- 已发布页面：首页、笔记库、关于、404、Binder 图解、Binder 学习路线、第 0/1/2/3 章
-- GSC：所有权验证成功；sitemap 成功。新增第 3 章后 sitemap 有 9 个 URL，
+- 已发布页面：首页、笔记库、关于、404、Binder 图解、Binder 学习路线、第 0/1/2/3/4 章
+- GSC：所有权验证成功；sitemap 成功。新增第 4 章后 sitemap 有 10 个 URL，
   等待 Google 重新抓取；上次读取为 5 个页面
-- 第 1/2 章使用 `.flow-diagram` 流程图组件，后续结构说明优先使用 CSS 布局或
-  Mermaid / D2，不再继续手写复杂 SVG 坐标；第 3 章为可运行 AIDL 实战
+- 第 1/2/4 章使用 `.flow-diagram` 流程图组件，后续结构说明优先使用 CSS 布局或
+  Mermaid / D2，不再继续手写复杂 SVG 坐标；第 3/4 章为 AIDL 实战
 - 工作区：干净，`main` 与 `origin/main` 同步
 - 已知注意点：
   - 不要删除 Google 验证文件与 `_redirects` 规则。
@@ -305,7 +341,7 @@ Bolin Lab 的开发记录。每次完成一轮开发后追加一条，至少包�
 ## 后续计划
 
 - [ ] 等待 Google 索引，观察 GSC “网页”报告
-- [ ] 写 Binder 学习路线第 4 章：AIDL 进阶
+- [ ] 写 Binder 学习路线第 5 章：ServiceManager 与服务注册
 - [ ] 评估把旧 Binder 长图中的静态关系图迁移到 D2
 - [ ] 增加 RSS / Atom
 - [ ] 补齐“在整理中”的 Linux 驱动、Framework、JNI 笔记
