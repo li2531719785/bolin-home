@@ -15,6 +15,45 @@ Bolin Lab 的开发记录。每次完成一轮开发后追加一条，至少包�
 
 ## 2026-11-15
 
+### 发布 Binder 学习路线第 2 章
+
+**目标：** 建立 Binder 的心智模型：一次调用在客户端、驱动、服务端之间怎么走。
+
+**改动：**
+
+- 新增 `notes/binder-chapter-2.html`：以天气服务查询为例，讲清 Client / Server、
+  Proxy / Stub、handle / ref / node、Parcel、同步与 oneway、Binder 线程池、
+  本地对象、死亡通知和常见误解。
+- 新增两张 CSS 流程图：对象映射（Proxy → ref/node → Stub）和同步调用执行路径；
+  继续使用 `.flow-diagram`，移动端自动纵向排列。
+- 笔记库加入第 2 章卡片，已发布数量更新为 05。
+- 首页更新为 05 篇，新增 NOTE 005 最新笔记入口。
+- 学习路线第 2 章添加“完整展开”链接，sitemap 新增第 2 章 URL。
+
+**涉及文件：**
+
+- `notes/binder-chapter-2.html`
+- `notes/index.html`
+- `notes/binder-learning-path.html`
+- `index.html`
+- `assets/css/site.css`
+- `sitemap.xml`
+- `AGENTS.md`
+- `README.md`
+
+**验证：**
+
+- 页面 200；12 个 h2、17 个 TOC 项、7 个自测答案、2 张流程图。
+- 1440px / 390px 无页面级横向溢出；移动端流程图纵向排列。
+- 笔记库 5 张卡片；roadmap 筛选 4 篇；搜索“oneway”命中第 2 章。
+- 控制台无 JS 错误。
+
+**Commit：** 本次提交（见 GitHub history）。
+
+**下一步：** 第 3 章：第一个 AIDL。
+
+---
+
 ### 发布 Binder 学习路线第 1 章
 
 **目标：** 解释 Android 为什么需要 Binder，并尝试更稳定的图示方式。
@@ -216,10 +255,10 @@ Bolin Lab 的开发记录。每次完成一轮开发后追加一条，至少包�
 
 - 线上地址：<https://home.bolinlab.top/>
 - 最近部署：Cloudflare Pages，`main` 分支自动部署
-- 已发布页面：首页、笔记库、关于、404、Binder 图解、Binder 学习路线、第 0/1 章
-- GSC：所有权验证成功；sitemap 成功。新增第 1 章后 sitemap 有 7 个 URL，
+- 已发布页面：首页、笔记库、关于、404、Binder 图解、Binder 学习路线、第 0/1/2 章
+- GSC：所有权验证成功；sitemap 成功。新增第 2 章后 sitemap 有 8 个 URL，
   等待 Google 重新抓取；上次读取为 5 个页面
-- 第 1 章新增 `.flow-diagram` 流程图组件，后续结构说明优先使用 CSS 布局或
+- 第 1/2 章使用 `.flow-diagram` 流程图组件，后续结构说明优先使用 CSS 布局或
   Mermaid / D2，不再继续手写复杂 SVG 坐标
 - 工作区：干净，`main` 与 `origin/main` 同步
 - 已知注意点：
@@ -230,7 +269,7 @@ Bolin Lab 的开发记录。每次完成一轮开发后追加一条，至少包�
 ## 后续计划
 
 - [ ] 等待 Google 索引，观察 GSC “网页”报告
-- [ ] 写 Binder 学习路线第 2 章：Binder 的心智模型
+- [ ] 写 Binder 学习路线第 3 章：第一个 AIDL
 - [ ] 评估把旧 Binder 长图中的静态关系图迁移到 D2
 - [ ] 增加 RSS / Atom
 - [ ] 补齐“在整理中”的 Linux 驱动、Framework、JNI 笔记

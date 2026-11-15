@@ -35,6 +35,7 @@
 ├── notes/binder-learning-path.html  # Binder 学习路线
 ├── notes/binder-chapter-0.html      # Binder 学习路线第 0 章：预备知识
 ├── notes/binder-chapter-1.html      # Binder 学习路线第 1 章：为什么需要 Binder
+├── notes/binder-chapter-2.html      # Binder 学习路线第 2 章：心智模型
 ├── assets/
 │   ├── css/site.css                 # 全站样式（含深色主题）
 │   ├── js/site.js                   # 主题、筛选、TOC、阅读进度
@@ -97,12 +98,13 @@
   `data-search`，否则搜索和筛选找不到它。
 - 笔记页：文章类页面使用 `.article-hero` + `.article-layout` + `.article-body`
   结构，自动生成 TOC 和阅读进度。
-- 目前正式笔记有四篇：
+- 目前正式笔记有五篇：
   1. `notes/binder-driver.html` — Binder 驱动数据结构图解
   2. `notes/binder-learning-path.html` — Binder 学习路线
   3. `notes/binder-chapter-0.html` — 第 0 章：Binder 的预备知识
   4. `notes/binder-chapter-1.html` — 第 1 章：Android 为什么需要 Binder
-- 首页和笔记库里的统计数字（04 篇、04 个方向等）必须与真实内容一致。
+  5. `notes/binder-chapter-2.html` — 第 2 章：Binder 的心智模型
+- 首页和笔记库里的统计数字（05 篇、04 个方向等）必须与真实内容一致。
 - 不要把“计划中”的内容写成已完成；不确定的内容标注为整理中。
 - 作者信息以仓库现有内容为准：Bolin、GitHub `li2531719785`、
   `2531719785@qq.com`。不要编造公司、学历或项目经历。
@@ -120,6 +122,7 @@
   - Binder 路线：`https://home.bolinlab.top/notes/binder-learning-path`
   - Binder 第 0 章：`https://home.bolinlab.top/notes/binder-chapter-0`
   - Binder 第 1 章：`https://home.bolinlab.top/notes/binder-chapter-1`
+  - Binder 第 2 章：`https://home.bolinlab.top/notes/binder-chapter-2`
 - 页面内部链接仍可保留 `.html`，方便 `python -m http.server` 本地预览；
   线上会 308 跳转，功能正常。
 - 新增页面后必须：
@@ -175,11 +178,11 @@
 ## 9. 当前状态（2026-11-15）
 
 - 线上站点正常，HTTP 200，Cloudflare 安全头生效。
-- 首页 / 笔记库 / 关于 / 404 / 四篇笔记全部可访问。
+- 首页 / 笔记库 / 关于 / 404 / 五篇笔记全部可访问。
 - 浅色 + 深色主题、移动端适配、搜索筛选、文章 TOC、阅读进度均已实现。
-- 第 1 章新增了 CSS flex 流程图（`.flow-diagram`），避免手写 SVG 坐标导致
+- 第 1、2 章使用 CSS flex 流程图（`.flow-diagram`），避免手写 SVG 坐标导致
   连线错位；移动端自动转为纵向排列。
-- GSC 验证成功；sitemap 已提交成功。新增第 1 章后 sitemap 现有 7 个 URL，
+- GSC 验证成功；sitemap 已提交成功。新增第 2 章后 sitemap 现有 8 个 URL，
   等待 Google 重新抓取；GSC 上次读取为 5 个页面。
 - 工作区干净，`main` 与 `origin/main` 同步。
 - 最近关键提交：
@@ -192,7 +195,7 @@
 ## 10. 下一步建议
 
 1. 等待 Google 收录；用 GSC “网页”报告观察索引状态。
-2. 继续写 Binder 学习路线第 2 章：Binder 的心智模型。
+2. 继续写 Binder 学习路线第 3 章：第一个 AIDL。
 3. 继续把 `notes/index.html` 中“在整理中”的主题写成正式笔记。
 4. 可选：RSS / Atom、每篇文章独立 OG 封面、Bing Webmaster。
 5. 新笔记优先保证：可读性 > 结构图 > 源码细节 > SEO。
