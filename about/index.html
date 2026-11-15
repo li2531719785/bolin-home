@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>关于 · Bolin Lab</title>
+<meta name="description" content="关于 Bolin Lab：一个记录 Android、Linux 与 Native 开发学习过程的开源笔记站。">
+<meta name="author" content="Bolin">
+<meta property="og:site_name" content="Bolin Lab">
+<meta property="og:title" content="关于 · Bolin Lab">
+<meta property="og:description" content="一个在学习 Android 底层与 Linux 系统的开发者，记录 Binder、Framework 与内核驱动的学习过程。">
+<meta property="og:type" content="website">
+<meta name="theme-color" content="#f4f1e9">
+<link rel="icon" href="../avatar.png" type="image/png">
+<link rel="stylesheet" href="../assets/css/site.css">
+<script>
+(function () {
+  try {
+    var saved = localStorage.getItem("bolin-theme");
+    var theme = saved || (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+    document.documentElement.dataset.theme = theme;
+    document.documentElement.classList.add("js");
+  } catch (e) {
+    document.documentElement.dataset.theme = "light";
+    document.documentElement.classList.add("js");
+  }
+})();
+</script>
+</head>
+<body>
+<a class="skip-link" href="#main">跳到主要内容</a>
+
+<header class="site-header">
+  <div class="container header-inner">
+    <a class="brand" href="../index.html" aria-label="Bolin Lab 首页">
+      <span class="brand-mark">B</span>
+      <span class="brand-text">
+        <span class="brand-name">Bolin Lab</span>
+        <span class="brand-sub">personal knowledge base</span>
+      </span>
+    </a>
+    <nav class="site-nav" aria-label="主导航">
+      <a class="nav-link" href="../index.html">首页</a>
+      <a class="nav-link" href="../notes/">笔记</a>
+      <a class="nav-link" href="./" aria-current="page">关于</a>
+    </nav>
+    <div class="header-actions">
+      <button class="icon-btn" type="button" data-theme-toggle aria-label="切换主题" aria-pressed="false">
+        <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M20 14.2A8.2 8.2 0 0 1 9.8 4a8.2 8.2 0 1 0 10.2 10.2Z"/></svg>
+        <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M19.1 4.9l-1.4 1.4M6.3 17.7l-1.4 1.4"/></svg>
+      </button>
+      <a class="icon-btn" href="https://github.com/li2531719785" target="_blank" rel="noopener" aria-label="GitHub">
+        <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 .7a11.3 11.3 0 0 0-3.6 22c.6.1.8-.3.8-.6v-2.1c-3.3.7-4-1.4-4-1.4-.5-1.4-1.3-1.8-1.3-1.8-1.1-.7.1-.7.1-.7 1.2.1 1.8 1.2 1.8 1.2 1.1 1.9 2.9 1.3 3.6 1 .1-.8.4-1.3.8-1.6-2.7-.3-5.5-1.3-5.5-5.9 0-1.3.5-2.4 1.2-3.2-.1-.3-.5-1.5.1-3.2 0 0 1-.3 3.4 1.2a11.7 11.7 0 0 1 6.2 0c2.4-1.6 3.4-1.2 3.4-1.2.6 1.7.2 2.9.1 3.2.8.8 1.2 1.9 1.2 3.2 0 4.6-2.8 5.5-5.5 5.8.4.4.8 1.1.8 2.2v3.3c0 .3.2.7.8.6A11.3 11.3 0 0 0 12 .7Z"/></svg>
+      </a>
+    </div>
+  </div>
+</header>
+
+<main id="main">
+  <div class="container">
+    <section class="page-hero">
+      <div class="eyebrow"><span class="status-dot live"></span> About / Bolin Lab</div>
+      <h1>你好，我是 Bolin。</h1>
+      <p>一个正在学习 Android 底层与 Linux 系统的开发者。喜欢把复杂的东西拆小，跑通，再写成别人也能看懂的笔记。</p>
+    </section>
+
+    <div class="about-grid">
+      <aside class="about-card">
+        <img class="about-avatar" src="../avatar.png" alt="Bolin 的头像" width="72" height="72">
+        <h2 class="about-name">Bolin</h2>
+        <div class="about-role">Android / Linux · Learner &amp; Builder</div>
+        <p>目前主要关注 Binder、Android Framework 与 Linux 驱动。这个站是我的公开学习记录。</p>
+        <div class="profile-tags">
+          <span class="tag accent-tag">Android</span>
+          <span class="tag">Linux</span>
+          <span class="tag">C/C++</span>
+          <span class="tag">JNI</span>
+        </div>
+        <div class="about-links">
+          <a class="about-link" href="https://github.com/li2531719785" target="_blank" rel="noopener"><span>GitHub</span> ↗</a>
+          <a class="about-link" href="mailto:2531719785@qq.com"><span>Email</span> ↗</a>
+          <a class="about-link" href="../notes/"><span>笔记库</span> →</a>
+        </div>
+      </aside>
+
+      <div class="about-body">
+        <p class="lead">我在学习如何把 <span class="accent">“会用”</span> 变成 <span class="accent">“知道它为什么这样工作”</span>。</p>
+        <p>从写 AIDL、跟一次 Binder 调用开始，我逐渐把兴趣延伸到 Framework、Native 和内核驱动。越往下读，越觉得真正有价值的不是记住某个结构体，而是能画出对象之间的关系、说清楚一次调用经过了哪些边界。</p>
+        <p>Bolin Lab 就是为此存在的：把散落在源码、调试器和笔记软件里的理解，整理成一条可以复走的路。</p>
+
+        <h2>这个站是什么</h2>
+        <p>它是一个公开的个人学习资料库，不是完整教程，也不是权威文档。内容会经历“草稿 → 实验 → 图解 → 修订”的过程，所以你会看到不同完成度的页面。</p>
+        <ul>
+          <li><strong>图解优先：</strong>先用一张图建立结构感，再进入字段和源码。</li>
+          <li><strong>问题驱动：</strong>从一个真实的调用、报错或面试问题出发。</li>
+          <li><strong>源码佐证：</strong>关键结论尽量对应到具体文件与函数。</li>
+          <li><strong>持续修订：</strong>理解变了，笔记也会跟着变。</li>
+        </ul>
+
+        <h2>我在关注什么</h2>
+        <ul>
+          <li><strong>Android Binder：</strong>用户态对象模型、libbinder、内核驱动与排障。</li>
+          <li><strong>Android Framework：</strong>system_server、AMS/WMS、启动流程与服务注册。</li>
+          <li><strong>Linux 驱动：</strong>字符设备、mmap、并发控制与内存分配。</li>
+          <li><strong>Native / JNI：</strong>Java、C++ 与内核之间的边界和性能。</li>
+        </ul>
+
+        <h2>我怎么做笔记</h2>
+        <div class="principle-grid">
+          <div class="principle"><b>先跑通</b><span>能复现、能调试，再讨论抽象概念。</span></div>
+          <div class="principle"><b>画关系</b><span>结构图、时序图和状态流转优先于大段文字。</span></div>
+          <div class="principle"><b>再修订</b><span>允许第一版不完美，但留下可迭代的骨架。</span></div>
+        </div>
+
+        <h2>时间线</h2>
+        <div class="timeline">
+          <div class="timeline-item">
+            <div class="timeline-date">2026.11.15</div>
+            <div class="timeline-title">Bolin Lab 上线</div>
+            <div class="timeline-desc">把个人学习资料整理成公开站点，部署在 Cloudflare Pages。</div>
+          </div>
+          <div class="timeline-item">
+            <div class="timeline-date">2026.11.15</div>
+            <div class="timeline-title">发布《Binder 学习路线》</div>
+            <div class="timeline-desc">给 Android 新手的一条 18 章学习主线。</div>
+          </div>
+          <div class="timeline-item">
+            <div class="timeline-date">2026.11.14</div>
+            <div class="timeline-title">发布《Binder 驱动数据结构关系》</div>
+            <div class="timeline-desc">用可交互的 HTML 图整理 binder_proc、node、ref、transaction 与 buffer。</div>
+          </div>
+        </div>
+
+        <h2>技术栈</h2>
+        <div class="stack-chips">
+          <span class="tag">Android</span>
+          <span class="tag">Java</span>
+          <span class="tag">Kotlin</span>
+          <span class="tag">C/C++</span>
+          <span class="tag">JNI / NDK</span>
+          <span class="tag">Linux Kernel</span>
+          <span class="tag">Git</span>
+          <span class="tag">HTML / CSS / JS</span>
+        </div>
+
+        <h2>联系我</h2>
+        <p>如果你也在学习 Binder、Framework 或 Linux 驱动，欢迎交流。发现笔记里的错误也请直接告诉我，我会修正。</p>
+        <div class="hero-actions">
+          <a class="btn btn-primary" href="mailto:2531719785@qq.com">发一封邮件</a>
+          <a class="btn" href="https://github.com/li2531719785" target="_blank" rel="noopener">在 GitHub 找到我 <span class="btn-arrow" aria-hidden="true">↗</span></a>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<footer class="site-footer">
+  <div class="container">
+    <div class="footer-main">
+      <div>
+        <div class="footer-brand">
+          <span class="brand-mark">B</span>
+          <span class="footer-tagline">Bolin Lab · 把底层知识讲成地图。</span>
+        </div>
+      </div>
+      <nav class="footer-links" aria-label="页脚导航">
+        <a href="../index.html">首页</a>
+        <a href="../notes/">笔记</a>
+        <a href="https://github.com/li2531719785" target="_blank" rel="noopener">GitHub ↗</a>
+        <a href="mailto:2531719785@qq.com">Email</a>
+      </nav>
+    </div>
+    <div class="footer-bottom">
+      <span>© <span data-year>2026</span> Bolin Lab</span>
+      <span>Built with plain HTML / CSS / JS · Deployed on Cloudflare Pages</span>
+    </div>
+  </div>
+</footer>
+
+<script src="../assets/js/site.js" defer></script>
+</body>
+</html>

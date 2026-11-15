@@ -1,0 +1,3398 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Android Binder 驱动数据结构关系 · Bolin Lab</title>
+<meta name="description" content="一份可交互的 Android Binder 驱动数据结构关系图：binder_proc、binder_thread、binder_node、binder_ref、binder_transaction、binder_buffer 与 binder_alloc。">
+<meta name="author" content="Bolin">
+<meta property="og:site_name" content="Bolin Lab">
+<meta property="og:title" content="Android Binder 驱动数据结构关系 · Bolin Lab">
+<meta property="og:description" content="用可交互的图整理 binder_proc、node、ref、transaction 与 buffer 的关系。">
+<meta property="og:type" content="article">
+<meta property="article:published_time" content="2026-11-14">
+<link rel="icon" href="../avatar.png" type="image/png">
+<style>
+  :root {
+    --bg: #060a12;
+    --bg-soft: #08101c;
+    --panel: #0c1525;
+    --panel-2: #101c30;
+    --panel-3: #142239;
+    --line: rgba(148, 176, 218, .16);
+    --line-strong: rgba(148, 176, 218, .28);
+    --text: #e9f0fc;
+    --muted: #97a8c4;
+    --dim: #6e819e;
+    --cyan: #51d8ff;
+    --blue: #69a8ff;
+    --violet: #b49aff;
+    --amber: #ffc857;
+    --rose: #ff7aa2;
+    --green: #63ecb3;
+    --mono: "Cascadia Code", "JetBrains Mono", "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+    --sans: "Inter", "Segoe UI", "Noto Sans SC", "Microsoft YaHei", system-ui, sans-serif;
+    --shadow: 0 30px 90px rgba(0, 0, 0, .48);
+    --radius: 22px;
+    --max: 1240px;
+  }
+
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    color: var(--text);
+    background:
+      radial-gradient(1000px 700px at 82% -8%, rgba(112, 86, 255, .20), transparent 62%),
+      radial-gradient(900px 650px at -10% 16%, rgba(0, 205, 255, .10), transparent 60%),
+      radial-gradient(700px 600px at 50% 105%, rgba(255, 200, 87, .06), transparent 65%),
+      var(--bg);
+    font-family: var(--sans);
+    -webkit-font-smoothing: antialiased;
+    line-height: 1.6;
+    overflow-x: hidden;
+  }
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    background-image:
+      linear-gradient(rgba(255,255,255,.022) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,.022) 1px, transparent 1px);
+    background-size: 52px 52px;
+    mask-image: radial-gradient(ellipse at 50% 18%, #000 0%, transparent 72%);
+    pointer-events: none;
+  }
+  body.no-scroll { overflow: hidden; }
+  ::selection { background: rgba(81, 216, 255, .28); color: #fff; }
+  a { color: inherit; text-decoration: none; }
+  button, input { font: inherit; }
+  button { color: inherit; }
+  code, pre, .mono { font-family: var(--mono); }
+  code {
+    color: #b9e8ff;
+    background: rgba(81, 216, 255, .08);
+    border: 1px solid rgba(81, 216, 255, .12);
+    padding: .12em .38em;
+    border-radius: 6px;
+    font-size: .9em;
+    white-space: nowrap;
+  }
+  p code { white-space: normal; }
+  h1, h2, h3, h4 { margin: 0; font-weight: 650; letter-spacing: -.025em; }
+  p { margin: 0; }
+
+  ::-webkit-scrollbar { width: 10px; height: 10px; }
+  ::-webkit-scrollbar-track { background: #070d18; }
+  ::-webkit-scrollbar-thumb { background: #263651; border-radius: 10px; border: 2px solid #070d18; }
+  ::-webkit-scrollbar-thumb:hover { background: #385073; }
+
+  .scroll-progress {
+    position: fixed;
+    top: 0; left: 0;
+    height: 2px; width: 0;
+    z-index: 100;
+    background: linear-gradient(90deg, var(--cyan), var(--violet), var(--rose));
+    box-shadow: 0 0 18px rgba(81, 216, 255, .65);
+  }
+
+  .topbar {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    z-index: 60;
+    height: 66px;
+    border-bottom: 1px solid transparent;
+    transition: background .3s, border-color .3s, backdrop-filter .3s;
+  }
+  .topbar.scrolled {
+    background: rgba(6, 10, 18, .78);
+    backdrop-filter: blur(20px) saturate(1.25);
+    border-bottom-color: rgba(148, 176, 218, .10);
+  }
+  .nav-inner {
+    max-width: var(--max);
+    height: 100%;
+    margin: 0 auto;
+    padding: 0 24px;
+    display: flex;
+    align-items: center;
+    gap: 22px;
+  }
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex: 0 0 auto;
+    font-family: var(--mono);
+    font-size: 13px;
+    letter-spacing: .06em;
+    color: #dce8fb;
+  }
+  .brand-mark {
+    width: 28px; height: 28px;
+    display: grid; place-items: center;
+    border-radius: 9px;
+    background: linear-gradient(135deg, rgba(81,216,255,.18), rgba(180,154,255,.22));
+    border: 1px solid rgba(148, 208, 255, .28);
+    box-shadow: inset 0 0 18px rgba(81, 216, 255, .12);
+  }
+  .brand-mark svg { width: 16px; height: 16px; }
+  .brand b { font-weight: 650; color: #fff; }
+  .brand span { color: var(--dim); }
+  .topnav {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    margin-left: auto;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .topnav::-webkit-scrollbar { display: none; }
+  .topnav a {
+    position: relative;
+    padding: 7px 11px;
+    border-radius: 8px;
+    color: #8fa1bd;
+    font-size: 12.5px;
+    white-space: nowrap;
+    transition: color .2s, background .2s;
+  }
+  .topnav a:hover { color: #fff; background: rgba(255,255,255,.045); }
+  .topnav a.active { color: #fff; background: rgba(81, 216, 255, .09); }
+  .topnav a.active::after {
+    content: "";
+    position: absolute;
+    left: 11px; right: 11px; bottom: 2px;
+    height: 1px;
+    background: linear-gradient(90deg, var(--cyan), transparent);
+  }
+  .nav-badge {
+    flex: 0 0 auto;
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: .08em;
+    color: var(--amber);
+    border: 1px solid rgba(255, 200, 87, .25);
+    background: rgba(255, 200, 87, .06);
+    padding: 4px 8px;
+    border-radius: 999px;
+  }
+  @media (max-width: 860px) {
+    .nav-badge { display: none; }
+    .nav-inner { gap: 12px; padding: 0 16px; }
+    .brand span { display: none; }
+  }
+
+  main { max-width: var(--max); margin: 0 auto; padding: 0 24px; }
+
+  .hero {
+    min-height: 100vh;
+    padding: 148px 0 92px;
+    display: grid;
+    grid-template-columns: minmax(0, 1.04fr) minmax(420px, .96fr);
+    gap: 46px;
+    align-items: center;
+    position: relative;
+  }
+  .hero::after {
+    content: "";
+    position: absolute;
+    left: 0; right: 0; bottom: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(148,176,218,.16), transparent);
+  }
+  .eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 9px;
+    font-family: var(--mono);
+    font-size: 10.5px;
+    letter-spacing: .16em;
+    color: var(--cyan);
+    text-transform: uppercase;
+    margin-bottom: 24px;
+  }
+  .pulse-dot {
+    position: relative;
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--cyan);
+    box-shadow: 0 0 12px var(--cyan);
+  }
+  .pulse-dot::after {
+    content: "";
+    position: absolute;
+    inset: -4px;
+    border-radius: 50%;
+    border: 1px solid rgba(81,216,255,.55);
+    animation: pulse 2.4s ease-out infinite;
+  }
+  @keyframes pulse {
+    0% { transform: scale(.6); opacity: 1; }
+    100% { transform: scale(1.9); opacity: 0; }
+  }
+  .hero h1 {
+    font-size: clamp(46px, 6.2vw, 78px);
+    line-height: 1.02;
+    letter-spacing: -.055em;
+    font-weight: 670;
+  }
+  .gradient-text {
+    display: inline-block;
+    background: linear-gradient(105deg, #8ee6ff 4%, #b8a3ff 48%, #ffd374 96%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    filter: drop-shadow(0 0 28px rgba(81, 216, 255, .16));
+  }
+  .hero-lead {
+    margin-top: 26px;
+    max-width: 590px;
+    font-size: 17px;
+    line-height: 1.8;
+    color: #b9c7dd;
+  }
+  .hero-lead strong { color: #fff; font-weight: 600; }
+  .hero-sub {
+    margin-top: 14px;
+    max-width: 560px;
+    font-size: 13px;
+    color: var(--dim);
+  }
+  .hero-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 32px;
+  }
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-height: 42px;
+    padding: 0 17px;
+    border-radius: 10px;
+    border: 1px solid var(--line-strong);
+    background: rgba(255,255,255,.035);
+    color: #dfe9f8;
+    font-size: 13px;
+    font-weight: 550;
+    cursor: pointer;
+    transition: transform .2s, background .2s, border-color .2s, box-shadow .2s;
+  }
+  .btn:hover { transform: translateY(-1px); background: rgba(255,255,255,.075); border-color: rgba(180, 208, 255, .38); }
+  .btn-primary {
+    color: #07111d;
+    background: linear-gradient(135deg, #8be8ff, #65c8ff 55%, #9c8bff);
+    border-color: transparent;
+    box-shadow: 0 10px 34px rgba(81, 216, 255, .18);
+  }
+  .btn-primary:hover { background: linear-gradient(135deg, #a9f0ff, #83d4ff 55%, #b1a4ff); box-shadow: 0 12px 40px rgba(81, 216, 255, .26); }
+  .btn-ghost { background: transparent; }
+  .btn-small { min-height: 36px; padding: 0 13px; font-size: 12px; }
+  .btn:disabled { opacity: .35; cursor: not-allowed; transform: none; }
+  .hero-stats {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 26px;
+    margin-top: 46px;
+    padding-top: 22px;
+    border-top: 1px solid rgba(148,176,218,.12);
+    max-width: 590px;
+  }
+  .stat b {
+    display: block;
+    font-family: var(--mono);
+    font-size: 20px;
+    font-weight: 600;
+    color: #f1f7ff;
+    letter-spacing: -.03em;
+  }
+  .stat span {
+    display: block;
+    margin-top: 2px;
+    font-size: 10.5px;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    color: var(--dim);
+  }
+  .hero-visual {
+    position: relative;
+    border: 1px solid rgba(148,176,218,.14);
+    border-radius: 24px;
+    background:
+      radial-gradient(500px 280px at 70% -10%, rgba(180,154,255,.12), transparent 60%),
+      linear-gradient(165deg, rgba(17,28,48,.92), rgba(8,14,25,.96));
+    box-shadow: var(--shadow), inset 0 1px 0 rgba(255,255,255,.05);
+    overflow: hidden;
+  }
+  .hero-visual::before {
+    content: "";
+    position: absolute;
+    inset: -1px;
+    border-radius: 24px;
+    padding: 1px;
+    background: linear-gradient(130deg, rgba(81,216,255,.4), transparent 30%, transparent 70%, rgba(255,200,87,.24));
+    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    pointer-events: none;
+  }
+  .hero-visual-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 14px 18px;
+    border-bottom: 1px solid rgba(148,176,218,.09);
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: .1em;
+    color: var(--dim);
+    text-transform: uppercase;
+  }
+  .live-label { display: inline-flex; align-items: center; gap: 7px; color: #a8f3d0; }
+  .live-label i { width: 5px; height: 5px; border-radius: 50%; background: var(--green); box-shadow: 0 0 10px var(--green); }
+  .hero-visual-body { padding: 8px 8px 0; }
+  .hero .hero-diagram { min-width: 0; }
+  .hero .hero-diagram svg { width: 100%; }
+  .hero-caption {
+    display: flex;
+    justify-content: space-between;
+    gap: 14px;
+    padding: 10px 18px 15px;
+    color: var(--dim);
+    font-size: 10.5px;
+    border-top: 1px solid rgba(148,176,218,.06);
+  }
+  .hero-caption .mono { color: #8fb2d9; }
+
+  .section {
+    padding: 104px 0;
+    scroll-margin-top: 82px;
+    position: relative;
+  }
+  .section + .section { border-top: 1px solid rgba(148,176,218,.075); }
+  .section-head { max-width: 830px; margin-bottom: 34px; }
+  .section-kicker {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 18px;
+    font-family: var(--mono);
+    font-size: 10.5px;
+    letter-spacing: .13em;
+    text-transform: uppercase;
+    color: #8ea6c8;
+  }
+  .section-kicker .num {
+    display: inline-grid;
+    place-items: center;
+    width: 24px; height: 24px;
+    border-radius: 7px;
+    color: var(--cyan);
+    background: rgba(81,216,255,.08);
+    border: 1px solid rgba(81,216,255,.2);
+    font-size: 10px;
+  }
+  .section-kicker .bar { width: 28px; height: 1px; background: linear-gradient(90deg, var(--cyan), transparent); }
+  .section-head h2 {
+    font-size: clamp(30px, 4vw, 49px);
+    line-height: 1.14;
+    letter-spacing: -.045em;
+  }
+  .section-head h2 em {
+    font-style: normal;
+    color: transparent;
+    background: linear-gradient(100deg, #9be9ff, #b6a1ff 70%);
+    -webkit-background-clip: text;
+    background-clip: text;
+  }
+  .section-head p {
+    margin-top: 16px;
+    max-width: 760px;
+    font-size: 15px;
+    line-height: 1.85;
+    color: var(--muted);
+  }
+  .section-head p strong { color: #e5efff; font-weight: 600; }
+
+  .panel {
+    border: 1px solid rgba(148,176,218,.13);
+    border-radius: var(--radius);
+    background:
+      radial-gradient(700px 300px at 100% 0%, rgba(180,154,255,.055), transparent 55%),
+      linear-gradient(180deg, rgba(14,24,41,.86), rgba(8,15,27,.9));
+    box-shadow: 0 24px 70px rgba(0,0,0,.28), inset 0 1px 0 rgba(255,255,255,.035);
+  }
+
+  .model-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 14px;
+  }
+  .model-card {
+    position: relative;
+    padding: 22px 22px 20px;
+    border-radius: 16px;
+    border: 1px solid rgba(148,176,218,.11);
+    background: linear-gradient(160deg, rgba(18,30,51,.72), rgba(9,16,29,.7));
+    overflow: hidden;
+    transition: transform .25s, border-color .25s, background .25s;
+  }
+  .model-card::after {
+    content: "";
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    width: 2px;
+    background: var(--accent);
+    opacity: .7;
+  }
+  .model-card:hover { transform: translateY(-3px); border-color: rgba(148,176,218,.24); background: linear-gradient(160deg, rgba(22,37,62,.82), rgba(10,18,32,.8)); }
+  .model-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 18px; }
+  .model-code {
+    width: 36px; height: 36px;
+    display: grid; place-items: center;
+    border-radius: 10px;
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 650;
+    color: var(--accent);
+    background: color-mix(in srgb, var(--accent) 9%, transparent);
+    border: 1px solid color-mix(in srgb, var(--accent) 24%, transparent);
+  }
+  .model-index { font-family: var(--mono); font-size: 10px; color: var(--dim); letter-spacing: .08em; }
+  .model-card h3 { font-size: 20px; letter-spacing: -.02em; margin-bottom: 4px; }
+  .model-card .struct { font-family: var(--mono); font-size: 11px; color: var(--accent); letter-spacing: .01em; }
+  .model-card p { margin-top: 12px; font-size: 12.5px; line-height: 1.75; color: #8fa3c0; }
+  .model-card[data-color="cyan"] { --accent: var(--cyan); }
+  .model-card[data-color="violet"] { --accent: var(--violet); }
+  .model-card[data-color="green"] { --accent: var(--green); }
+  .model-card[data-color="amber"] { --accent: var(--amber); }
+  .model-card[data-color="rose"] { --accent: var(--rose); }
+  .model-card[data-color="blue"] { --accent: var(--blue); }
+
+  .metaphor {
+    margin-top: 18px;
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    padding: 18px 20px;
+    border-radius: 14px;
+    border: 1px solid rgba(255,200,87,.14);
+    background: linear-gradient(100deg, rgba(255,200,87,.065), rgba(255,200,87,.018));
+    color: #cdbb92;
+    font-size: 13px;
+    line-height: 1.8;
+  }
+  .metaphor b { color: #ffe6a6; font-weight: 600; }
+  .metaphor .quote {
+    flex: 0 0 auto;
+    font-family: Georgia, serif;
+    font-size: 28px;
+    line-height: 1;
+    color: rgba(255,200,87,.65);
+    margin-top: -2px;
+  }
+
+  .diagram-card { overflow: hidden; }
+  .diagram-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px;
+    padding: 13px 18px;
+    border-bottom: 1px solid rgba(148,176,218,.08);
+    background: rgba(7,13,24,.4);
+  }
+  .legend { display: flex; align-items: center; flex-wrap: wrap; gap: 16px; }
+  .legend-item { display: inline-flex; align-items: center; gap: 8px; font-size: 10.5px; color: #8498b7; white-space: nowrap; }
+  .legend-line { display: inline-block; width: 24px; height: 0; border-top: 1.5px solid #4c6788; }
+  .legend-line.dashed { border-top-style: dashed; border-top-color: #8798b1; }
+  .legend-line.cross { border-top-style: dashed; border-top-color: var(--rose); }
+  .legend-line.queue { border-top-style: dotted; border-top-color: var(--amber); border-top-width: 2px; }
+  .legend-line.flow { border-top: 2px solid var(--cyan); box-shadow: 0 0 8px rgba(81,216,255,.35); }
+  .diagram-hint { font-family: var(--mono); font-size: 9.5px; letter-spacing: .08em; color: #5e7697; text-transform: uppercase; white-space: nowrap; }
+  .diagram-scroll {
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding: 12px 12px 8px;
+    scrollbar-color: #2b3d5a #0a1120;
+  }
+  .diagram { min-width: 1000px; width: 100%; }
+  .diagram svg { display: block; width: 100%; height: auto; overflow: visible; }
+  .diagram-node { cursor: pointer; transition: opacity .2s; outline: none; }
+  .diagram-node .node-box { transition: stroke .2s, filter .2s; }
+  .diagram-node:hover .node-box, .diagram-node.is-hot .node-box { filter: drop-shadow(0 0 10px rgba(81,216,255,.18)); }
+  .diagram-node:focus-visible .node-box { stroke: #ffffff; stroke-width: 1.8; }
+  .diagram-node:hover .node-title, .diagram-node.is-hot .node-title { fill: #ffffff !important; }
+  .diagram-node.is-dim { opacity: .16; }
+  .diagram-edge { pointer-events: none; transition: opacity .2s; }
+  .diagram-edge.is-dim { opacity: .07; }
+  .diagram-edge.is-hot { opacity: 1; }
+  .diagram-edge.is-hot .edge-path { filter: drop-shadow(0 0 6px rgba(81,216,255,.28)); }
+  .edge-label-group { transition: opacity .2s; }
+  .edge-label-group.is-dim { opacity: .1; }
+  .s-dot { display: inline-block; width: 6px; height: 6px; border-radius: 50%; margin-right: 7px; vertical-align: 1px; }
+  .edge-path { fill: none; }
+  .edge-label { font-family: var(--mono); font-size: 10.5px; fill: #aebed6; paint-order: stroke; stroke: #07101c; stroke-width: 4.5px; stroke-linejoin: round; letter-spacing: .01em; pointer-events: none; }
+  .edge-label-group { pointer-events: none; }
+  .zone-box { fill: rgba(81,216,255,.022); stroke: rgba(129,162,207,.14); stroke-dasharray: 3 7; }
+  .zone-label { font-family: var(--mono); font-size: 9.5px; fill: #627b9d; letter-spacing: .14em; }
+  .node-title { font-family: var(--mono); font-size: 17px; font-weight: 600; fill: #f0f6ff; }
+  .node-sub { font-size: 11px; fill: #869ab8; }
+  .node-line { font-family: var(--mono); font-size: 10.5px; fill: #a1b4d1; }
+  .node-tag { font-family: var(--mono); font-size: 8.5px; letter-spacing: .1em; font-weight: 600; }
+  .node-accent { opacity: .9; }
+  .diagram-footer {
+    padding: 10px 18px 13px;
+    border-top: 1px solid rgba(148,176,218,.065);
+    color: #5d7495;
+    font-size: 10.5px;
+  }
+  .diagram-footer b { color: #8fa8c9; font-weight: 500; }
+
+  .insight-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 14px;
+    margin-top: 18px;
+  }
+  .insight {
+    padding: 20px;
+    border-radius: 14px;
+    border: 1px solid rgba(148,176,218,.1);
+    background: rgba(15,25,43,.5);
+  }
+  .insight .label { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; font-family: var(--mono); font-size: 9.5px; letter-spacing: .11em; text-transform: uppercase; color: #7f95b5; }
+  .insight .label i { width: 5px; height: 5px; border-radius: 50%; background: var(--accent, var(--cyan)); box-shadow: 0 0 8px var(--accent, var(--cyan)); }
+  .insight h3 { font-size: 15px; margin-bottom: 7px; }
+  .insight p { font-size: 12.5px; line-height: 1.8; color: #8fa3c0; }
+  .insight code { font-size: 10.5px; }
+
+  .callout {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    margin-top: 18px;
+    padding: 18px 20px;
+    border-radius: 14px;
+    border: 1px solid rgba(81,216,255,.13);
+    background: linear-gradient(100deg, rgba(81,216,255,.06), rgba(81,216,255,.012));
+    font-size: 12.5px;
+    line-height: 1.8;
+    color: #9fb5d2;
+  }
+  .callout .mark {
+    flex: 0 0 auto;
+    width: 22px; height: 22px;
+    display: grid; place-items: center;
+    border-radius: 7px;
+    color: var(--cyan);
+    background: rgba(81,216,255,.1);
+    border: 1px solid rgba(81,216,255,.22);
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 700;
+    margin-top: 1px;
+  }
+  .callout strong { color: #e6f0ff; font-weight: 600; }
+  .callout.warn { border-color: rgba(255,200,87,.16); background: linear-gradient(100deg, rgba(255,200,87,.06), rgba(255,200,87,.012)); }
+  .callout.warn .mark { color: var(--amber); background: rgba(255,200,87,.1); border-color: rgba(255,200,87,.22); }
+
+  .table-wrap {
+    margin-top: 18px;
+    border: 1px solid rgba(148,176,218,.1);
+    border-radius: 15px;
+    overflow: auto;
+    background: rgba(8,15,27,.52);
+  }
+  table { border-collapse: collapse; width: 100%; min-width: 780px; font-size: 12px; }
+  th {
+    text-align: left;
+    padding: 12px 16px;
+    font-family: var(--mono);
+    font-size: 9.5px;
+    font-weight: 600;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    color: #7790b0;
+    background: rgba(255,255,255,.025);
+    border-bottom: 1px solid rgba(148,176,218,.1);
+    white-space: nowrap;
+  }
+  td { padding: 12px 16px; border-bottom: 1px solid rgba(148,176,218,.065); color: #a6b7cf; vertical-align: top; line-height: 1.65; }
+  tbody tr:last-child td { border-bottom: none; }
+  tbody tr { transition: background .15s; }
+  tbody tr:hover { background: rgba(81,216,255,.035); }
+  td:first-child { color: #e2ecfb; font-weight: 500; white-space: nowrap; }
+  td code { font-size: 10.5px; }
+  .lock-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+  .lock-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 6px 10px;
+    border-radius: 8px;
+    border: 1px solid rgba(148,176,218,.12);
+    background: rgba(255,255,255,.025);
+    font-family: var(--mono);
+    font-size: 10px;
+    color: #95aac8;
+  }
+  .lock-chip i { width: 5px; height: 5px; border-radius: 50%; background: var(--amber); }
+  .lock-chip.cyan i { background: var(--cyan); }
+  .lock-chip.rose i { background: var(--rose); }
+  .lock-chip.green i { background: var(--green); }
+
+  .fact-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; margin-top: 18px; }
+  .fact-card { padding: 20px; border-radius: 14px; border: 1px solid rgba(148,176,218,.1); background: rgba(15,25,43,.5); }
+  .fact-card .mini { font-family: var(--mono); font-size: 9.5px; letter-spacing: .1em; color: var(--accent, var(--cyan)); text-transform: uppercase; margin-bottom: 9px; }
+  .fact-card h3 { font-size: 15px; margin-bottom: 7px; }
+  .fact-card p { font-size: 12.5px; line-height: 1.8; color: #8fa3c0; }
+  .fact-card code { font-size: 10.5px; }
+  .fact-card[data-color="cyan"] { --accent: var(--cyan); }
+  .fact-card[data-color="rose"] { --accent: var(--rose); }
+  .fact-card[data-color="amber"] { --accent: var(--amber); }
+  .fact-card[data-color="violet"] { --accent: var(--violet); }
+  .fact-card[data-color="green"] { --accent: var(--green); }
+
+  .translation-strip {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 18px;
+    padding: 16px 18px;
+    border-radius: 14px;
+    border: 1px solid rgba(148,176,218,.1);
+    background: rgba(8,15,27,.55);
+    font-family: var(--mono);
+    font-size: 11px;
+  }
+  .trans-chip { padding: 6px 10px; border-radius: 7px; border: 1px solid rgba(148,176,218,.16); color: #b8cbe2; background: rgba(255,255,255,.025); }
+  .trans-chip.cyan { color: var(--cyan); border-color: rgba(81,216,255,.25); background: rgba(81,216,255,.06); }
+  .trans-chip.rose { color: var(--rose); border-color: rgba(255,122,162,.25); background: rgba(255,122,162,.06); }
+  .trans-chip.green { color: var(--green); border-color: rgba(99,236,179,.25); background: rgba(99,236,179,.06); }
+  .trans-arrow { color: #647c9d; }
+
+  .tour-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 310px;
+    grid-template-areas: "seq side";
+    gap: 18px;
+    align-items: start;
+  }
+  .seq-card { grid-area: seq; }
+  .tour-side {
+    grid-area: side;
+    position: sticky;
+    top: 88px;
+    padding: 22px;
+    border-radius: 18px;
+    border: 1px solid rgba(148,176,218,.13);
+    background:
+      radial-gradient(360px 220px at 100% 0%, rgba(180,154,255,.09), transparent 65%),
+      linear-gradient(180deg, rgba(16,28,48,.94), rgba(9,16,29,.94));
+    box-shadow: 0 18px 50px rgba(0,0,0,.25);
+    overflow: hidden;
+  }
+  .tour-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 18px; }
+  .step-count { font-family: var(--mono); font-size: 11px; color: var(--cyan); letter-spacing: .08em; }
+  .step-tag { font-family: var(--mono); font-size: 8.5px; letter-spacing: .1em; color: var(--dim); text-transform: uppercase; }
+  .tour-side h3 { font-size: 20px; line-height: 1.35; margin-bottom: 10px; }
+  .tour-side .tour-desc { font-size: 12.5px; line-height: 1.8; color: #98aecb; min-height: 96px; }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+  .tour-side .chips { margin-top: 14px; }
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    padding: 4px 7px;
+    border-radius: 6px;
+    border: 1px solid color-mix(in srgb, var(--chip, var(--cyan)) 24%, transparent);
+    background: color-mix(in srgb, var(--chip, var(--cyan)) 7%, transparent);
+    color: color-mix(in srgb, var(--chip, var(--cyan)) 80%, white);
+    font-family: var(--mono);
+    font-size: 9px;
+    letter-spacing: .01em;
+    white-space: nowrap;
+  }
+  .tour-code {
+    margin-top: 14px;
+    padding: 10px 11px;
+    border-radius: 8px;
+    border: 1px solid rgba(148,176,218,.1);
+    background: rgba(3,8,16,.55);
+    color: #7fa5c8;
+    font-family: var(--mono);
+    font-size: 9.5px;
+    line-height: 1.7;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+  }
+  .tour-progress-track { height: 3px; border-radius: 3px; background: rgba(255,255,255,.06); margin: 18px 0 12px; overflow: hidden; }
+  .tour-progress-fill { height: 100%; width: 12.5%; background: linear-gradient(90deg, var(--cyan), var(--violet)); border-radius: 3px; transition: width .35s; }
+  .tour-controls { display: flex; gap: 7px; }
+  .tour-controls .btn { flex: 1; padding: 0 10px; }
+  .tour-controls .play { flex: 0 0 auto; }
+  .tour-dots { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 14px; }
+  .tour-dot {
+    width: 23px; height: 23px;
+    display: grid; place-items: center;
+    border-radius: 6px;
+    border: 1px solid rgba(148,176,218,.13);
+    background: transparent;
+    color: #6e84a3;
+    font-family: var(--mono);
+    font-size: 9px;
+    cursor: pointer;
+    transition: .2s;
+  }
+  .tour-dot:hover { color: #fff; border-color: rgba(81,216,255,.3); }
+  .tour-dot.active { color: #07111d; background: var(--cyan); border-color: var(--cyan); box-shadow: 0 0 16px rgba(81,216,255,.25); }
+
+  .seq-card { overflow: hidden; }
+  .seq-card .seq-wrap { padding: 8px 12px 12px; }
+  @media (max-width: 960px) {
+    .tour-layout { grid-template-columns: 1fr; grid-template-areas: "side" "seq"; }
+    .tour-side { grid-area: side; }
+    .seq-card { grid-area: seq; }
+  }
+  .seq-toolbar {
+    display: flex; align-items: center; justify-content: space-between; gap: 14px;
+    padding: 13px 18px;
+    border-bottom: 1px solid rgba(148,176,218,.08);
+    background: rgba(7,13,24,.4);
+  }
+  .seq-toolbar .legend { gap: 12px; }
+  .seq-wrap { padding: 8px 12px 12px; }
+  @media (max-width: 760px) {
+    .diagram-toolbar::after, .seq-toolbar::after {
+      content: "SWIPE →";
+      font-family: var(--mono);
+      font-size: 9px;
+      letter-spacing: .08em;
+      color: var(--amber);
+      white-space: nowrap;
+    }
+  }
+  .seq-wrap .diagram { min-width: 0; }
+  .seq-step { transition: opacity .25s; }
+  .seq-step.is-dim { opacity: .45; }
+  .seq-step.is-active .seq-arrow { stroke-dasharray: 7 5; animation: edgeFlow 1.1s linear infinite; stroke-width: 2.1; filter: drop-shadow(0 0 5px rgba(81,216,255,.25)); }
+  .seq-step.is-active .seq-action { filter: drop-shadow(0 0 12px rgba(81,216,255,.12)); }
+  @keyframes edgeFlow { to { stroke-dashoffset: -24; } }
+  .seq-line { stroke-width: 1.6; fill: none; }
+  .seq-arrow { stroke-width: 1.7; fill: none; }
+  .seq-action { transition: filter .2s; }
+  .seq-label { font-family: var(--mono); font-size: 13px; font-weight: 600; fill: #eaf3ff; }
+  .seq-sub { font-family: var(--mono); font-size: 9.5px; fill: #89a0be; }
+  .seq-lane-title { font-family: var(--mono); font-size: 16px; font-weight: 600; fill: #f3f8ff; }
+  .seq-lane-sub { font-size: 9.5px; fill: #8197b5; }
+  .seq-step-num { font-family: var(--mono); font-size: 9px; font-weight: 700; fill: #07111d; }
+  .seq-step-circle { fill: #6c86a8; }
+  .seq-step.is-active .seq-step-circle { fill: var(--cyan); filter: drop-shadow(0 0 6px rgba(81,216,255,.45)); }
+  .seq-rail { stroke: rgba(148,176,218,.18); stroke-width: 1; stroke-dasharray: 2 6; }
+  .seq-phase { font-family: var(--mono); font-size: 9px; letter-spacing: .16em; fill: #617b9e; text-transform: uppercase; }
+
+  .compare-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; margin-top: 18px; }
+  .compare-card { padding: 20px; border-radius: 15px; border: 1px solid rgba(148,176,218,.1); background: rgba(15,25,43,.5); }
+  .compare-card h3 { display: flex; align-items: center; gap: 8px; font-size: 15px; margin-bottom: 10px; }
+  .compare-card h3 .tag { font-family: var(--mono); font-size: 8.5px; letter-spacing: .1em; padding: 3px 6px; border-radius: 5px; border: 1px solid rgba(81,216,255,.22); color: var(--cyan); background: rgba(81,216,255,.06); }
+  .compare-card.oneway h3 .tag { color: var(--amber); border-color: rgba(255,200,87,.24); background: rgba(255,200,87,.06); }
+  .compare-card ul { margin: 0; padding-left: 17px; font-size: 12.5px; line-height: 1.85; color: #93a8c5; }
+  .compare-card li + li { margin-top: 3px; }
+  .compare-card code { font-size: 10.5px; }
+
+  .detail-accordion {
+    margin-top: 18px;
+    border: 1px solid rgba(148,176,218,.1);
+    border-radius: 14px;
+    background: rgba(8,15,27,.55);
+    overflow: hidden;
+  }
+  .detail-accordion summary {
+    list-style: none;
+    cursor: pointer;
+    padding: 16px 18px;
+    font-size: 13px;
+    font-weight: 550;
+    color: #c9d9ec;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+  }
+  .detail-accordion summary::-webkit-details-marker { display: none; }
+  .detail-accordion summary::after { content: "+"; font-family: var(--mono); color: var(--cyan); font-size: 16px; }
+  .detail-accordion[open] summary::after { content: "−"; }
+  .detail-accordion[open] summary { border-bottom: 1px solid rgba(148,176,218,.08); }
+  .accordion-body { padding: 18px; font-size: 12.5px; line-height: 1.85; color: #93a8c5; }
+  .accordion-body p + p { margin-top: 10px; }
+  .accordion-body pre { margin: 12px 0 0; }
+
+  .mini-flow { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 16px; }
+  .mini-flow .step {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 7px 10px; border-radius: 8px;
+    border: 1px solid rgba(148,176,218,.12);
+    background: rgba(255,255,255,.025);
+    font-family: var(--mono); font-size: 9.5px; color: #9fb4d0;
+  }
+  .mini-flow .step b { color: var(--cyan); font-weight: 600; }
+  .mini-flow .sep { color: #4d6382; font-family: var(--mono); font-size: 11px; }
+
+  .calc { padding: 24px; margin-top: 18px; }
+  .calc-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 18px; }
+  .calc-kicker { font-family: var(--mono); font-size: 9px; letter-spacing: .12em; text-transform: uppercase; color: #7890b0; margin-bottom: 6px; }
+  .calc h3 { font-size: 20px; }
+  .calc-status {
+    flex: 0 0 auto;
+    display: inline-flex; align-items: center; gap: 7px;
+    padding: 6px 10px; border-radius: 999px;
+    font-family: var(--mono); font-size: 9.5px; letter-spacing: .06em;
+    color: var(--green); background: rgba(99,236,179,.07); border: 1px solid rgba(99,236,179,.22);
+  }
+  .calc-status.dead { color: var(--rose); background: rgba(255,122,162,.07); border-color: rgba(255,122,162,.22); }
+  .calc-status i { width: 5px; height: 5px; border-radius: 50%; background: currentColor; box-shadow: 0 0 8px currentColor; }
+  .calc-desc { margin-top: 9px; font-size: 12.5px; line-height: 1.8; color: #8fa3c0; max-width: 720px; }
+  .calc-rows { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin-top: 18px; }
+  @media (min-width: 761px) {
+    .calc-row:last-child { grid-column: 1 / -1; }
+  }
+  .calc-row {
+    display: grid;
+    grid-template-columns: 9px minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 9px;
+    text-align: left;
+    padding: 11px 12px;
+    border-radius: 10px;
+    border: 1px solid rgba(148,176,218,.1);
+    background: rgba(255,255,255,.018);
+    cursor: pointer;
+    transition: .2s;
+  }
+  .calc-row:hover { border-color: rgba(148,176,218,.22); background: rgba(255,255,255,.035); }
+  .calc-row .dot { width: 7px; height: 7px; border-radius: 50%; background: #334764; transition: .2s; }
+  .calc-row .field { font-family: var(--mono); font-size: 10.5px; color: #a7bdd8; display: block; }
+  .calc-row .hint { display: block; margin-top: 2px; font-size: 10.5px; color: #6f86a5; }
+  .calc-row .value { font-family: var(--mono); font-size: 12px; color: #5e7695; min-width: 18px; text-align: right; }
+  .calc-row.on { border-color: color-mix(in srgb, var(--row-color, var(--cyan)) 28%, transparent); background: color-mix(in srgb, var(--row-color, var(--cyan)) 6%, rgba(255,255,255,.018)); }
+  .calc-row.on .dot { background: var(--row-color, var(--cyan)); box-shadow: 0 0 9px var(--row-color, var(--cyan)); }
+  .calc-row.on .field { color: #e3efff; }
+  .calc-row.on .value { color: var(--row-color, var(--cyan)); }
+  .calc-formula {
+    margin-top: 16px;
+    padding: 12px 14px;
+    border-radius: 9px;
+    border: 1px solid rgba(148,176,218,.09);
+    background: rgba(3,8,16,.55);
+    font-family: var(--mono);
+    font-size: 10px;
+    line-height: 1.8;
+    color: #88a5c7;
+    overflow-wrap: anywhere;
+  }
+  .calc-formula .on { color: var(--green); }
+  .calc-formula .off { color: #526987; }
+  .calc-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+  .calc-note { margin-top: 14px; font-size: 11px; line-height: 1.8; color: #6e86a6; }
+
+  .timeline {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 10px;
+    margin-top: 18px;
+    counter-reset: tl;
+  }
+  .timeline-item {
+    position: relative;
+    padding: 18px 15px;
+    border-radius: 13px;
+    border: 1px solid rgba(148,176,218,.1);
+    background: rgba(15,25,43,.48);
+  }
+  .timeline-item::before {
+    counter-increment: tl;
+    content: "0" counter(tl);
+    display: inline-block;
+    font-family: var(--mono);
+    font-size: 9px;
+    color: var(--cyan);
+    margin-bottom: 8px;
+  }
+  .timeline-item h4 { font-size: 13px; margin-bottom: 5px; }
+  .timeline-item p { font-size: 11.5px; line-height: 1.75; color: #8399b6; }
+  .timeline-item code { font-size: 9.5px; }
+  .timeline-item:not(:last-child)::after {
+    content: "›";
+    position: absolute;
+    right: -9px; top: 50%;
+    transform: translateY(-50%);
+    z-index: 2;
+    width: 16px; height: 16px;
+    display: grid; place-items: center;
+    border-radius: 50%;
+    background: #0b1423;
+    border: 1px solid rgba(148,176,218,.16);
+    color: #6680a2;
+    font-size: 11px;
+  }
+
+  .death-flow {
+    margin-top: 18px;
+    padding: 20px;
+    border-radius: 15px;
+    border: 1px solid rgba(255,122,162,.12);
+    background: linear-gradient(100deg, rgba(255,122,162,.045), rgba(8,15,27,.35));
+  }
+  .death-flow h3 { display: flex; align-items: center; gap: 9px; font-size: 15px; margin-bottom: 6px; }
+  .death-flow h3 .badge { font-family: var(--mono); font-size: 8.5px; letter-spacing: .09em; color: var(--rose); border: 1px solid rgba(255,122,162,.22); background: rgba(255,122,162,.06); border-radius: 5px; padding: 3px 6px; }
+  .death-flow p { font-size: 12px; color: #8fa3c0; line-height: 1.8; }
+  .death-flow .mini-flow { margin-top: 12px; }
+  .death-flow .mini-flow .step { border-color: rgba(255,122,162,.12); }
+  .death-flow .mini-flow .step b { color: var(--rose); }
+
+  .tabs { margin-top: 18px; }
+  .tab-buttons { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+  .tab-btn {
+    padding: 8px 12px;
+    border-radius: 8px;
+    border: 1px solid rgba(148,176,218,.12);
+    background: transparent;
+    color: #8499b8;
+    font-family: var(--mono);
+    font-size: 10px;
+    cursor: pointer;
+    transition: .2s;
+  }
+  .tab-btn:hover { color: #fff; border-color: rgba(148,176,218,.26); }
+  .tab-btn.active { color: #07111d; background: #8fe7ff; border-color: #8fe7ff; box-shadow: 0 0 18px rgba(81,216,255,.14); }
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; animation: fadeUp .35s ease; }
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: none; } }
+  .code-card {
+    border: 1px solid rgba(148,176,218,.1);
+    border-radius: 14px;
+    overflow: hidden;
+    background: #070d17;
+  }
+  .code-head {
+    display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    padding: 10px 14px;
+    border-bottom: 1px solid rgba(148,176,218,.08);
+    background: rgba(255,255,255,.02);
+    color: #6f86a6;
+    font-family: var(--mono);
+    font-size: 9.5px;
+  }
+  .code-head .file { color: #8ea9c9; }
+  .copy-btn {
+    border: 1px solid rgba(148,176,218,.12);
+    background: transparent;
+    color: #7d93b1;
+    border-radius: 6px;
+    padding: 4px 8px;
+    font-family: var(--mono);
+    font-size: 9px;
+    cursor: pointer;
+    transition: .2s;
+  }
+  .copy-btn:hover { color: #fff; border-color: rgba(148,176,218,.28); }
+  pre {
+    margin: 0;
+    padding: 18px;
+    overflow: auto;
+    font-size: 11px;
+    line-height: 1.75;
+    color: #b9cbe2;
+    tab-size: 4;
+  }
+  pre code {
+    display: block;
+    white-space: pre;
+    background: none;
+    border: 0;
+    border-radius: 0;
+    padding: 0;
+    color: inherit;
+    font-size: inherit;
+  }
+  .tok-key { color: #d5a6ff; }
+  .tok-type { color: #7bdffc; }
+  .tok-fn { color: #9fd6a7; }
+  .tok-com { color: #566c88; font-style: italic; }
+  .tok-num { color: #ffc857; }
+  .tok-str { color: #ffb0c6; }
+
+  .cheat-tools { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-top: 18px; }
+  .search-wrap { position: relative; flex: 1 1 280px; max-width: 420px; }
+  .search-wrap input {
+    width: 100%;
+    height: 40px;
+    padding: 0 38px 0 13px;
+    border-radius: 10px;
+    border: 1px solid rgba(148,176,218,.14);
+    background: rgba(255,255,255,.025);
+    color: #e8f2ff;
+    outline: none;
+    font-size: 12px;
+    transition: .2s;
+  }
+  .search-wrap input::placeholder { color: #5f7798; }
+  .search-wrap input:focus { border-color: rgba(81,216,255,.36); box-shadow: 0 0 0 3px rgba(81,216,255,.06); }
+  .search-icon { position: absolute; right: 13px; top: 50%; transform: translateY(-50%); color: #5d7596; font-size: 13px; pointer-events: none; }
+  .cheat-count { font-family: var(--mono); font-size: 9.5px; letter-spacing: .06em; color: #6c84a4; }
+  .cheat-table { margin-top: 12px; }
+  .cheat-table table { min-width: 900px; }
+  .cheat-table tr.hidden { display: none; }
+  .empty-row td { text-align: center; color: #637c9c; padding: 28px; }
+
+  .file-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; margin-top: 18px; }
+  .file-card { padding: 20px; border-radius: 14px; border: 1px solid rgba(148,176,218,.1); background: rgba(15,25,43,.5); }
+  .file-card .path { font-family: var(--mono); font-size: 10px; color: var(--cyan); margin-bottom: 6px; }
+  .file-card h3 { font-size: 15px; margin-bottom: 7px; }
+  .file-card p { font-size: 12.5px; line-height: 1.8; color: #8fa3c0; }
+  .call-chain {
+    margin-top: 18px;
+    padding: 20px;
+    border-radius: 15px;
+    border: 1px solid rgba(148,176,218,.1);
+    background: rgba(3,8,16,.45);
+  }
+  .call-chain .kicker { font-family: var(--mono); font-size: 9px; letter-spacing: .12em; color: #7089aa; text-transform: uppercase; margin-bottom: 12px; }
+  .call-chain pre { padding: 0; font-size: 10.5px; line-height: 1.9; color: #9eb6d4; }
+  .call-chain .arrow { color: #536b8b; }
+  .call-chain .fn { color: #8fe7ff; }
+  .call-chain .cmd { color: #ffc857; }
+
+  .mistake-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; margin-top: 18px; }
+  .mistake { padding: 19px; border-radius: 14px; border: 1px solid rgba(255,122,162,.11); background: linear-gradient(160deg, rgba(255,122,162,.045), rgba(15,25,43,.35)); }
+  .mistake .no { font-family: var(--mono); font-size: 9px; color: var(--rose); letter-spacing: .1em; margin-bottom: 8px; }
+  .mistake h3 { font-size: 14px; margin-bottom: 6px; }
+  .mistake p { font-size: 12px; line-height: 1.8; color: #8da2bf; }
+  .mistake .truth { display: block; margin-top: 9px; padding-top: 9px; border-top: 1px solid rgba(255,122,162,.1); color: #c7d8eb; font-size: 11.5px; }
+  .mistake .truth b { color: var(--green); font-weight: 600; }
+
+  .footer {
+    max-width: var(--max);
+    margin: 0 auto;
+    padding: 40px 24px 54px;
+    border-top: 1px solid rgba(148,176,218,.08);
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 24px;
+    color: #657d9d;
+    font-size: 11px;
+    line-height: 1.8;
+  }
+  .footer b { color: #99afca; font-weight: 500; }
+  .footer .mono { color: #7b96b7; }
+  .footer-links { display: flex; flex-wrap: wrap; gap: 14px; }
+  .footer-links a:hover { color: var(--cyan); }
+  .back-top {
+    display: inline-flex; align-items: center; gap: 5px;
+    color: #8aa3c2; font-family: var(--mono); font-size: 9.5px;
+  }
+  .back-top:hover { color: #fff; }
+
+  .drawer-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 70;
+    background: rgba(1, 5, 12, .64);
+    backdrop-filter: blur(6px);
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity .3s, visibility .3s;
+  }
+  .drawer-backdrop.is-open { opacity: 1; visibility: visible; }
+  .drawer {
+    position: fixed;
+    top: 0; right: 0;
+    z-index: 80;
+    width: min(450px, 100vw);
+    height: 100dvh;
+    padding: 30px 28px 40px;
+    overflow-y: auto;
+    background:
+      radial-gradient(500px 280px at 100% 0%, rgba(180,154,255,.10), transparent 60%),
+      linear-gradient(180deg, #0a1322, #070d18);
+    border-left: 1px solid rgba(148,176,218,.16);
+    box-shadow: -30px 0 80px rgba(0,0,0,.5);
+    transform: translateX(102%);
+    visibility: hidden;
+    transition: transform .38s cubic-bezier(.2,.8,.2,1), visibility .38s;
+  }
+  .drawer.is-open { transform: none; visibility: visible; }
+  .drawer-close {
+    position: absolute;
+    top: 17px; right: 17px;
+    width: 34px; height: 34px;
+    display: grid; place-items: center;
+    border-radius: 50%;
+    border: 1px solid rgba(148,176,218,.14);
+    background: rgba(255,255,255,.03);
+    color: #9bb2ce;
+    cursor: pointer;
+    font-size: 18px;
+    line-height: 1;
+    transition: .2s;
+  }
+  .drawer-close:hover { color: #fff; background: rgba(255,255,255,.08); }
+  .drawer-kicker { font-family: var(--mono); font-size: 9px; letter-spacing: .13em; text-transform: uppercase; color: var(--cyan); padding-right: 38px; margin-bottom: 10px; }
+  .drawer h3 { font-family: var(--mono); font-size: 24px; letter-spacing: -.03em; margin-bottom: 12px; color: #f4f9ff; }
+  .drawer-desc { font-size: 13px; line-height: 1.85; color: #9db3cf; margin-bottom: 22px; }
+  .drawer-section { margin-top: 22px; }
+  .drawer-section h4 { font-family: var(--mono); font-size: 9.5px; letter-spacing: .12em; text-transform: uppercase; color: #7189a9; margin-bottom: 10px; }
+  .field-list { display: flex; flex-direction: column; gap: 0; border-top: 1px solid rgba(148,176,218,.08); }
+  .field-row { display: grid; grid-template-columns: 1fr; gap: 3px; padding: 10px 0; border-bottom: 1px solid rgba(148,176,218,.065); }
+  .field-row code { justify-self: start; font-size: 10.5px; color: #8fe7ff; background: rgba(81,216,255,.06); border-color: rgba(81,216,255,.1); }
+  .field-row span { font-size: 11.5px; line-height: 1.7; color: #8da3c0; }
+  .drawer-rel { display: flex; flex-direction: column; gap: 8px; }
+  .drawer-rel div { padding: 10px 12px; border-radius: 9px; border: 1px solid rgba(148,176,218,.09); background: rgba(255,255,255,.018); font-size: 11.5px; line-height: 1.7; color: #9ab0cc; }
+  .drawer-rel code { font-size: 10px; }
+  .drawer-life { font-size: 12px; line-height: 1.85; color: #94aac7; }
+  .drawer-src {
+    display: block;
+    margin-top: 6px;
+    padding: 10px 12px;
+    border-radius: 8px;
+    border: 1px solid rgba(148,176,218,.09);
+    background: rgba(3,8,16,.5);
+    color: #7d9cbe;
+    font-family: var(--mono);
+    font-size: 9.5px;
+    line-height: 1.75;
+    overflow-wrap: anywhere;
+  }
+
+  .toast {
+    position: fixed;
+    left: 50%;
+    bottom: 28px;
+    z-index: 90;
+    transform: translate(-50%, 20px);
+    opacity: 0;
+    visibility: hidden;
+    padding: 10px 16px;
+    border-radius: 9px;
+    border: 1px solid rgba(148,176,218,.2);
+    background: rgba(9, 17, 30, .94);
+    backdrop-filter: blur(12px);
+    color: #dce9fb;
+    font-size: 11.5px;
+    box-shadow: 0 16px 50px rgba(0,0,0,.4);
+    transition: .25s;
+  }
+  .toast.show { opacity: 1; visibility: visible; transform: translate(-50%, 0); }
+
+  .reveal { opacity: 0; transform: translateY(18px); transition: opacity .7s ease, transform .7s ease; }
+  .reveal.is-visible { opacity: 1; transform: none; }
+  html.no-js .reveal, html.static .reveal { opacity: 1; transform: none; }
+
+  @media (max-width: 1120px) {
+    .hero { grid-template-columns: minmax(0, 1fr) minmax(360px, .9fr); gap: 30px; }
+    .model-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .insight-grid, .fact-grid, .mistake-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .timeline { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .timeline-item:nth-child(3)::after { display: none; }
+  }
+  @media (max-width: 960px) {
+    .hero { min-height: auto; grid-template-columns: 1fr; padding: 128px 0 76px; gap: 38px; }
+    .hero-copy { max-width: 760px; }
+    .hero-visual { max-width: 680px; width: 100%; }
+    .tour-layout { grid-template-columns: 1fr; }
+    .tour-side { position: static; order: -1; }
+    .tour-side .tour-desc { min-height: 0; }
+    .file-grid { grid-template-columns: 1fr; }
+    .section { padding: 80px 0; }
+  }
+  @media (max-width: 760px) {
+    main { padding: 0 16px; }
+    .nav-inner { padding: 0 14px; gap: 8px; }
+    .topnav { gap: 0; mask-image: linear-gradient(90deg, #000 88%, transparent); }
+    .topnav a { padding: 7px 7px; font-size: 10.5px; }
+    .hero { padding-top: 112px; }
+    .hero h1 { font-size: clamp(38px, 12vw, 58px); }
+    .hero-lead { font-size: 15px; }
+    .hero-stats { gap: 20px; }
+    .model-grid, .insight-grid, .fact-grid, .compare-grid, .mistake-grid { grid-template-columns: 1fr; }
+    .calc-rows { grid-template-columns: 1fr; }
+    .timeline { grid-template-columns: 1fr; }
+    .timeline-item::after { display: none !important; }
+    .section-head p { font-size: 14px; }
+    .diagram-toolbar { align-items: flex-start; }
+    .diagram-hint { display: none; }
+    .diagram { min-width: 900px; }
+    .seq-wrap .diagram { min-width: 820px; }
+    .footer { flex-direction: column; padding: 30px 16px 46px; }
+    .drawer { padding: 26px 20px 36px; }
+  }
+  @media (max-width: 460px) {
+    .hero-actions .btn { flex: 1 1 auto; }
+    .hero-stats { gap: 16px 22px; }
+    .stat b { font-size: 18px; }
+    .model-card { padding: 19px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+    *, *::before, *::after { animation-duration: .001ms !important; animation-iteration-count: 1 !important; transition-duration: .001ms !important; }
+    .reveal { opacity: 1; transform: none; }
+  }
+</style>
+</head>
+<body>
+<div class="scroll-progress" id="scrollProgress"></div>
+
+<header class="topbar" id="topbar">
+  <div class="nav-inner">
+    <a class="brand" href="#top" aria-label="回到顶部">
+      <span class="brand-mark" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <circle cx="12" cy="5" r="2.3" stroke="#8fe7ff"/>
+          <circle cx="5" cy="18" r="2.3" stroke="#c1a8ff"/>
+          <circle cx="19" cy="18" r="2.3" stroke="#ffd374"/>
+          <path d="M10.6 6.7 6.4 15.8M13.4 6.7l4.2 9.1M7.3 18h9.4" stroke="#6a86ad" stroke-dasharray="2 3"/>
+        </svg>
+      </span>
+      <b>binder</b><span>// data structures</span>
+    </a>
+    <nav class="topnav" aria-label="章节导航">
+      <a href="../index.html">← Bolin Lab</a>
+      <a href="#overview">总览</a>
+      <a href="#proc">进程</a>
+      <a href="#refs">引用</a>
+      <a href="#txn">事务</a>
+      <a href="#buffer">缓冲</a>
+      <a href="#counts">计数</a>
+      <a href="#source">速查</a>
+      <a href="#map">源码</a>
+    </nav>
+    <span class="nav-badge">ANDROID BINDER</span>
+  </div>
+</header>
+
+<main>
+  <section class="hero" id="top">
+    <div class="hero-copy">
+      <div class="eyebrow"><span class="pulse-dot"></span> Android Binder · Kernel Driver</div>
+      <h1>Binder 驱动的<br><span class="gradient-text">数据结构关系</span></h1>
+      <p class="hero-lead">把 Android 内核里的 Binder 驱动想象成一座<strong>跨进程对象邮局</strong>：进程是邮局，节点是收件人，引用是取件码，事务是包裹，缓冲区则是落在收件人地址里的寄存柜。</p>
+      <p class="hero-sub">一张可交互的内核对象地图。悬停高亮关系，点击任意结构体查看字段、生命周期与源码入口。</p>
+      <div class="hero-actions">
+        <a class="btn btn-primary" href="#overview">开始看图 <span aria-hidden="true">↓</span></a>
+        <a class="btn btn-ghost" href="#txn">8 步走完一次事务 <span aria-hidden="true">→</span></a>
+      </div>
+      <div class="hero-stats">
+        <div class="stat"><b>12+</b><span>核心结构</span></div>
+        <div class="stat"><b>4</b><span>棵红黑树</span></div>
+        <div class="stat"><b>3</b><span>类 work 队列</span></div>
+        <div class="stat"><b>2</b><span>套引用计数</span></div>
+      </div>
+    </div>
+    <div class="hero-visual">
+      <div class="hero-visual-head">
+        <span class="live-label"><i></i> live object map</span>
+        <span class="mono">drivers/android</span>
+      </div>
+      <div class="hero-visual-body">
+        <div id="hero-diagram" class="diagram hero-diagram" aria-label="Binder 核心结构示意图"></div>
+      </div>
+      <div class="hero-caption">
+        <span>悬停 / 点击节点查看档案</span>
+        <span class="mono">proc · node · ref · txn</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="model">
+    <div class="section-head reveal">
+      <div class="section-kicker"><span class="num">00</span> Mental Model <span class="bar"></span></div>
+      <h2>先记住这个比喻，再进入结构</h2>
+      <p>Binder 并不把对象“复制”到另一个进程。它在内核里维护一套对象关系：<strong>服务端拥有 node，客户端持有 ref</strong>，真正跨进程的是 handle 和数据 buffer。</p>
+    </div>
+    <div class="model-grid reveal">
+      <article class="model-card" data-color="cyan">
+        <div class="model-top"><span class="model-code">PR</span><span class="model-index">01 / ROOT</span></div>
+        <h3>邮局</h3>
+        <div class="struct">binder_proc</div>
+        <p>每个打开 <code>/dev/binder</code> 的进程一份。所有线程、节点、引用和待处理工作都挂在它下面。</p>
+      </article>
+      <article class="model-card" data-color="blue">
+        <div class="model-top"><span class="model-code">TH</span><span class="model-index">02 / COUNTER</span></div>
+        <h3>柜台</h3>
+        <div class="struct">binder_thread</div>
+        <p>真正执行 <code>BINDER_WRITE_READ</code> 的线程。同步调用的“栈”按线程保存，而不是按进程保存。</p>
+      </article>
+      <article class="model-card" data-color="rose">
+        <div class="model-top"><span class="model-code">ND</span><span class="model-index">03 / RECEIVER</span></div>
+        <h3>收件人</h3>
+        <div class="struct">binder_node</div>
+        <p>服务端 Binder 对象在内核里的代表。<code>ptr + cookie</code> 对上用户态对象，node 归属于创建它的进程。</p>
+      </article>
+      <article class="model-card" data-color="amber">
+        <div class="model-top"><span class="model-code">RF</span><span class="model-index">04 / HANDLE</span></div>
+        <h3>取件码</h3>
+        <div class="struct">binder_ref</div>
+        <p>客户端进程内的 handle → node 映射。同一个 node 在 A、C 两个进程里可以是不同的 desc。</p>
+      </article>
+      <article class="model-card" data-color="violet">
+        <div class="model-top"><span class="model-code">TX</span><span class="model-index">05 / PARCEL</span></div>
+        <h3>包裹单</h3>
+        <div class="struct">binder_transaction</div>
+        <p>一次调用或回复的元数据：谁发的、发给谁、用了哪个 buffer、在不在同步调用栈上。</p>
+      </article>
+      <article class="model-card" data-color="green">
+        <div class="model-top"><span class="model-code">BF</span><span class="model-index">06 / LOCKER</span></div>
+        <h3>寄存柜</h3>
+        <div class="struct">binder_buffer</div>
+        <p>真正装 <code>data + offsets</code> 的内存。它属于<strong>目标进程</strong>的 <code>binder_alloc</code>，不在发送方。</p>
+      </article>
+    </div>
+    <div class="metaphor reveal">
+      <span class="quote">“</span>
+      <div><b>一句话记住：</b>handle 只在所属进程内有意义；node 才是跨进程的对象身份。事务把 handle 解析成 node，再把数据写进 node 所属进程的 buffer。</div>
+    </div>
+  </section>
+
+  <section class="section" id="overview">
+    <div class="section-head reveal">
+      <div class="section-kicker"><span class="num">01</span> Global Map <span class="bar"></span></div>
+      <h2>六个对象，<em>三条关系线</em></h2>
+      <p>设备提供全局上下文，进程维护自己的索引；引用把客户端和服务端连起来；事务和缓冲区负责一次调用的实际传输。</p>
+    </div>
+    <div class="diagram-card panel reveal">
+      <div class="diagram-toolbar">
+        <div class="legend" aria-label="关系图例">
+          <span class="legend-item"><i class="legend-line solid"></i>包含 / 索引</span>
+          <span class="legend-item"><i class="legend-line dashed"></i>指针 / 查找</span>
+          <span class="legend-item"><i class="legend-line cross"></i>跨进程引用</span>
+          <span class="legend-item"><i class="legend-line queue"></i>工作队列</span>
+        </div>
+        <span class="diagram-hint">Hover to trace · Click for detail</span>
+      </div>
+      <div class="diagram-scroll" tabindex="0" aria-label="全局关系图，可横向滚动">
+        <div id="overview-diagram" class="diagram"></div>
+      </div>
+      <div class="diagram-footer"><b>读图提示：</b>先沿实线找“谁拥有谁”，再沿虚线找“谁指向谁”。跨进程的粉色线只发生在 <code>ref ↔ node</code> 之间。</div>
+    </div>
+    <div class="insight-grid reveal">
+      <article class="insight" style="--accent: var(--cyan)">
+        <div class="label"><i></i> Process line</div>
+        <h3>进程线：设备 → 上下文 → 进程 → 线程</h3>
+        <p><code>binder_device</code> 内嵌一份 <code>binder_context</code>；每个进程打开设备得到自己的 <code>binder_proc</code>，线程则按 tid 挂在 proc 下。</p>
+      </article>
+      <article class="insight" style="--accent: var(--rose)">
+        <div class="label"><i></i> Object line</div>
+        <h3>对象线：ref → node ← node-&gt;refs</h3>
+        <p>客户端进程持有 <code>binder_ref</code>，服务端进程拥有 <code>binder_node</code>。node 的 <code>refs</code> 链表反向登记所有引用它的 ref。</p>
+      </article>
+      <article class="insight" style="--accent: var(--violet)">
+        <div class="label"><i></i> Transfer line</div>
+        <h3>传输线：thread → txn → buffer → node</h3>
+        <p>一次调用创建 <code>binder_transaction</code>；数据被写入目标进程的 <code>binder_buffer</code>；work 项进入目标线程或进程的 todo 队列。</p>
+      </article>
+    </div>
+    <div class="callout reveal">
+      <span class="mark">i</span>
+      <div><strong>为什么有三个“容器”？</strong> <code>binder_proc</code> 是生命周期与锁的边界；<code>binder_thread</code> 是同步调用栈的边界；<code>binder_node</code> 是对象身份的边界。三者职责不同，不能互相替代。</div>
+    </div>
+  </section>
+
+  <section class="section" id="proc">
+    <div class="section-head reveal">
+      <div class="section-kicker"><span class="num">02</span> Process Index <span class="bar"></span></div>
+      <h2>binder_proc：一个进程的<em>四棵树、两条队列、一个分配器</em></h2>
+      <p>驱动几乎不在热路径上遍历链表找对象。<code>binder_proc</code> 里预置了按不同键组织的红黑树：线程按 tid、节点按用户态指针、引用按 handle 和 node 各一棵。</p>
+    </div>
+    <div class="diagram-card panel reveal">
+      <div class="diagram-toolbar">
+        <div class="legend">
+          <span class="legend-item"><i class="legend-line solid"></i>内嵌索引</span>
+          <span class="legend-item"><i class="legend-line dashed"></i>红黑树 / 链表</span>
+          <span class="legend-item"><i class="legend-line queue"></i>等待 / 工作队列</span>
+        </div>
+        <span class="diagram-hint">Four rb-trees · two queues</span>
+      </div>
+      <div class="diagram-scroll" tabindex="0" aria-label="binder_proc 内部索引关系图，可横向滚动">
+        <div id="proc-diagram" class="diagram"></div>
+      </div>
+      <div class="diagram-footer"><b>注意：</b>这些 <code>rb_node</code> 是内嵌在 thread / node / ref 对象里的“挂钩”，不是单独分配的数据结构。</div>
+    </div>
+    <div class="table-wrap reveal">
+      <table aria-label="binder_proc 索引查询表">
+        <thead>
+          <tr><th>查询目标</th><th>索引</th><th>键</th><th>保护锁</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>进程里的线程</td><td><code>proc-&gt;threads</code></td><td><code>binder_thread.rb_node</code>（tid）</td><td><code>inner_lock</code></td></tr>
+          <tr><td>进程拥有的节点</td><td><code>proc-&gt;nodes</code></td><td><code>binder_node.rb_node</code>（node-&gt;ptr）</td><td><code>inner_lock</code></td></tr>
+          <tr><td>handle → ref</td><td><code>proc-&gt;refs_by_desc</code></td><td><code>binder_ref.rb_node_desc</code>（data.desc）</td><td><code>outer_lock</code></td></tr>
+          <tr><td>node → ref</td><td><code>proc-&gt;refs_by_node</code></td><td><code>binder_ref.rb_node_node</code>（node 指针）</td><td><code>outer_lock</code></td></tr>
+          <tr><td>谁在引用这个 node</td><td><code>node-&gt;refs</code></td><td><code>binder_ref.node_entry</code>（hlist）</td><td><code>node-&gt;lock</code></td></tr>
+          <tr><td>可投递工作的线程</td><td><code>proc-&gt;waiting_threads</code></td><td><code>binder_thread.waiting_thread_node</code></td><td><code>inner_lock</code></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="lock-row reveal">
+      <span class="lock-chip"><i></i>锁顺序：outer → node → inner</span>
+      <span class="lock-chip cyan"><i></i>inner_lock：threads / nodes / todo</span>
+      <span class="lock-chip rose"><i></i>node-&gt;lock：refs hlist / 节点计数</span>
+      <span class="lock-chip green"><i></i>outer_lock：refs_by_desc / refs_by_node</span>
+    </div>
+    <div class="callout warn reveal">
+      <span class="mark">!</span>
+      <div><strong>别把 dmap 当成数据缓存。</strong> <code>proc-&gt;dmap</code> 只是分配 handle 描述符（desc）的位图；<code>desc = 0</code> 保留给 <code>binder_context_mgr_node</code>（ServiceManager 那一类全局上下文管理器）。</div>
+    </div>
+  </section>
+
+  <section class="section" id="refs">
+    <div class="section-head reveal">
+      <div class="section-kicker"><span class="num">03</span> Object &amp; Reference <span class="bar"></span></div>
+      <h2>node 与 ref：<em>对象身份</em>和<em>进程内句柄</em></h2>
+      <p>这是 Android Binder 最容易混淆的一对关系。<code>binder_node</code> 是服务端 Binder 对象在内核里的实体账本；<code>binder_ref</code> 是客户端进程里的一个 handle。前者回答“它是谁”，后者回答“这个进程怎么找到它”。</p>
+    </div>
+    <div class="diagram-card panel reveal">
+      <div class="diagram-toolbar">
+        <div class="legend">
+          <span class="legend-item"><i class="legend-line solid"></i>归属 / 索引</span>
+          <span class="legend-item"><i class="legend-line dashed"></i>指针</span>
+          <span class="legend-item"><i class="legend-line cross"></i>跨进程登记</span>
+        </div>
+        <span class="diagram-hint">Same node · different handles</span>
+      </div>
+      <div class="diagram-scroll" tabindex="0" aria-label="binder_node 与 binder_ref 关系图，可横向滚动">
+        <div id="refs-diagram" class="diagram"></div>
+      </div>
+      <div class="diagram-footer"><b>同一个 node，两个进程：</b>A 拿到的 handle 是 1，C 拿到的是 7。数字只在本进程的 <code>refs_by_desc</code> 里解释。</div>
+    </div>
+    <div class="fact-grid reveal">
+      <article class="fact-card" data-color="rose">
+        <div class="mini">Node identity</div>
+        <h3>node 只有一个 owner</h3>
+        <p>node 的 <code>proc</code> 指向拥有它的服务端进程，并使用用户态的 <code>ptr + cookie</code> 作为身份。owner 退出后 <code>proc = NULL</code>，node 进入 dead nodes，等待引用清理。</p>
+      </article>
+      <article class="fact-card" data-color="amber">
+        <div class="mini">Handle namespace</div>
+        <h3>ref 属于客户端进程</h3>
+        <p><code>data.desc</code> 是 handle，只在所属 <code>binder_proc</code> 内唯一。每条 ref 同时挂进两棵红黑树和一条 <code>node-&gt;refs</code> 哈希链。</p>
+      </article>
+      <article class="fact-card" data-color="cyan">
+        <div class="mini">Bidirectional</div>
+        <h3>双向登记，各自服务不同问题</h3>
+        <p><code>proc-&gt;refs_by_desc</code> 让驱动从 handle 快速找到 ref；<code>node-&gt;refs</code> 让 node owner 死亡时能反向找到所有客户端并投递死亡通知。</p>
+      </article>
+    </div>
+    <div class="translation-strip reveal" aria-label="Binder 对象跨进程转换示意">
+      <span class="trans-chip cyan">BINDER_TYPE_BINDER</span>
+      <span class="trans-arrow">──▶</span>
+      <span class="trans-chip rose">binder_node（内核）</span>
+      <span class="trans-arrow">──▶</span>
+      <span class="trans-chip green">BINDER_TYPE_HANDLE</span>
+      <span style="color:#657b99">发送方视角</span>
+      <span style="color:#657b99">接收方视角</span>
+    </div>
+    <div class="callout reveal">
+      <span class="mark">i</span>
+      <div><strong>Android 里 handle 0 是特殊值。</strong> 它不经过普通 ref 查找，而是直接指向 <code>binder_context.binder_context_mgr_node</code>，也就是 ServiceManager 所在的上下文管理器。普通服务的 handle 从 1 开始分配。</div>
+    </div>
+  </section>
+
+  <section class="section" id="txn">
+    <div class="section-head reveal">
+      <div class="section-kicker"><span class="num">04</span> Transaction Journey <span class="bar"></span></div>
+      <h2>一次同步调用，<em>8 步</em>穿过内核</h2>
+      <p>下面以 Android 常见的同步 Binder 调用为例：A 进程通过 handle 调用 B 进程中的服务。点击“下一步”或自动播放，观察 <code>ref → node → buffer → work → transaction_stack</code> 如何依次登场。</p>
+    </div>
+    <div class="tour-layout reveal">
+      <div class="tour-side">
+        <div class="tour-top">
+          <span class="step-count" id="tourCount">01 / 08</span>
+          <span class="step-tag">SYNC CALL</span>
+        </div>
+        <h3 id="tourTitle">请求进入内核</h3>
+        <p class="tour-desc" id="tourDesc">客户端线程发起 BC_TRANSACTION，带上 handle、code 和用户态 data / offsets 指针。驱动开始在 A 的进程上下文里解析目标。</p>
+        <div class="chips" id="tourChips"></div>
+        <div class="tour-code" id="tourCode"></div>
+        <div class="tour-progress-track"><div class="tour-progress-fill" id="tourProgress"></div></div>
+        <div class="tour-controls">
+          <button class="btn btn-small" id="tourPrev" type="button" aria-label="上一步">← 上一步</button>
+          <button class="btn btn-small play" id="tourPlay" type="button" aria-label="自动播放">▶</button>
+          <button class="btn btn-small btn-primary" id="tourNext" type="button">下一步 →</button>
+        </div>
+        <div class="tour-dots" id="tourDots" aria-label="事务步骤快速跳转"></div>
+      </div>
+      <div class="seq-card panel">
+        <div class="seq-toolbar">
+          <div class="legend">
+            <span class="legend-item"><i class="legend-line flow"></i>当前步骤</span>
+            <span class="legend-item"><i class="legend-line cross"></i>回复路径</span>
+          </div>
+          <span class="diagram-hint">TIME ↓ · REQUEST → REPLY</span>
+        </div>
+        <div class="seq-wrap">
+          <div class="diagram-scroll" tabindex="0" aria-label="Binder 同步事务时序图，可横向滚动">
+            <div id="tour-diagram" class="diagram"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="compare-grid reveal">
+      <article class="compare-card">
+        <h3>同步调用 <span class="tag">TF_ONE_WAY = 0</span></h3>
+        <ul>
+          <li><code>t-&gt;from</code> 指向发送线程，必须有回复。</li>
+          <li>请求优先进入目标 <code>thread-&gt;todo</code>，没有可用线程时进入 <code>proc-&gt;todo</code>。</li>
+          <li>发送线程把 <code>t</code> 压入 <code>transaction_stack</code>，阻塞等待回复。</li>
+          <li>回复是另一笔 <code>binder_transaction</code>，目标是原发送线程。</li>
+          <li>发送方的 <code>BR_TRANSACTION_COMPLETE</code> 会被延迟到事务完成 / 出错后。</li>
+        </ul>
+      </article>
+      <article class="compare-card oneway">
+        <h3>单向调用 <span class="tag">TF_ONE_WAY = 1</span></h3>
+        <ul>
+          <li><code>t-&gt;from = NULL</code>，没有回复事务。</li>
+          <li>通常进入目标 <code>proc-&gt;todo</code>；同一 node 已有异步事务时进入 <code>node-&gt;async_todo</code>。</li>
+          <li>发送方立即收到 <code>BR_TRANSACTION_COMPLETE</code>。</li>
+          <li>buffer 标记为 <code>async_transaction</code>，消耗 <code>free_async_space</code>。</li>
+          <li>目标进程仍需在处理完后 <code>BC_FREE_BUFFER</code>。</li>
+        </ul>
+      </article>
+    </div>
+    <details class="detail-accordion reveal">
+      <summary>展开：transaction_stack、from_parent 与 to_parent 到底怎么串？</summary>
+      <div class="accordion-body">
+        <p>同步调用允许嵌套：A 调用 B，B 在处理时又调用 C。每个线程各自维护一条“正在处理的同步事务栈”，但发送侧和接收侧使用不同的指针。</p>
+        <pre><code>发送侧（A.thread）
+    transaction_stack ──▶ t1(A→B)
+                         from_parent ──▶ 上一层发送事务（这里为 NULL）
+
+接收侧（B.thread）
+    transaction_stack ──▶ t1(A→B)         ← binder_thread_read 投递时压入
+                         to_parent   ──▶ 上一层接收事务（这里为 NULL）
+
+B 再调用 C 时：
+    B.thread.transaction_stack ──▶ t2(B→C)
+                                   from_parent ──▶ t1
+    C.thread.transaction_stack ──▶ t2
+
+回复时：
+    BC_REPLY 用接收线程栈顶的 t2 找到 t2-&gt;from（B 线程），
+    再把 t2 从 B.thread 的栈中弹出。</code></pre>
+        <p><strong>记忆法：</strong><code>from_parent</code> 串起“调用者曾经发过的上一层”，<code>to_parent</code> 串起“接收者曾经处理过的上一层”。它们共同支持嵌套调用、回复定位与优先级继承。</p>
+      </div>
+    </details>
+  </section>
+
+  <section class="section" id="buffer">
+    <div class="section-head reveal">
+      <div class="section-kicker"><span class="num">05</span> Buffer &amp; Allocator <span class="bar"></span></div>
+      <h2>包裹最终落在<em>谁的地址空间</em>？</h2>
+      <p>答案不是发送方，而是<strong>接收方</strong>。请求 buffer 在服务端进程的 <code>binder_alloc</code> 中分配；回复 buffer 在客户端进程的 <code>binder_alloc</code> 中分配。驱动负责把用户态数据拷进目标缓冲区，再把缓冲区地址映射给对方。</p>
+    </div>
+    <div class="diagram-card panel reveal">
+      <div class="diagram-toolbar">
+        <div class="legend">
+          <span class="legend-item"><i class="legend-line solid"></i>内嵌 / 归属</span>
+          <span class="legend-item"><i class="legend-line dashed"></i>索引 / 指针</span>
+          <span class="legend-item"><i class="legend-line flow"></i>数据拷贝</span>
+        </div>
+        <span class="diagram-hint">Target-side allocation</span>
+      </div>
+      <div class="diagram-scroll" tabindex="0" aria-label="binder_alloc 与 binder_buffer 关系图，可横向滚动">
+        <div id="buffer-diagram" class="diagram"></div>
+      </div>
+      <div class="diagram-footer"><b>关键：</b>同一个 <code>binder_buffer</code> 同时挂在 <code>alloc-&gt;buffers</code> 链表和 <code>free_buffers</code> 或 <code>allocated_buffers</code> 红黑树中，分别服务“按地址遍历”和“按大小 / 地址查找”。</div>
+    </div>
+    <div class="fact-grid reveal">
+      <article class="fact-card" data-color="green">
+        <div class="mini">Allocation</div>
+        <h3>buffer 属于目标进程</h3>
+        <p><code>binder_alloc_new_buf(&amp;target_proc-&gt;alloc, ...)</code> 在目标进程 mmap 出来的 Binder 区域里做 best-fit 分配。发送方只提供用户态数据指针。</p>
+      </article>
+      <article class="fact-card" data-color="amber">
+        <div class="mini">Contents</div>
+        <h3>data + offsets + extra</h3>
+        <p><code>data</code> 是 Parcel 字节流；<code>offsets</code> 标记其中 <code>flat_binder_object</code> 的位置；<code>extra</code> 放安全上下文等附加信息。</p>
+      </article>
+      <article class="fact-card" data-color="rose">
+        <div class="mini">Freeing</div>
+        <h3>transaction 和 buffer 分开释放</h3>
+        <p>事务对象可以在投递 / 回复后释放，但 buffer 要等目标进程调用 <code>BC_FREE_BUFFER</code>。因此 <code>buffer-&gt;transaction</code> 可能先变成 NULL。</p>
+      </article>
+    </div>
+    <div class="compare-grid reveal">
+      <article class="compare-card">
+        <h3>请求路径 <span class="tag">A → B</span></h3>
+        <ul>
+          <li>buffer 在 <code>B_proc.alloc</code> 中分配。</li>
+          <li><code>buffer-&gt;target_node = nodeB</code>。</li>
+          <li>B 用户态拿到 <code>data.ptr = buffer-&gt;user_data</code>。</li>
+          <li>B 处理完后用 <code>BC_FREE_BUFFER</code> 释放。</li>
+        </ul>
+      </article>
+      <article class="compare-card oneway">
+        <h3>回复路径 <span class="tag">B → A</span></h3>
+        <ul>
+          <li>回复是新的 <code>binder_transaction</code>，buffer 在 <code>A_proc.alloc</code> 中分配。</li>
+          <li>回复事务的 <code>is_reply = 1</code>，目标线程是请求事务的 <code>from</code>。</li>
+          <li>A 读到 <code>BR_REPLY</code>，用 <code>BC_FREE_BUFFER</code> 释放。</li>
+        </ul>
+      </article>
+    </div>
+    <div class="mini-flow reveal" aria-label="buffer 生命周期">
+      <span class="step"><b>01</b> binder_alloc_new_buf()</span>
+      <span class="sep">→</span>
+      <span class="step"><b>02</b> 拷入 data / offsets / 翻译对象</span>
+      <span class="sep">→</span>
+      <span class="step"><b>03</b> 投递，allow_user_free = 1</span>
+      <span class="sep">→</span>
+      <span class="step"><b>04</b> BC_FREE_BUFFER</span>
+      <span class="sep">→</span>
+      <span class="step"><b>05</b> 合并回 free_buffers</span>
+    </div>
+    <div class="callout warn reveal">
+      <span class="mark">!</span>
+      <div><strong>单向事务的“半区”规则：</strong><code>free_async_space</code> 在 mmap 时初始化为区域大小的一半，用来限制 oneway 事务占用的空间；当它过低时，驱动会触发 oneway spam 检测。</div>
+    </div>
+  </section>
+
+  <section class="section" id="counts">
+    <div class="section-head reveal">
+      <div class="section-kicker"><span class="num">06</span> Refcounts &amp; Lifetime <span class="bar"></span></div>
+      <h2>谁让 node <em>活着</em>？</h2>
+      <p>Binder 的引用计数分为“node 侧”和“ref 侧”两套。点击下面的开关，直观看到哪些计数会阻止 <code>binder_node</code> 被回收。</p>
+    </div>
+    <div class="calc panel reveal">
+      <div class="calc-head">
+        <div>
+          <div class="calc-kicker">Interactive · node refcount</div>
+          <h3>binder_node 存活判定器</h3>
+          <p class="calc-desc">假设这是服务端进程 B 中的一个 node。只要以下任意一项非零 / 非空，node 就不能释放；全部归零后，它才会从 <code>proc-&gt;nodes</code> 摘除并进入释放路径。</p>
+        </div>
+        <span class="calc-status" id="calcStatus"><i></i><span id="calcStatusText">存活</span></span>
+      </div>
+      <div class="calc-rows" id="calcRows" aria-label="node 引用计数开关"></div>
+      <div class="calc-formula" id="calcFormula" aria-live="polite"></div>
+      <div class="calc-actions">
+        <button class="btn btn-small" type="button" id="calcReset">重置为典型场景</button>
+        <button class="btn btn-small" type="button" id="calcAllGone">模拟引用全部释放</button>
+      </div>
+      <p class="calc-note">简化展示：真实释放还要考虑 <code>has_strong_ref / has_weak_ref</code> 的“延迟通知”路径；如果 node 曾向用户态通知过引用状态，清零后会先通过内嵌的 <code>node-&gt;work</code> 走一次延迟处理。</p>
+    </div>
+    <div class="table-wrap reveal">
+      <table aria-label="Binder 引用计数说明表">
+        <thead>
+          <tr><th>计数 / 结构</th><th>属于谁</th><th>代表什么</th><th>释放时机</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>ref-&gt;data.strong / weak</code></td><td>客户端进程</td><td>该进程持有的强 / 弱 handle 引用数</td><td>BC_RELEASE / BC_DECREFS 等递减，归零后清理 ref</td></tr>
+          <tr><td><code>node-&gt;internal_strong_refs</code></td><td>服务端 node</td><td>跨进程 ref 持有的强引用；每个 ref 的 strong 0→1 时 +1</td><td>对应 ref 的 strong 归零时递减</td></tr>
+          <tr><td><code>node-&gt;local_strong_refs / local_weak_refs</code></td><td>服务端 node</td><td>owner 侧的强 / 弱引用（本地用户态；事务构造也会取强引用）</td><td>BC_ACQUIRE / BC_INCREFS 与对应 DONE / RELEASE 流程</td></tr>
+          <tr><td><code>node-&gt;tmp_refs</code></td><td>服务端 node</td><td>驱动内部临时引用：查找、构造事务、遍历时保证对象不消失</td><td>操作完成后 binder_put_node() 立即递减</td></tr>
+          <tr><td><code>proc-&gt;tmp_ref / thread-&gt;tmp_ref</code></td><td>进程 / 线程</td><td>防止 proc / thread 在并发路径中被释放</td><td>事务构造、查找、释放等操作结束时递减</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="timeline reveal" aria-label="binder_node 生命周期">
+      <div class="timeline-item"><h4>创建</h4><p>第一次发送 <code>BINDER_TYPE_BINDER</code> 时，驱动在 owner 进程里创建 node，并插入 <code>proc-&gt;nodes</code>。</p></div>
+      <div class="timeline-item"><h4>引用</h4><p>每个接收该对象的进程都创建一条 <code>binder_ref</code>，拿到自己的 handle；ref 通过 <code>node_entry</code> 挂到 <code>node-&gt;refs</code>。</p></div>
+      <div class="timeline-item"><h4>计数</h4><p>强 / 弱引用、事务临时引用共同维持 node。此时 <code>proc-&gt;nodes</code> 可被查，事务可以找到 <code>target_node</code>。</p></div>
+      <div class="timeline-item"><h4>owner 死亡</h4><p><code>node-&gt;proc = NULL</code>，node 移入 dead nodes；遍历 <code>node-&gt;refs</code> 给注册过 death 的客户端投递通知。</p></div>
+      <div class="timeline-item"><h4>回收</h4><p>最后一个 ref 和临时引用消失后，node 才真正释放；dead node 从全局链表摘除。</p></div>
+    </div>
+    <div class="death-flow reveal">
+      <h3>死亡通知链路 <span class="badge">ANDROID SERVICE DEATH</span></h3>
+      <p>Android 上层注册 <code>DeathRecipient</code> 后，驱动里对应一条 <code>binder_ref_death</code>。服务端进程死亡时，客户端会收到 <code>BR_DEAD_BINDER</code>，从而触发 onServiceDied() 这类回调。</p>
+      <div class="mini-flow">
+        <span class="step"><b>01</b> BC_REQUEST_DEATH_NOTIFICATION</span>
+        <span class="sep">→</span>
+        <span class="step"><b>02</b> binder_ref_death</span>
+        <span class="sep">→</span>
+        <span class="step"><b>03</b> owner 进程退出</span>
+        <span class="sep">→</span>
+        <span class="step"><b>04</b> BR_DEAD_BINDER</span>
+        <span class="sep">→</span>
+        <span class="step"><b>05</b> BC_CLEAR_DEATH_NOTIFICATION</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="source">
+    <div class="section-head reveal">
+      <div class="section-kicker"><span class="num">07</span> Source Slices <span class="bar"></span></div>
+      <h2>源码切片与<em>结构速查</em></h2>
+      <p>下面是 Android Binder 驱动核心结构的节选，字段顺序和注释经过压缩，保留关系最重要的部分。最后附一张可搜索的结构速查表。</p>
+    </div>
+    <div class="tabs panel reveal">
+      <div class="tab-buttons" role="tablist" aria-label="Binder 核心结构源码">
+        <button class="tab-btn active" role="tab" aria-selected="true" aria-controls="tab-proc" id="btn-proc" data-tab="tab-proc">binder_proc</button>
+        <button class="tab-btn" role="tab" aria-selected="false" aria-controls="tab-thread" id="btn-thread" data-tab="tab-thread">binder_thread</button>
+        <button class="tab-btn" role="tab" aria-selected="false" aria-controls="tab-node" id="btn-node" data-tab="tab-node">binder_node</button>
+        <button class="tab-btn" role="tab" aria-selected="false" aria-controls="tab-ref" id="btn-ref" data-tab="tab-ref">binder_ref</button>
+        <button class="tab-btn" role="tab" aria-selected="false" aria-controls="tab-txn" id="btn-txn" data-tab="tab-txn">binder_transaction</button>
+        <button class="tab-btn" role="tab" aria-selected="false" aria-controls="tab-buffer" id="btn-buffer" data-tab="tab-buffer">buffer / alloc</button>
+      </div>
+      <div class="tab-panel active" id="tab-proc" role="tabpanel" aria-labelledby="btn-proc">
+        <div class="code-card">
+          <div class="code-head"><span class="file">drivers/android/binder_internal.h · struct binder_proc（节选）</span><button class="copy-btn" type="button">复制</button></div>
+          <pre><code>struct binder_proc {
+    struct hlist_node proc_node;       /* 全局 binder_procs */
+    struct rb_root threads;            /* key: tid */
+    struct rb_root nodes;              /* key: node->ptr */
+    struct rb_root refs_by_desc;       /* key: ref->data.desc */
+    struct rb_root refs_by_node;       /* key: node 指针 */
+    struct list_head waiting_threads;  /* 可接工作的线程 */
+    struct list_head todo;             /* 进程级 work */
+    struct dbitmap dmap;               /* handle 分配位图 */
+    struct binder_alloc alloc;         /* mmap 区 + buffer 索引 */
+    struct binder_context *context;
+    spinlock_t inner_lock;             /* threads / nodes / todo */
+    spinlock_t outer_lock;             /* refs_by_* */
+    ...
+};</code></pre>
+        </div>
+      </div>
+      <div class="tab-panel" id="tab-thread" role="tabpanel" aria-labelledby="btn-thread">
+        <div class="code-card">
+          <div class="code-head"><span class="file">drivers/android/binder_internal.h · struct binder_thread（节选）</span><button class="copy-btn" type="button">复制</button></div>
+          <pre><code>struct binder_thread {
+    struct binder_proc *proc;
+    struct rb_node rb_node;               /* proc->threads */
+    struct list_head waiting_thread_node; /* proc->waiting_threads */
+    int pid;
+    int looper;
+    struct binder_transaction *transaction_stack;
+    struct list_head todo;                /* 线程级 work */
+    bool process_todo;
+    struct binder_error return_error;
+    struct binder_error reply_error;
+    wait_queue_head_t wait;
+    atomic_t tmp_ref;
+    ...
+};</code></pre>
+        </div>
+      </div>
+      <div class="tab-panel" id="tab-node" role="tabpanel" aria-labelledby="btn-node">
+        <div class="code-card">
+          <div class="code-head"><span class="file">drivers/android/binder_internal.h · struct binder_node（节选）</span><button class="copy-btn" type="button">复制</button></div>
+          <pre><code>struct binder_node {
+    struct binder_work work;
+    union {
+        struct rb_node rb_node;        /* owner->nodes */
+        struct hlist_node dead_node;   /* 全局 dead_nodes */
+    };
+    struct binder_proc *proc;          /* owner；死亡后为 NULL */
+    struct hlist_head refs;            /* binder_ref.node_entry */
+    int internal_strong_refs;
+    int local_weak_refs;
+    int local_strong_refs;
+    int tmp_refs;
+    binder_uintptr_t ptr;              /* 用户态对象指针 */
+    binder_uintptr_t cookie;
+    bool has_async_transaction;
+    struct list_head async_todo;
+    ...
+};</code></pre>
+        </div>
+      </div>
+      <div class="tab-panel" id="tab-ref" role="tabpanel" aria-labelledby="btn-ref">
+        <div class="code-card">
+          <div class="code-head"><span class="file">drivers/android/binder_internal.h · struct binder_ref（节选）</span><button class="copy-btn" type="button">复制</button></div>
+          <pre><code>struct binder_ref_data {
+    int debug_id;
+    uint32_t desc;                     /* userspace handle */
+    int strong;
+    int weak;
+};
+
+struct binder_ref {
+    struct binder_ref_data data;
+    struct rb_node rb_node_desc;       /* proc->refs_by_desc */
+    struct rb_node rb_node_node;       /* proc->refs_by_node */
+    struct hlist_node node_entry;      /* node->refs */
+    struct binder_proc *proc;
+    struct binder_node *node;
+    struct binder_ref_death *death;    /* 可选 */
+    struct binder_ref_freeze *freeze;  /* 可选 */
+};</code></pre>
+        </div>
+      </div>
+      <div class="tab-panel" id="tab-txn" role="tabpanel" aria-labelledby="btn-txn">
+        <div class="code-card">
+          <div class="code-head"><span class="file">drivers/android/binder_internal.h · struct binder_transaction（节选）</span><button class="copy-btn" type="button">复制</button></div>
+          <pre><code>struct binder_transaction {
+    struct binder_work work;
+    struct binder_thread *from;        /* 单向事务为 NULL */
+    struct binder_transaction *from_parent;
+    struct binder_proc *to_proc;
+    struct binder_thread *to_thread;
+    struct binder_transaction *to_parent;
+    unsigned is_async:1;
+    unsigned is_reply:1;
+    struct binder_buffer *buffer;      /* 目标进程 alloc 中的 buffer */
+    unsigned int code;
+    unsigned int flags;
+    struct binder_priority priority;
+    struct binder_priority saved_priority;
+    struct list_head fd_fixups;
+    spinlock_t lock;                   /* 保护 from / to_proc / to_thread */
+    ...
+};</code></pre>
+        </div>
+      </div>
+      <div class="tab-panel" id="tab-buffer" role="tabpanel" aria-labelledby="btn-buffer">
+        <div class="code-card">
+          <div class="code-head"><span class="file">binder_alloc.h · binder_buffer / binder_alloc（节选）</span><button class="copy-btn" type="button">复制</button></div>
+          <pre><code>struct binder_buffer {
+    struct list_head entry;            /* alloc->buffers，按地址 */
+    struct rb_node rb_node;            /* free / allocated tree */
+    unsigned free:1;
+    unsigned allow_user_free:1;
+    unsigned async_transaction:1;
+    struct binder_transaction *transaction;
+    struct binder_node *target_node;
+    size_t data_size;
+    size_t offsets_size;
+    size_t extra_buffers_size;
+    unsigned long user_data;           /* 目标进程用户态地址 */
+    int pid;
+};
+
+struct binder_alloc {
+    struct mm_struct *mm;
+    unsigned long vm_start;
+    struct list_head buffers;
+    struct rb_root free_buffers;       /* by size */
+    struct rb_root allocated_buffers;  /* by address */
+    size_t free_async_space;
+    size_t buffer_size;
+    ...
+};</code></pre>
+        </div>
+      </div>
+    </div>
+    <div class="cheat-tools reveal">
+      <div class="search-wrap">
+        <input id="cheatSearch" type="search" placeholder="搜索结构、字段或命令，例如 binder_node、handle、buffer…" aria-label="搜索结构速查表">
+        <span class="search-icon" aria-hidden="true">⌕</span>
+      </div>
+      <span class="cheat-count" id="cheatCount">14 个结构</span>
+    </div>
+    <div class="table-wrap cheat-table reveal">
+      <table aria-label="Binder 驱动数据结构速查表">
+        <thead>
+          <tr><th>结构</th><th>归属</th><th>一句话职责</th><th>关键关系</th></tr>
+        </thead>
+        <tbody id="cheatBody">
+          <tr class="cheat-row"><td><span class="s-dot" style="background:var(--blue)"></span><code>binder_device</code></td><td>设备 / 全局</td><td>Binder 设备实例，内嵌 context</td><td><code>context</code>；全局 <code>binder_devices</code></td></tr>
+          <tr class="cheat-row"><td><span class="s-dot" style="background:var(--violet)"></span><code>binder_context</code></td><td>设备 / 全局</td><td>设备级上下文，保存 context manager node</td><td><code>binder_context_mgr_node</code>；handle 0</td></tr>
+          <tr class="cheat-row"><td><span class="s-dot" style="background:var(--cyan)"></span><code>binder_proc</code></td><td>进程</td><td>每进程的 Binder 状态与索引根</td><td><code>threads / nodes / refs_by_* / todo / alloc</code></td></tr>
+          <tr class="cheat-row"><td><span class="s-dot" style="background:var(--blue)"></span><code>binder_thread</code></td><td>线程</td><td>执行 ioctl 的线程与同步调用栈</td><td><code>transaction_stack</code>；<code>thread-&gt;todo</code></td></tr>
+          <tr class="cheat-row"><td><span class="s-dot" style="background:var(--rose)"></span><code>binder_node</code></td><td>服务端进程</td><td>Binder 对象的内核代表</td><td><code>proc</code>；<code>refs</code>；<code>ptr / cookie</code></td></tr>
+          <tr class="cheat-row"><td><span class="s-dot" style="background:var(--amber)"></span><code>binder_ref</code></td><td>客户端进程</td><td>handle → node 的进程内引用</td><td><code>desc</code>；<code>node_entry</code>；<code>death</code></td></tr>
+          <tr class="cheat-row"><td><span class="s-dot" style="background:var(--rose)"></span><code>binder_ref_death</code></td><td>客户端进程</td><td>服务端死亡通知</td><td><code>ref-&gt;death</code>；内嵌 <code>work</code></td></tr>
+          <tr class="cheat-row"><td><span class="s-dot" style="background:var(--violet)"></span><code>binder_transaction</code></td><td>一次调用 / 回复</td><td>调用元数据与调用栈节点</td><td><code>from / to_proc / to_thread / buffer</code></td></tr>
+          <tr class="cheat-row"><td><span class="s-dot" style="background:var(--green)"></span><code>binder_buffer</code></td><td>目标进程 alloc</td><td>承载 data / offsets 的缓冲区</td><td><code>transaction</code>；<code>target_node</code>；<code>user_data</code></td></tr>
+          <tr class="cheat-row"><td><span class="s-dot" style="background:var(--green)"></span><code>binder_alloc</code></td><td>进程</td><td>mmap 区与 buffer 分配器</td><td><code>free_buffers</code>；<code>allocated_buffers</code></td></tr>
+          <tr class="cheat-row"><td><span class="s-dot" style="background:var(--amber)"></span><code>binder_work</code></td><td>队列元素</td><td>可排队的工作项，内嵌在宿主中</td><td><code>entry</code>；<code>type</code>；<code>container_of</code></td></tr>
+          <tr class="cheat-row"><td><span class="s-dot" style="background:var(--blue)"></span><code>binder_txn_fd_fixup</code></td><td>事务</td><td>把 fd 安装到目标进程的延迟项</td><td><code>file</code>；<code>offset</code>；<code>target_fd</code></td></tr>
+          <tr class="cheat-row"><td><span class="s-dot" style="background:var(--cyan)"></span><code>flat_binder_object</code></td><td>UAPI</td><td>用户态 Binder 对象的跨进程描述</td><td><code>type / binder / handle / cookie</code></td></tr>
+          <tr class="cheat-row"><td><span class="s-dot" style="background:var(--violet)"></span><code>binder_transaction_data</code></td><td>UAPI</td><td>BC_TRANSACTION / BC_REPLY 的载荷描述</td><td><code>target / code / data / offsets</code></td></tr>
+          <tr class="empty-row" id="cheatEmpty" hidden><td colspan="4">没有匹配的结构，试试 <code>node</code>、<code>ref</code> 或 <code>buffer</code>。</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="section" id="map">
+    <div class="section-head reveal">
+      <div class="section-kicker"><span class="num">08</span> Source Map &amp; Traps <span class="bar"></span></div>
+      <h2>最后一张<em>源码地图</em></h2>
+      <p>数据结构只是骨架。真正把它们串起来的是 <code>binder.c</code> 里的 ioctl 状态机、事务投递路径，以及 <code>binder_alloc.c</code> 的缓冲区分配器。</p>
+    </div>
+    <div class="file-grid reveal">
+      <article class="file-card">
+        <div class="path">drivers/android/binder.c</div>
+        <h3>核心状态机</h3>
+        <p>open / mmap / ioctl、BC_TRANSACTION 与 BC_REPLY、thread_read、node/ref 计数、死亡通知、进程释放。几乎所有跨对象关系都在这里建立和拆除。</p>
+      </article>
+      <article class="file-card">
+        <div class="path">drivers/android/binder_alloc.c · .h</div>
+        <h3>缓冲区分配器</h3>
+        <p>mmap 区域建立、best-fit buffer 分配、free / allocated 红黑树、页安装与 shrinker。它只关心内存，不关心 Binder 调用语义。</p>
+      </article>
+      <article class="file-card">
+        <div class="path">drivers/android/binder_internal.h</div>
+        <h3>内核结构定义</h3>
+        <p><code>binder_proc / thread / node / ref / transaction / buffer</code> 的权威定义与字段注释。看关系时优先读这里的注释。</p>
+      </article>
+      <article class="file-card">
+        <div class="path">include/uapi/linux/android/binder.h</div>
+        <h3>用户态 ABI</h3>
+        <p><code>binder_transaction_data</code>、<code>flat_binder_object</code>、BC_* / BR_* 命令。AIDL 生成的 proxy / stub 最终都会落到这层。</p>
+      </article>
+    </div>
+    <div class="call-chain panel reveal">
+      <div class="kicker">从系统调用到数据结构 · 一条最短调用链</div>
+      <pre class="no-highlight">open(<span class="str">"/dev/binder"</span>)
+  <span class="arrow">└─▶</span> <span class="fn">binder_open</span>()            <span class="arrow">→</span> 创建 <span class="cmd">binder_proc</span> + 初始化 <span class="cmd">binder_alloc</span>
+mmap()
+  <span class="arrow">└─▶</span> <span class="fn">binder_mmap</span>()            <span class="arrow">→</span> <span class="fn">binder_alloc_mmap_handler</span>()
+ioctl(BINDER_WRITE_READ)
+  <span class="arrow">├─▶</span> <span class="fn">binder_thread_write</span>()
+  <span class="arrow">│    └─▶</span> BC_TRANSACTION <span class="arrow">→</span> <span class="fn">binder_transaction</span>()
+  <span class="arrow">│         ├─▶</span> <span class="fn">binder_get_ref_olocked</span>()      <span class="arrow">→</span> <span class="cmd">binder_ref</span> <span class="arrow">→</span> <span class="cmd">binder_node</span>
+  <span class="arrow">│         ├─▶</span> <span class="fn">binder_alloc_new_buf</span>()       <span class="arrow">→</span> 目标进程 <span class="cmd">binder_buffer</span>
+  <span class="arrow">│         └─▶</span> <span class="fn">binder_proc_transaction</span>()      <span class="arrow">→</span> <span class="cmd">thread-&gt;todo / proc-&gt;todo / node-&gt;async_todo</span>
+  <span class="arrow">└─▶</span> <span class="fn">binder_thread_read</span>()
+       <span class="arrow">└─▶</span> 出队 <span class="cmd">binder_work</span> <span class="arrow">→</span> BR_TRANSACTION / BR_REPLY
+close()
+  <span class="arrow">└─▶</span> <span class="fn">binder_deferred_release</span>()
+       <span class="arrow">├─▶</span> <span class="fn">binder_thread_release</span>()
+       <span class="arrow">├─▶</span> <span class="fn">binder_node_release</span>()        <span class="arrow">→</span> death notifications
+       <span class="arrow">└─▶</span> <span class="fn">binder_cleanup_ref_olocked</span>()   <span class="arrow">→</span> 释放 ref</pre>
+    </div>
+    <div class="mistake-grid reveal">
+      <article class="mistake">
+        <div class="no">TRAP 01</div>
+        <h3>handle 是全局 ID？</h3>
+        <p>不是。handle（desc）只在所属进程的 <code>refs_by_desc</code> 里有意义，同一个 node 在不同进程可以有不同 desc。</p>
+        <span class="truth"><b>真相：</b>node 才是对象身份，handle 只是进程内取件码。</span>
+      </article>
+      <article class="mistake">
+        <div class="no">TRAP 02</div>
+        <h3>node 里存着 Parcel 数据？</h3>
+        <p>不存。node 是对象账本；Parcel 数据在目标进程的 <code>binder_buffer</code> 里，node 只提供目标对象身份。</p>
+        <span class="truth"><b>真相：</b>node ↔ ref 管身份，buffer 管数据。</span>
+      </article>
+      <article class="mistake">
+        <div class="no">TRAP 03</div>
+        <h3>buffer 是发送方分配的？</h3>
+        <p>反了。请求 buffer 在服务端 alloc，回复 buffer 在客户端 alloc。发送方的用户缓冲区只是被拷贝的源。</p>
+        <span class="truth"><b>真相：</b><code>binder_alloc_new_buf(&amp;target_proc-&gt;alloc, ...)</code></span>
+      </article>
+      <article class="mistake">
+        <div class="no">TRAP 04</div>
+        <h3>所有 work 都进 proc-&gt;todo？</h3>
+        <p>同步事务和回复优先进 <code>thread-&gt;todo</code>；异步 / 死亡通知常进 <code>proc-&gt;todo</code>；单向串行化用 <code>node-&gt;async_todo</code>。</p>
+        <span class="truth"><b>真相：</b>三个队列承载三种投递语义。</span>
+      </article>
+      <article class="mistake">
+        <div class="no">TRAP 05</div>
+        <h3>transaction 释放 = buffer 释放？</h3>
+        <p>不是。t 可以在投递 / 回复后先释放，buffer 仍由目标进程持有，直到 <code>BC_FREE_BUFFER</code> 才归还 alloc。</p>
+        <span class="truth"><b>真相：</b>两者互相指向，但生命周期解耦。</span>
+      </article>
+      <article class="mistake">
+        <div class="no">TRAP 06</div>
+        <h3>一次同步调用只有一个 transaction？</h3>
+        <p>请求是一个 t，回复是另一个 t′（<code>is_reply = 1</code>），拥有独立的 buffer，目标线程是原请求的 <code>from</code>。</p>
+        <span class="truth"><b>真相：</b>一来一回，两笔 transaction。</span>
+      </article>
+    </div>
+    <div class="callout reveal">
+      <span class="mark">A</span>
+      <div><strong>范围说明：</strong>本页聚焦 <strong>Android Binder 驱动</strong>（<code>drivers/android/</code>，同时被 upstream Linux 收录），不展开 AIDL 编译器、BinderProxy / Binder JNI、Framework 层 ServiceManager 的 Java 实现。那些层最终都会落到这里的 handle、node、transaction 与 buffer。</div>
+    </div>
+  </section>
+</main>
+
+<footer class="footer">
+  <div>
+    <b>Android Binder 驱动数据结构全景图</b><br>
+    参考：Android common kernel / android-mainline，<span class="mono">drivers/android/binder.c · binder_alloc.c · binder_internal.h</span><br>
+    不同内核版本的字段与命令会有差异；图中省略了锁、统计、debugfs、freeze 等次要字段。<br>
+    收录于 <a href="../index.html">Bolin Lab</a> · 单文件、无外部依赖。
+  </div>
+  <div class="footer-links">
+    <a href="../index.html">← 返回 Bolin Lab</a>
+    <a href="./">更多笔记</a>
+    <a href="https://android.googlesource.com/kernel/common/+/refs/heads/android-mainline/drivers/android/" target="_blank" rel="noopener">Android Binder 源码 ↗</a>
+    <a href="#top" class="back-top">回到顶部 ↑</a>
+  </div>
+</footer>
+
+<div class="drawer-backdrop" id="drawerBackdrop"></div>
+<aside class="drawer" id="drawer" role="dialog" aria-modal="true" aria-labelledby="drawerTitle" aria-hidden="true">
+  <button class="drawer-close" id="drawerClose" aria-label="关闭详情">×</button>
+  <div class="drawer-kicker" id="drawerKicker"></div>
+  <h3 id="drawerTitle"></h3>
+  <p class="drawer-desc" id="drawerDesc"></p>
+  <div class="drawer-section">
+    <h4>关键字段</h4>
+    <div class="field-list" id="drawerFields"></div>
+  </div>
+  <div class="drawer-section">
+    <h4>它和谁相连</h4>
+    <div class="drawer-rel" id="drawerRels"></div>
+  </div>
+  <div class="drawer-section">
+    <h4>生命周期</h4>
+    <p class="drawer-life" id="drawerLife"></p>
+  </div>
+  <div class="drawer-section">
+    <h4>源码入口</h4>
+    <code class="drawer-src" id="drawerSrc"></code>
+  </div>
+</aside>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+/* =========================================================
+   Binder 数据结构全景图
+   - 单文件、无外部依赖
+   - 图由小型 SVG 渲染器生成，支持 hover 高亮
+   - 数据模型与内核字段均以 android-mainline / Linux 6.x 为参考
+   ========================================================= */
+(function () {
+  "use strict";
+
+  const NS = "http://www.w3.org/2000/svg";
+  const PALETTE = {
+    cyan: "#51d8ff",
+    blue: "#69a8ff",
+    violet: "#b49aff",
+    amber: "#ffc857",
+    rose: "#ff7aa2",
+    green: "#63ecb3",
+    slate: "#8ba1be"
+  };
+  const EDGE_STYLE = {
+    contain: { color: "#4c6788", dash: null, width: 1.5 },
+    ptr: { color: "#8798b1", dash: "6 6", width: 1.35 },
+    cross: { color: "#ff7aa2", dash: "7 5", width: 1.8 },
+    queue: { color: "#ffc857", dash: "2 5", width: 1.6 },
+    stack: { color: "#b49aff", dash: "4 4", width: 1.5 },
+    flow: { color: "#51d8ff", dash: "7 5", width: 1.8 },
+    data: { color: "#63ecb3", dash: "5 4", width: 1.5 }
+  };
+  const mono = '"Cascadia Code", "JetBrains Mono", Consolas, monospace';
+
+  function svgEl(tag, attrs) {
+    const el = document.createElementNS(NS, tag);
+    if (attrs) Object.keys(attrs).forEach(k => el.setAttribute(k, attrs[k]));
+    return el;
+  }
+  function hexAlpha(hex, alpha) {
+    const h = hex.replace("#", "");
+    const r = parseInt(h.slice(0, 2), 16);
+    const g = parseInt(h.slice(2, 4), 16);
+    const b = parseInt(h.slice(4, 6), 16);
+    return "rgba(" + r + "," + g + "," + b + "," + alpha + ")";
+  }
+  function fitText(textEl, maxWidth, minSize) {
+    let size = parseFloat(textEl.getAttribute("font-size")) || 12;
+    minSize = minSize || 8;
+    try {
+      while (textEl.getComputedTextLength() > maxWidth && size > minSize) {
+        size -= 0.4;
+        textEl.setAttribute("font-size", size);
+      }
+    } catch (e) { /* SVG not laid out yet */ }
+  }
+
+  let diagramUid = 0;
+
+  function renderDiagram(container, spec) {
+    if (!container) return;
+    const uid = "dg" + (++diagramUid);
+    const svg = svgEl("svg", {
+      viewBox: "0 0 " + spec.width + " " + spec.height,
+      role: "group",
+      "aria-label": spec.ariaLabel || "Binder 数据结构关系图"
+    });
+    svg.setAttribute("preserveAspectRatio", "xMidYMid meet");
+    svg.style.fontFamily = '"Inter", "Segoe UI", "Noto Sans SC", "Microsoft YaHei", sans-serif';
+    container.innerHTML = "";
+    container.appendChild(svg);
+
+    const defs = svgEl("defs");
+    Object.keys(PALETTE).forEach(key => {
+      const color = PALETTE[key];
+      const marker = svgEl("marker", {
+        id: uid + "-arrow-" + key,
+        markerWidth: "9", markerHeight: "9",
+        refX: "7", refY: "3.5", orient: "auto",
+        markerUnits: "strokeWidth"
+      });
+      marker.appendChild(svgEl("path", { d: "M0,0 L8,3.5 L0,7 Z", fill: color }));
+      defs.appendChild(marker);
+      const start = svgEl("marker", {
+        id: uid + "-arrow-start-" + key,
+        markerWidth: "9", markerHeight: "9",
+        refX: "1.5", refY: "3.5", orient: "auto",
+        markerUnits: "strokeWidth"
+      });
+      start.appendChild(svgEl("path", { d: "M8,0 L0,3.5 L8,7 Z", fill: color }));
+      defs.appendChild(start);
+    });
+    const bgGlow = svgEl("radialGradient", { id: uid + "-glow", cx: "50%", cy: "0%", r: "85%" });
+    bgGlow.appendChild(svgEl("stop", { offset: "0%", "stop-color": "#122340", "stop-opacity": ".35" }));
+    bgGlow.appendChild(svgEl("stop", { offset: "100%", "stop-color": "#060a12", "stop-opacity": "0" }));
+    defs.appendChild(bgGlow);
+    svg.appendChild(defs);
+
+    svg.appendChild(svgEl("rect", {
+      x: 0, y: 0, width: spec.width, height: spec.height,
+      fill: "url(#" + uid + "-glow)"
+    }));
+
+    const zonesLayer = svgEl("g");
+    const edgeLayer = svgEl("g");
+    const nodeLayer = svgEl("g");
+    const labelLayer = svgEl("g");
+    svg.appendChild(zonesLayer);
+    svg.appendChild(edgeLayer);
+    svg.appendChild(nodeLayer);
+    svg.appendChild(labelLayer);
+
+    (spec.zones || []).forEach(zone => {
+      const g = svgEl("g");
+      g.appendChild(svgEl("rect", {
+        x: zone.x, y: zone.y, width: zone.w, height: zone.h,
+        rx: 18, class: "zone-box"
+      }));
+      if (zone.label) {
+        const t = svgEl("text", {
+          x: zone.x + 16, y: zone.y + 21,
+          class: "zone-label", "font-family": mono
+        });
+        t.textContent = zone.label;
+        g.appendChild(t);
+      }
+      zonesLayer.appendChild(g);
+    });
+
+    const nodeMap = {};
+    (spec.nodes || []).forEach(n => { nodeMap[n.id] = n; });
+
+    function sidePoint(node, side, offset) {
+      offset = offset == null ? 0.5 : offset;
+      switch (side) {
+        case "left": return { x: node.x, y: node.y + node.h * offset };
+        case "right": return { x: node.x + node.w, y: node.y + node.h * offset };
+        case "top": return { x: node.x + node.w * offset, y: node.y };
+        case "bottom": return { x: node.x + node.w * offset, y: node.y + node.h };
+        default: return { x: node.x + node.w / 2, y: node.y + node.h / 2 };
+      }
+    }
+    const normal = { left: [-1, 0], right: [1, 0], top: [0, -1], bottom: [0, 1] };
+
+    (spec.edges || []).forEach(edge => {
+      const a = nodeMap[edge.from];
+      const b = nodeMap[edge.to];
+      if (!a || !b) return;
+      const acx = a.x + a.w / 2, acy = a.y + a.h / 2;
+      const bcx = b.x + b.w / 2, bcy = b.y + b.h / 2;
+      let fromSide = edge.fromSide, toSide = edge.toSide;
+      if (!fromSide || !toSide) {
+        const dx = bcx - acx, dy = bcy - acy;
+        if (Math.abs(dx) >= Math.abs(dy)) {
+          fromSide = dx >= 0 ? "right" : "left";
+          toSide = dx >= 0 ? "left" : "right";
+        } else {
+          fromSide = dy >= 0 ? "bottom" : "top";
+          toSide = dy >= 0 ? "top" : "bottom";
+        }
+      }
+      const p1 = sidePoint(a, fromSide, edge.fromOffset);
+      const p2 = sidePoint(b, toSide, edge.toOffset);
+      const dist = Math.hypot(p2.x - p1.x, p2.y - p1.y);
+      const bend = edge.bend != null ? edge.bend : Math.max(42, Math.min(170, dist * 0.30));
+      const n1 = normal[fromSide], n2 = normal[toSide];
+      let c1x = p1.x + n1[0] * bend, c1y = p1.y + n1[1] * bend;
+      let c2x = p2.x + n2[0] * bend, c2y = p2.y + n2[1] * bend;
+      if (edge.curve === "flat") {
+        c1x = p1.x + (p2.x - p1.x) * 0.45;
+        c1y = p1.y + (p2.y - p1.y) * 0.45;
+        c2x = p1.x + (p2.x - p1.x) * 0.55;
+        c2y = p1.y + (p2.y - p1.y) * 0.55;
+      }
+      const d = "M " + p1.x + " " + p1.y + " C " + c1x + " " + c1y + ", " + c2x + " " + c2y + ", " + p2.x + " " + p2.y;
+      const style = EDGE_STYLE[edge.type] || EDGE_STYLE.contain;
+      const colorKey = edge.colorKey || (edge.type === "cross" ? "rose" : edge.type === "queue" ? "amber" : edge.type === "stack" ? "violet" : edge.type === "flow" ? "cyan" : edge.type === "data" ? "green" : "slate");
+      const color = PALETTE[colorKey] || style.color;
+      const g = svgEl("g", { class: "diagram-edge", "data-from": edge.from, "data-to": edge.to });
+      const pathAttrs = {
+        d: d,
+        class: "edge-path",
+        stroke: edge.color || color,
+        "stroke-width": style.width,
+        "stroke-linecap": "round",
+        "stroke-linejoin": "round",
+        "marker-end": "url(#" + uid + "-arrow-" + colorKey + ")"
+      };
+      if (style.dash) pathAttrs["stroke-dasharray"] = style.dash;
+      if (edge.double) pathAttrs["marker-start"] = "url(#" + uid + "-arrow-start-" + colorKey + ")";
+      g.appendChild(svgEl("path", pathAttrs));
+      edgeLayer.appendChild(g);
+
+      if (edge.label) {
+        const label = svgEl("text", { class: "edge-label" });
+        label.setAttribute("text-anchor", "middle");
+        label.textContent = edge.label;
+        labelLayer.appendChild(label);
+        let total = 0;
+        try { total = g.firstChild.getTotalLength(); } catch (e) { total = 0; }
+        let pt = { x: (p1.x + p2.x) / 2, y: (p1.y + p2.y) / 2 };
+        if (total) {
+          try { pt = g.firstChild.getPointAtLength(total * (edge.labelAt == null ? 0.5 : edge.labelAt)); } catch (e) {}
+        }
+        let lx = pt.x + (edge.labelDx || 0);
+        let ly = pt.y + (edge.labelDy == null ? -6 : edge.labelDy);
+        label.setAttribute("x", lx);
+        label.setAttribute("y", ly);
+        label.dataset.edgeFrom = edge.from;
+        label.dataset.edgeTo = edge.to;
+        label.classList.add("edge-label-link");
+      }
+    });
+
+    (spec.nodes || []).forEach(n => {
+      const color = PALETTE[n.color] || PALETTE.cyan;
+      const g = svgEl("g", {
+        class: "diagram-node" + (n.ghost ? " is-ghost" : ""),
+        "data-id": n.id,
+        tabindex: "0",
+        role: "button",
+        "aria-label": n.title + "：" + (n.tag || "结构体") + "。点击查看详情"
+      });
+      if (n.detail) g.dataset.detail = n.detail;
+      nodeLayer.appendChild(g);
+      const box = svgEl("rect", {
+        x: n.x, y: n.y, width: n.w, height: n.h, rx: 13,
+        class: "node-box",
+        fill: n.ghost ? "rgba(255,255,255,.012)" : hexAlpha(color, .065),
+        stroke: n.ghost ? "rgba(148,176,218,.2)" : hexAlpha(color, .38),
+        "stroke-width": 1.15,
+        "stroke-dasharray": n.ghost ? "5 5" : null
+      });
+      if (box.getAttribute("stroke-dasharray") === null) box.removeAttribute("stroke-dasharray");
+      g.appendChild(box);
+      if (!n.ghost) {
+        g.appendChild(svgEl("rect", {
+          x: n.x, y: n.y, width: n.w, height: 3, rx: 1.5,
+          fill: color, class: "node-accent", opacity: .8
+        }));
+      }
+      const pad = 15;
+      const title = svgEl("text", {
+        x: n.x + pad, y: n.y + 26,
+        class: "node-title", fill: n.ghost ? "#7d90aa" : "#f0f6ff",
+        "font-family": mono, "font-size": n.titleSize || 17
+      });
+      title.textContent = n.title;
+      g.appendChild(title);
+      const tagW = n.tag ? Math.min(100, String(n.tag).length * 5.2 + 16) : 0;
+      fitText(title, n.w - pad * 2 - tagW - 10, 10.5);
+      if (n.tag) {
+        const tag = svgEl("text", {
+          x: n.x + n.w - pad, y: n.y + 21,
+          "text-anchor": "end", class: "node-tag",
+          fill: n.ghost ? "#5d728f" : color, "font-family": mono, "font-size": 8.5
+        });
+        tag.textContent = n.tag;
+        g.appendChild(tag);
+      }
+      let lineY = n.y + 47;
+      if (n.sub) {
+        const sub = svgEl("text", {
+          x: n.x + pad, y: n.y + 46,
+          class: "node-sub", fill: n.ghost ? "#617792" : "#8499b7",
+          "font-size": 10.5
+        });
+        sub.textContent = n.sub;
+        g.appendChild(sub);
+        fitText(sub, n.w - pad * 2, 8.5);
+        lineY = n.y + 67;
+      }
+      (n.lines || []).forEach((line, i) => {
+        const t = svgEl("text", {
+          x: n.x + pad, y: lineY + i * 17,
+          class: "node-line", fill: n.ghost ? "#5f7591" : "#9fb4d1",
+          "font-family": mono, "font-size": 10.2
+        });
+        t.textContent = line;
+        g.appendChild(t);
+        fitText(t, n.w - pad * 2, 8);
+      });
+    });
+
+    labelLayer.querySelectorAll(".edge-label").forEach(label => {
+      const from = label.dataset.edgeFrom;
+      const to = label.dataset.edgeTo;
+      const g = svgEl("g", { class: "edge-label-group", "data-from": from, "data-to": to });
+      g.appendChild(label);
+      labelLayer.appendChild(g);
+    });
+
+    function resetHighlight() {
+      svg.querySelectorAll(".diagram-node").forEach(n => n.classList.remove("is-dim", "is-hot"));
+      svg.querySelectorAll(".diagram-edge").forEach(e => e.classList.remove("is-dim", "is-hot"));
+      svg.querySelectorAll(".edge-label-group").forEach(e => e.classList.remove("is-dim"));
+    }
+    function highlightNode(id) {
+      const connected = new Set([id]);
+      const connectedEdges = [];
+      svg.querySelectorAll(".diagram-edge").forEach(edge => {
+        if (edge.dataset.from === id || edge.dataset.to === id) {
+          connected.add(edge.dataset.from);
+          connected.add(edge.dataset.to);
+          connectedEdges.push(edge);
+          edge.classList.remove("is-dim");
+          edge.classList.add("is-hot");
+        } else {
+          edge.classList.remove("is-hot");
+          edge.classList.add("is-dim");
+        }
+      });
+      svg.querySelectorAll(".diagram-node").forEach(n => {
+        const isConnected = connected.has(n.dataset.id);
+        n.classList.toggle("is-dim", !isConnected);
+        n.classList.toggle("is-hot", n.dataset.id === id);
+      });
+      svg.querySelectorAll(".edge-label-group").forEach(g => {
+        const ok = (g.dataset.from === id || g.dataset.to === id);
+        g.classList.toggle("is-dim", !ok);
+      });
+    }
+    svg.querySelectorAll(".diagram-node").forEach(g => {
+      g.addEventListener("pointerenter", () => highlightNode(g.dataset.id));
+      g.addEventListener("pointerleave", resetHighlight);
+      g.addEventListener("focus", () => highlightNode(g.dataset.id));
+      g.addEventListener("blur", resetHighlight);
+      g.addEventListener("click", e => {
+        e.stopPropagation();
+        if (g.dataset.detail) openDrawer(g.dataset.detail);
+      });
+      g.addEventListener("keydown", e => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          if (g.dataset.detail) openDrawer(g.dataset.detail);
+        }
+      });
+    });
+    svg.addEventListener("pointerleave", resetHighlight);
+  }
+
+  /* ---------- 详情抽屉 ---------- */
+  const DETAILS = {
+    device: {
+      kicker: "GLOBAL OBJECT",
+      title: "binder_device",
+      color: "blue",
+      desc: "一个 Binder 设备实例。它把字符设备（miscdevice）和一份 binder_context 绑在一起；打开设备本身不会创建它。",
+      fields: [
+        ["hlist", "挂到全局 binder_devices 链表。"],
+        ["miscdev", "注册 /dev/binder 之类的字符设备节点。"],
+        ["context", "内嵌的 binder_context，保存该设备的全局上下文。"],
+        ["binderfs_inode / ref", "binderfs 与设备生命周期相关字段。"]
+      ],
+      rels: [
+        "1 个设备 → 1 个 <code>binder_context</code>；所有打开该设备的进程都引用这份 context。",
+        "设备是全局的；<code>binder_proc</code> 是每个进程 / 每次 open 的。"
+      ],
+      life: "由 binderfs 或 binder_init 创建并注册；设备销毁时随之释放。open() 不会新建 device，而是新建 binder_proc。",
+      src: "drivers/android/binder_internal.h · struct binder_device"
+    },
+    context: {
+      kicker: "PER-DEVICE CONTEXT",
+      title: "binder_context",
+      color: "violet",
+      desc: "每个 Binder 设备一份的上下文，最重要的是 binder_context_mgr_node：它代表 handle 0 指向的上下文管理器节点。",
+      fields: [
+        ["binder_context_mgr_node", "上下文管理器（ServiceManager）对应的 binder_node。"],
+        ["context_mgr_node_lock", "保护 context manager node 的互斥锁。"],
+        ["binder_context_mgr_uid", "允许成为 context manager 的 uid。"],
+        ["name", "设备 / binderfs 上下文名。"]
+      ],
+      rels: [
+        "<code>binder_proc.context</code> 指回它；handle 0 的解析不经过普通 ref，而是直接取 <code>binder_context_mgr_node</code>。",
+        "context manager node 也属于某个 <code>binder_proc</code>，但它有特殊权限与生命周期处理。"
+      ],
+      life: "跟随 binder_device 生命周期；context manager 注册 / 退出时更新内部指针。",
+      src: "drivers/android/binder_internal.h · struct binder_context；binder.c · binder_ioctl_set_ctx_mgr()"
+    },
+    proc: {
+      kicker: "PER-PROCESS BOOKKEEPING",
+      title: "binder_proc",
+      color: "cyan",
+      desc: "每个打开 Binder 设备的进程一份，是线程、节点、引用、todo 和分配器的根。它同时定义了 Binder 的锁边界。",
+      fields: [
+        ["threads", "rb_root，按 tid 索引 binder_thread，保护于 inner_lock。"],
+        ["nodes", "rb_root，按 node->ptr 索引本进程拥有的 binder_node。"],
+        ["refs_by_desc / refs_by_node", "两棵 ref 红黑树：handle → ref、node → ref，保护于 outer_lock。"],
+        ["waiting_threads", "等待工作的线程链表，用于给同步事务挑一个目标线程。"],
+        ["todo", "进程级 work 队列：异步事务、死亡通知等。"],
+        ["alloc", "内嵌 binder_alloc：mmap 区域、buffer 索引。"],
+        ["context", "指向所属 binder_context。"],
+        ["inner_lock / outer_lock", "锁顺序 outer → node → inner；hot path 的核心同步点。"]
+      ],
+      rels: [
+        "向下拥有 <code>binder_thread</code>、<code>binder_node</code>、<code>binder_ref</code> 和 <code>binder_alloc</code>。",
+        "通过 <code>proc_node</code> 挂到全局 <code>binder_procs</code> 链表；通过 <code>context</code> 关联设备。",
+        "事务的 <code>to_proc</code> 指向接收方 proc；<code>t-&gt;from-&gt;proc</code> 指向发送方 proc。"
+      ],
+      life: "binder_open() 创建；进程退出或文件关闭后进入 binder_deferred_release()，依次释放线程、节点、ref、todo 与分配器。",
+      src: "drivers/android/binder_internal.h · struct binder_proc；binder.c · binder_open() / binder_deferred_release()"
+    },
+    thread: {
+      kicker: "PER-THREAD BOOKKEEPING",
+      title: "binder_thread",
+      color: "blue",
+      desc: "真正执行 BINDER_WRITE_READ 的内核侧线程记录。首次 ioctl 时按 tid 懒创建；同步调用的 transaction_stack 就挂在这里。",
+      fields: [
+        ["rb_node", "挂到 proc->threads 的节点，键是 tid。"],
+        ["transaction_stack", "该线程正在处理的同步事务栈。发送请求和接收请求都会压栈。"],
+        ["todo", "线程级 work 队列；同步事务和回复优先投递到这里。"],
+        ["process_todo", "todo 里的工作是否应该被处理（与延迟的 BR_TRANSACTION_COMPLETE 有关）。"],
+        ["waiting_thread_node", "挂到 proc->waiting_threads，表示线程空闲可接活。"],
+        ["wait / looper", "等待队列与 looper 状态。"],
+        ["tmp_ref", "临时引用，保证线程在并发查找期间不被释放。"]
+      ],
+      rels: [
+        "属于一个 <code>binder_proc</code>；通过 <code>pid</code> / tid 索引。",
+        "一个调用中的 transaction 通过 <code>t-&gt;from</code> 指回发送线程，通过 <code>t-&gt;to_thread</code> 指向接收线程。",
+        "回复的目标就是请求事务的 <code>from</code> 线程，而不是“随便找个线程”。"
+      ],
+      life: "首次 BINDER_WRITE_READ / ioctl 时由 binder_get_thread() 创建；线程退出且没有未完成事务时释放。",
+      src: "drivers/android/binder_internal.h · struct binder_thread；binder.c · binder_get_thread()"
+    },
+    node: {
+      kicker: "OWNED BY A PROCESS",
+      title: "binder_node",
+      color: "rose",
+      desc: "服务端 Binder 对象在内核里的账本。它不保存业务数据，只保存对象身份、owner、引用链表和计数。",
+      fields: [
+        ["proc", "拥有该 node 的 binder_proc；owner 退出后会被置 NULL，node 转入 dead_nodes。"],
+        ["ptr / cookie", "用户态对象指针与附加 cookie，用来对上 BBinder / BpBinder 这一侧的身份。"],
+        ["refs", "hlist_head，链接所有指向自己的 binder_ref（通过 ref->node_entry）。"],
+        ["internal_strong_refs", "跨进程 ref 持有的强引用计数；每个 ref 的 strong 从 0→1 时 +1。"],
+        ["local_strong_refs / local_weak_refs", "owner 侧的强 / 弱引用：本地用户态计数，构造事务时也会持有强引用。"],
+        ["tmp_refs", "驱动内部临时引用，遍历或构造事务时使用。"],
+        ["has_async_transaction / async_todo", "该 node 是否已有进行中的单向事务，以及等待串行处理的异步队列。"],
+        ["rb_node / dead_node", "在 owner 的 proc->nodes 中，或 owner 死后挂到全局 dead_nodes。"],
+        ["work", "内嵌 binder_work，用于通知 owner 进程节点引用状态变化。"]
+      ],
+      rels: [
+        "多个 <code>binder_ref</code> 可以指向同一个 node；node 通过 <code>refs</code> 反向找到它们。",
+        "一个 node 只属于一个 proc；handle 的 desc 是“客户端视角”，不是 node 的属性。",
+        "事务的 <code>t-&gt;buffer-&gt;target_node</code> 指向接收方 node。"
+      ],
+      life: "首次发送 BINDER 对象时由 binder_new_node() 创建；引用 + 计数全归零后释放；owner 先死则 node->proc=NULL，等待 refs 清理并发送死亡通知。",
+      src: "drivers/android/binder_internal.h · struct binder_node；binder.c · binder_new_node() / binder_node_release()"
+    },
+    ref: {
+      kicker: "PER-PROCESS HANDLE",
+      title: "binder_ref",
+      color: "amber",
+      desc: "客户端进程里的“取件码”。它把一个本地 handle（desc）映射到一个远端 node，同时记录强 / 弱引用计数。",
+      fields: [
+        ["data.desc", "用户态 handle，在当前 proc 内唯一；0 保留给 context manager。"],
+        ["data.strong / data.weak", "该进程持有的强 / 弱引用数。"],
+        ["rb_node_desc", "挂到 proc->refs_by_desc，按键 desc 查找。"],
+        ["rb_node_node", "挂到 proc->refs_by_node，按键 node 指针查找。"],
+        ["node_entry", "挂到目标 node->refs 的 hlist，用于 owner 死亡时反向遍历。"],
+        ["node", "指向目标 binder_node。"],
+        ["death / freeze", "可选的死亡 / 冻结通知对象；death 内嵌 binder_work。"],
+        ["proc", "拥有该 ref 的客户端进程。"]
+      ],
+      rels: [
+        "ref 属于客户端 proc，node 属于服务端 proc；一条 ref 连接两边。",
+        "同一个 node 可以被多个 proc 各建一条 ref，因此可以有多个不同的 desc。",
+        "<code>refs_by_desc</code> 服务 handle 查找，<code>node-&gt;refs</code> 服务 owner 死亡时的反向通知。"
+      ],
+      life: "首次向某进程传递 node 时由 binder_inc_ref_for_node() 创建；强 / 弱计数归零或进程退出时由 binder_cleanup_ref_olocked() 摘除并释放。",
+      src: "drivers/android/binder_internal.h · struct binder_ref；binder.c · binder_get_ref_for_node_olocked() / binder_cleanup_ref_olocked()"
+    },
+    death: {
+      kicker: "DEATH NOTIFICATION",
+      title: "binder_ref_death",
+      color: "rose",
+      desc: "客户端为某个 handle 注册的死亡通知。它内嵌一个 binder_work，owner 死亡时被挂到客户端 proc 的 todo 队列。",
+      fields: [
+        ["work", "binder_work，类型为 BINDER_WORK_DEAD_BINDER 等。"],
+        ["cookie", "用户态注册时传入的 cookie，随 BR_DEAD_BINDER 返回。"],
+        ["ref->death", "binder_ref 上的可选指针；没有注册就是 NULL。"]
+      ],
+      rels: [
+        "一个 ref 最多有一个 death；death 属于 ref 所在的客户端 proc。",
+        "node owner 死亡时，binder_node_release() 遍历 node->refs，把每个 ref->death->work 入队。"
+      ],
+      life: "BC_REQUEST_DEATH_NOTIFICATION 创建；BR_DEAD_BINDER / BC_CLEAR_DEATH_NOTIFICATION / BC_DEAD_BINDER_DONE 流程结束后释放。",
+      src: "drivers/android/binder_internal.h · struct binder_ref_death；binder.c · binder_node_release()"
+    },
+    transaction: {
+      kicker: "ONE CALL OR REPLY",
+      title: "binder_transaction",
+      color: "violet",
+      desc: "一次调用或一次回复的内核元数据。它把发送线程、接收进程 / 线程、目标 buffer 和同步调用栈串起来。",
+      fields: [
+        ["from", "发送线程；单向事务为 NULL。"],
+        ["to_proc / to_thread", "接收方进程与（可选的）目标线程。"],
+        ["from_parent", "发送线程上一层同步事务，构成发送侧 transaction_stack。"],
+        ["to_parent", "接收线程上一层同步事务，构成接收侧 transaction_stack。"],
+        ["is_async / is_reply", "单向事务 / 回复事务标记。"],
+        ["buffer", "指向接收方 alloc 中的 binder_buffer。"],
+        ["code / flags / priority", "调用号、TF_* 标志、继承的调度优先级。"],
+        ["work", "内嵌 binder_work，类型通常是 BINDER_WORK_TRANSACTION。"],
+        ["fd_fixups", "需要安装到目标进程的 fd 修复项。"]
+      ],
+      rels: [
+        "请求事务的 buffer 在接收方（服务端）alloc；回复事务的 buffer 在发送方（客户端）alloc。",
+        "<code>t-&gt;buffer-&gt;transaction</code> 反向指回 t；两者生命周期解耦。",
+        "同步请求会把 t 压入发送线程的 transaction_stack；服务端读到后再压入接收线程的栈。"
+      ],
+      life: "BC_TRANSACTION / BC_REPLY 时创建；入队、投递、回复后逐步释放；缓冲区则由 BC_FREE_BUFFER 单独释放。",
+      src: "drivers/android/binder_internal.h · struct binder_transaction；binder.c · binder_transaction() / binder_proc_transaction()"
+    },
+    buffer: {
+      kicker: "TARGET-SIDE MEMORY",
+      title: "binder_buffer",
+      color: "green",
+      desc: "真正承载 data 与 offsets 的缓冲区。它在目标进程通过 mmap 映射出来的 Binder 区域里分配；用户态拿到的是 user_data 指针。",
+      fields: [
+        ["transaction", "指向当前使用该 buffer 的 binder_transaction；投递后可能被清空。"],
+        ["target_node", "目标 node；用于把事务交给正确的对象。"],
+        ["data_size / offsets_size / extra_buffers_size", "数据、对象偏移数组、额外元数据的大小。"],
+        ["user_data", "目标进程用户态地址；BR_TRANSACTION / BR_REPLY 的 data.ptr 指向它。"],
+        ["free / allow_user_free", "是否空闲、用户态是否已获准释放。"],
+        ["async_transaction / oneway_spam_suspect", "单向事务标记与 spam 检测标记。"],
+        ["entry / rb_node", "按地址串在 alloc->buffers；按 size 或地址挂到 free / allocated 红黑树。"]
+      ],
+      rels: [
+        "buffer 属于目标进程的 <code>binder_alloc</code>，不是发送方。",
+        "buffer 与 transaction 互相指向，但可以一方先释放：事务可以被 free，buffer 等 BC_FREE_BUFFER。",
+        "buffer 的 <code>target_node</code> 指向接收方 node。"
+      ],
+      life: "binder_alloc_new_buf() 分配；投递后 allow_user_free=1；BC_FREE_BUFFER 触发 binder_alloc_prepare_to_free() / binder_free_buf() 归还。",
+      src: "drivers/android/binder_alloc.h · struct binder_buffer；binder_alloc.c · binder_alloc_new_buf() / binder_free_buf()"
+    },
+    alloc: {
+      kicker: "PER-PROC ALLOCATOR",
+      title: "binder_alloc",
+      color: "green",
+      desc: "每个 binder_proc 内嵌一个分配器，管理 mmap 出来的 Binder 区域、页表与 buffer 索引。",
+      fields: [
+        ["mm / vm_start / buffer_size", "目标进程地址空间与 mmap 区域范围。"],
+        ["buffers", "按地址串联所有 binder_buffer 的 list_head。"],
+        ["free_buffers", "按 size 组织的空闲 buffer 红黑树，best-fit 分配。"],
+        ["allocated_buffers", "按地址组织的已分配 buffer 红黑树，BC_FREE_BUFFER 查找。"],
+        ["free_async_space", "预留给单向事务的地址空间，mmap 时初始化为区域的一半。"],
+        ["pages / freelist", "物理页安装与内存回收（shrinker）相关。"],
+        ["mutex", "保护分配器字段；与 binder_proc 的 spinlock 是不同层次。"]
+      ],
+      rels: [
+        "每个 <code>binder_proc</code> 有一个；请求 buffer 在服务端 alloc，回复 buffer 在客户端 alloc。",
+        "binder_buffer 同时出现在 <code>buffers</code> 链表和某一棵红黑树中。",
+        "mmap 只允许一次；vma 关闭后 mapped=false，不再接受新事务。"
+      ],
+      life: "binder_open() 初始化；binder_mmap() 建立区域；进程释放时 binder_alloc_deferred_release() 回收 buffer 与页。",
+      src: "drivers/android/binder_alloc.h · struct binder_alloc；binder_alloc.c · binder_alloc_mmap_handler() / binder_alloc_new_buf()"
+    },
+    work: {
+      kicker: "QUEUE ELEMENT",
+      title: "binder_work",
+      color: "amber",
+      desc: "可被挂到 todo 队列的最小工作项。它通常内嵌在 node、transaction、error、death 等对象里，通过 container_of() 反推出宿主。",
+      fields: [
+        ["entry", "list_head，挂到 thread->todo / proc->todo / node->async_todo 等。"],
+        ["type", "BINDER_WORK_TRANSACTION、NODE、DEAD_BINDER、TRANSACTION_COMPLETE 等。"]
+      ],
+      rels: [
+        "transaction 内嵌 work；node 内嵌 work；ref_death 内嵌 work。",
+        "同一个 work 同时只能在一个队列里；出队后由 binder_thread_read() 按 type 分派。",
+        "队列有三种典型归属：<code>thread-&gt;todo</code>（同步 / 回复）、<code>proc-&gt;todo</code>（异步 / 死亡）、<code>node-&gt;async_todo</code>（单向串行）。"
+      ],
+      life: "随宿主对象创建 / 释放；入队 / 出队只操作 entry，不单独 kfree（除了 tcomplete 这类独立分配的 work）。",
+      src: "drivers/android/binder_internal.h · struct binder_work；binder.c · binder_enqueue_work_ilocked() / binder_thread_read()"
+    }
+  };
+
+  let lastFocus = null;
+  function openDrawer(key) {
+    const data = DETAILS[key];
+    if (!data) return;
+    lastFocus = document.activeElement;
+    const drawer = document.getElementById("drawer");
+    const backdrop = document.getElementById("drawerBackdrop");
+    document.getElementById("drawerKicker").textContent = data.kicker;
+    document.getElementById("drawerTitle").textContent = data.title;
+    document.getElementById("drawerDesc").textContent = data.desc;
+    document.getElementById("drawerFields").innerHTML = data.fields.map(f =>
+      '<div class="field-row"><code>' + f[0] + '</code><span>' + f[1] + '</span></div>'
+    ).join("");
+    document.getElementById("drawerRels").innerHTML = data.rels.map(r =>
+      '<div>' + r + '</div>'
+    ).join("");
+    document.getElementById("drawerLife").textContent = data.life;
+    document.getElementById("drawerSrc").textContent = data.src;
+    const title = document.getElementById("drawerTitle");
+    title.style.color = PALETTE[data.color] || "#f4f9ff";
+    drawer.classList.add("is-open");
+    backdrop.classList.add("is-open");
+    drawer.setAttribute("aria-hidden", "false");
+    document.body.classList.add("no-scroll");
+    setTimeout(() => document.getElementById("drawerClose").focus(), 80);
+  }
+  function closeDrawer() {
+    const drawer = document.getElementById("drawer");
+    const backdrop = document.getElementById("drawerBackdrop");
+    drawer.classList.remove("is-open");
+    backdrop.classList.remove("is-open");
+    drawer.setAttribute("aria-hidden", "true");
+    document.body.classList.remove("no-scroll");
+    if (lastFocus && lastFocus.focus) lastFocus.focus();
+  }
+  document.getElementById("drawerClose").addEventListener("click", closeDrawer);
+  document.getElementById("drawerBackdrop").addEventListener("click", closeDrawer);
+  document.addEventListener("keydown", e => {
+    if (e.key === "Escape" && document.getElementById("drawer").classList.contains("is-open")) closeDrawer();
+  });
+
+  /* ---------- 内容与图形数据 ---------- */
+  const HERO_SPEC = {
+    width: 700, height: 470,
+    ariaLabel: "Binder 核心结构关系示意：proc、thread、ref、transaction、node 与 buffer",
+    nodes: [
+      { id: "proc", x: 28, y: 42, w: 195, h: 92, color: "cyan", tag: "PROC", title: "binder_proc", sub: "进程 A", lines: ["pid · threads · todo"], detail: "proc" },
+      { id: "thread", x: 28, y: 176, w: 195, h: 96, color: "blue", tag: "THREAD", title: "binder_thread", sub: "执行调用的线程", lines: ["transaction_stack", "todo / wait"], detail: "thread" },
+      { id: "ref", x: 28, y: 314, w: 195, h: 92, color: "amber", tag: "REF", title: "binder_ref", sub: "A 的 handle", lines: ["desc = 1 → node"], detail: "ref" },
+      { id: "txn", x: 250, y: 214, w: 205, h: 112, color: "violet", tag: "TXN", title: "binder_transaction", sub: "一次同步调用", lines: ["from → thread", "buffer → target"], detail: "transaction" },
+      { id: "node", x: 485, y: 180, w: 186, h: 106, color: "rose", tag: "NODE", title: "binder_node", sub: "服务端对象", lines: ["ptr + cookie", "refs hlist"], detail: "node" },
+      { id: "buffer", x: 485, y: 322, w: 186, h: 100, color: "green", tag: "BUFFER", title: "binder_buffer", sub: "B 的 alloc", lines: ["data + offsets", "user_data"], detail: "buffer" }
+    ],
+    edges: [
+      { from: "proc", to: "thread", type: "contain", label: "threads", fromSide: "bottom", toSide: "top", fromOffset: 0.35, toOffset: 0.35, labelDx: 22, labelDy: 4 },
+      { from: "thread", to: "txn", type: "flow", label: "from", fromSide: "right", toSide: "left", toOffset: 0.38, labelAt: 0.48 },
+      { from: "ref", to: "txn", type: "ptr", fromSide: "right", toSide: "left", toOffset: 0.78 },
+      { from: "txn", to: "node", type: "cross", fromSide: "right", toSide: "left", fromOffset: 0.3, toOffset: 0.45, double: true },
+      { from: "txn", to: "buffer", type: "data", label: "t->buffer", fromSide: "bottom", toSide: "left", toOffset: 0.4, labelDx: 24, labelDy: 14 }
+    ]
+  };
+
+  const OVERVIEW_SPEC = {
+    width: 1240, height: 880,
+    ariaLabel: "Binder 全局数据结构关系图",
+    zones: [
+      { x: 420, y: 12, w: 400, h: 242, label: "GLOBAL / PER-DEVICE" }
+    ],
+    nodes: [
+      { id: "device", x: 470, y: 38, w: 300, h: 82, color: "blue", tag: "DEVICE", title: "binder_device", sub: "一个 Binder 设备实例", lines: ["miscdevice + binder_context"], detail: "device" },
+      { id: "context", x: 470, y: 152, w: 300, h: 88, color: "violet", tag: "CONTEXT", title: "binder_context", sub: "设备级全局上下文", lines: ["binder_context_mgr_node (0)"], detail: "context" },
+      { id: "procA", x: 48, y: 312, w: 372, h: 100, color: "cyan", tag: "PROC · A", title: "binder_proc", sub: "客户端进程 A", lines: ["threads · nodes · refs_by_*", "todo · alloc · context"], detail: "proc" },
+      { id: "procB", x: 820, y: 312, w: 372, h: 100, color: "green", tag: "PROC · B", title: "binder_proc", sub: "服务端进程 B", lines: ["threads · nodes · refs_by_*", "todo · alloc · context"], detail: "proc" },
+      { id: "threadA", x: 105, y: 470, w: 258, h: 104, color: "cyan", tag: "THREAD", title: "binder_thread", sub: "A 中执行调用的线程", lines: ["transaction_stack", "todo / wait"], detail: "thread" },
+      { id: "threadB", x: 877, y: 470, w: 258, h: 104, color: "green", tag: "THREAD", title: "binder_thread", sub: "B 中处理事务的线程", lines: ["transaction_stack", "todo / wait"], detail: "thread" },
+      { id: "refA", x: 105, y: 620, w: 258, h: 104, color: "amber", tag: "REF · desc 1", title: "binder_ref", sub: "A 的进程内引用", lines: ["node → nodeB", "strong / weak / death"], detail: "ref" },
+      { id: "nodeB", x: 877, y: 620, w: 258, h: 104, color: "rose", tag: "NODE", title: "binder_node", sub: "B 拥有的对象", lines: ["ptr + cookie", "refs hlist ← refA"], detail: "node" },
+      { id: "txn", x: 500, y: 604, w: 320, h: 122, color: "violet", tag: "TXN", title: "binder_transaction", sub: "一次调用 / 回复的元数据", lines: ["from → threadA", "to_proc / to_thread → B", "buffer → B 的 alloc"], detail: "transaction" }
+    ],
+    edges: [
+      { from: "device", to: "context", type: "contain", label: "内嵌 context", labelDx: 96, labelDy: 4 },
+      { from: "context", to: "procA", type: "ptr", label: "proc->context", fromSide: "left", toSide: "top", toOffset: 0.62, labelAt: 0.48, labelDx: -28, labelDy: -4 },
+      { from: "context", to: "procB", type: "ptr", label: "proc->context", fromSide: "right", toSide: "top", toOffset: 0.38, labelAt: 0.52, labelDx: 28, labelDy: -4 },
+      { from: "procA", to: "threadA", type: "contain", label: "threads（按 tid）", fromSide: "bottom", toSide: "top", fromOffset: 0.32, toOffset: 0.5, labelDx: -52, labelDy: 4 },
+      { from: "procB", to: "threadB", type: "contain", label: "threads（按 tid）", fromSide: "bottom", toSide: "top", fromOffset: 0.68, toOffset: 0.5, labelDx: 52, labelDy: 4 },
+      { from: "procA", to: "refA", type: "ptr", label: "refs_by_*", fromSide: "left", toSide: "left", fromOffset: 0.9, toOffset: 0.3, bend: 38, labelAt: 0.5, labelDx: 14, labelDy: 2 },
+      { from: "procB", to: "nodeB", type: "contain", label: "nodes", fromSide: "right", toSide: "right", fromOffset: 0.9, toOffset: 0.3, bend: 38, labelAt: 0.5, labelDx: -14, labelDy: 2 },
+      { from: "threadA", to: "txn", type: "flow", label: "from / 发起", fromSide: "right", toSide: "left", fromOffset: 0.32, toOffset: 0.22, labelAt: 0.5, labelDy: -10 },
+      { from: "txn", to: "threadB", type: "flow", label: "to_thread", fromSide: "right", toSide: "left", fromOffset: 0.28, toOffset: 0.34, labelAt: 0.5, labelDx: -4, labelDy: -16 },
+      { from: "refA", to: "nodeB", type: "cross", label: "同一个 node：ref ↔ node", fromSide: "bottom", toSide: "bottom", fromOffset: 0.55, toOffset: 0.55, bend: 46, labelAt: 0.5, labelDy: 2, double: true },
+      { from: "txn", to: "nodeB", type: "ptr", fromSide: "right", toSide: "left", fromOffset: 0.16, toOffset: 0.72 }
+    ]
+  };
+
+  const PROC_SPEC = {
+    width: 1240, height: 750,
+    ariaLabel: "binder_proc 内部四棵树、队列与分配器关系图",
+    nodes: [
+      { id: "dmap", x: 475, y: 48, w: 290, h: 88, color: "violet", tag: "DBITMAP", title: "dmap", sub: "handle 描述符分配", lines: ["0 保留给 context mgr"], detail: "proc" },
+      { id: "threads", x: 70, y: 62, w: 300, h: 106, color: "cyan", tag: "RB TREE", title: "threads", sub: "binder_thread 索引", lines: ["键：tid", "rb_node ↔ thread"], detail: "thread" },
+      { id: "nodes", x: 870, y: 62, w: 300, h: 106, color: "rose", tag: "RB TREE", title: "nodes", sub: "本进程拥有的 node", lines: ["键：node->ptr", "rb_node ↔ node"], detail: "node" },
+      { id: "proc", x: 440, y: 286, w: 360, h: 144, color: "cyan", tag: "PROC", title: "binder_proc", sub: "进程级 Binder 状态", lines: ["pid / tsk / cred", "inner_lock / outer_lock", "context / alloc / stats"], detail: "proc" },
+      { id: "waiting", x: 62, y: 300, w: 292, h: 96, color: "amber", tag: "LIST", title: "waiting_threads", sub: "等待工作的线程", lines: ["waiting_thread_node"], detail: "proc" },
+      { id: "todo", x: 886, y: 300, w: 292, h: 96, color: "amber", tag: "WORK QUEUE", title: "todo", sub: "进程级 work 队列", lines: ["binder_work（异步/死亡）"], detail: "work" },
+      { id: "refsDesc", x: 70, y: 560, w: 300, h: 106, color: "amber", tag: "RB TREE", title: "refs_by_desc", sub: "handle → ref", lines: ["键：ref->data.desc", "rb_node_desc ↔ ref"], detail: "ref" },
+      { id: "refsNode", x: 870, y: 560, w: 300, h: 106, color: "amber", tag: "RB TREE", title: "refs_by_node", sub: "node → ref", lines: ["键：node 指针", "rb_node_node ↔ ref"], detail: "ref" },
+      { id: "alloc", x: 475, y: 572, w: 290, h: 100, color: "green", tag: "ALLOCATOR", title: "alloc", sub: "binder_alloc（内嵌）", lines: ["mmap 区 + buffer 索引"], detail: "alloc" }
+    ],
+    edges: [
+      { from: "proc", to: "dmap", type: "contain", label: "分配 desc", fromSide: "top", toSide: "bottom", fromOffset: 0.55, toOffset: 0.55, labelDx: 64, labelDy: 4 },
+      { from: "proc", to: "threads", type: "ptr", label: "按 tid 查", fromSide: "left", toSide: "right", fromOffset: 0.16, toOffset: 0.78, labelAt: 0.45, labelDy: -8 },
+      { from: "proc", to: "nodes", type: "ptr", label: "按 ptr 查", fromSide: "right", toSide: "left", fromOffset: 0.16, toOffset: 0.78, labelAt: 0.55, labelDy: -8 },
+      { from: "proc", to: "waiting", type: "queue", label: "挑空闲线程", fromSide: "left", toSide: "right", fromOffset: 0.62, toOffset: 0.45, labelAt: 0.5, labelDy: -5 },
+      { from: "proc", to: "todo", type: "queue", label: "进程级入队", fromSide: "right", toSide: "left", fromOffset: 0.62, toOffset: 0.45, labelAt: 0.5, labelDy: -5 },
+      { from: "proc", to: "refsDesc", type: "ptr", label: "desc → ref", fromSide: "left", toSide: "right", fromOffset: 0.86, toOffset: 0.2, labelAt: 0.45, labelDy: 10 },
+      { from: "proc", to: "refsNode", type: "ptr", label: "node → ref", fromSide: "right", toSide: "left", fromOffset: 0.86, toOffset: 0.2, labelAt: 0.55, labelDy: 10 },
+      { from: "proc", to: "alloc", type: "contain", label: "内嵌 alloc", fromSide: "bottom", toSide: "top", fromOffset: 0.45, toOffset: 0.55, labelDx: -70, labelDy: 4 }
+    ]
+  };
+
+  const REFS_SPEC = {
+    width: 1240, height: 790,
+    ariaLabel: "binder_node 与多个 binder_ref 的跨进程引用关系图",
+    nodes: [
+      { id: "procB", x: 470, y: 34, w: 300, h: 88, color: "green", tag: "PROC · B", title: "binder_proc", sub: "服务端进程（node owner）", lines: ["nodes rbtree → nodeB"], detail: "proc" },
+      { id: "nodeB", x: 405, y: 178, w: 430, h: 160, color: "rose", tag: "NODE · owner=B", title: "binder_node", sub: "B 的 Binder 对象实体", lines: ["ptr / cookie  ← 用户态身份", "refs hlist → refA, refC", "internal / local / tmp_refs"], detail: "node" },
+      { id: "procA", x: 54, y: 74, w: 318, h: 90, color: "cyan", tag: "PROC · A", title: "binder_proc", sub: "客户端进程 A", lines: ["refs_by_desc / refs_by_node"], detail: "proc" },
+      { id: "procC", x: 868, y: 74, w: 318, h: 90, color: "blue", tag: "PROC · C", title: "binder_proc", sub: "客户端进程 C", lines: ["refs_by_desc / refs_by_node"], detail: "proc" },
+      { id: "refA", x: 54, y: 418, w: 330, h: 144, color: "amber", tag: "REF · desc 1", title: "binder_ref", sub: "A 的 handle = 1", lines: ["data.strong / data.weak", "node → nodeB", "node_entry → nodeB->refs"], detail: "ref" },
+      { id: "refC", x: 856, y: 418, w: 330, h: 144, color: "amber", tag: "REF · desc 7", title: "binder_ref", sub: "C 的 handle = 7", lines: ["data.strong / data.weak", "node → nodeB", "node_entry → nodeB->refs"], detail: "ref" },
+      { id: "deathA", x: 84, y: 632, w: 270, h: 84, color: "rose", tag: "DEATH", title: "binder_ref_death", sub: "A 注册了死亡通知", lines: ["work + cookie"], detail: "death" },
+      { id: "deathC", x: 886, y: 632, w: 270, h: 84, color: "slate", ghost: true, title: "death = NULL", sub: "C 没有注册死亡通知", lines: ["可选字段"], detail: "death" }
+    ],
+    edges: [
+      { from: "procB", to: "nodeB", type: "contain", label: "nodes", labelDx: 82, labelDy: 4 },
+      { from: "procA", to: "refA", type: "ptr", label: "refs_by_desc / by_node", fromSide: "bottom", toSide: "top", fromOffset: 0.46, toOffset: 0.5, labelDx: -36, labelDy: 4 },
+      { from: "procC", to: "refC", type: "ptr", label: "refs_by_desc / by_node", fromSide: "bottom", toSide: "top", fromOffset: 0.54, toOffset: 0.5, labelDx: 36, labelDy: 4 },
+      { from: "refA", to: "nodeB", type: "cross", label: "node_entry（hlist）↔ node", fromSide: "right", toSide: "left", fromOffset: 0.22, toOffset: 0.72, labelAt: 0.48, labelDy: -10, double: true },
+      { from: "refC", to: "nodeB", type: "cross", label: "node_entry（hlist）↔ node", fromSide: "left", toSide: "right", fromOffset: 0.22, toOffset: 0.72, labelAt: 0.52, labelDy: -10, double: true },
+      { from: "refA", to: "deathA", type: "ptr", label: "death*", labelDx: 56, labelDy: 8 },
+      { from: "refC", to: "deathC", type: "ptr", label: "death = NULL", labelDx: 62, labelDy: 8 }
+    ]
+  };
+
+  const BUFFER_SPEC = {
+    width: 1240, height: 650,
+    ariaLabel: "binder_alloc、binder_buffer 与 transaction 的关系图",
+    nodes: [
+      { id: "userB", x: 430, y: 34, w: 360, h: 86, color: "blue", tag: "USERSPACE · B", title: "目标进程用户态", sub: "mmap 出来的 Binder 区域", lines: ["data.ptr = buffer->user_data"], detail: "buffer" },
+      { id: "senderA", x: 850, y: 34, w: 320, h: 86, color: "cyan", tag: "USERSPACE · A", title: "发送方用户缓冲区", sub: "调用者传入 data / offsets", lines: ["binder_alloc_copy_user_to_buffer()"], detail: "buffer" },
+      { id: "procB", x: 50, y: 74, w: 300, h: 88, color: "green", tag: "PROC · B", title: "binder_proc", sub: "服务端进程", lines: ["alloc 内嵌在 proc 中"], detail: "proc" },
+      { id: "allocB", x: 50, y: 224, w: 300, h: 162, color: "green", tag: "ALLOC", title: "binder_alloc", sub: "目标进程的 Binder 分配器", lines: ["mm / vm_start / buffer_size", "buffers · free_buffers", "allocated_buffers", "free_async_space / pages"], detail: "alloc" },
+      { id: "bufferB", x: 430, y: 214, w: 360, h: 180, color: "green", tag: "BUFFER", title: "binder_buffer", sub: "请求数据落在 B 的 alloc 里", lines: ["transaction  →  t", "target_node  →  nodeB", "data_size / offsets_size", "user_data  →  B 用户态", "free / allow_user_free"], detail: "buffer" },
+      { id: "txn", x: 850, y: 214, w: 320, h: 140, color: "violet", tag: "TXN", title: "binder_transaction", sub: "正在使用这个 buffer", lines: ["buffer  →  bufferB", "to_proc  →  procB", "to_thread  →  B.thread"], detail: "transaction" },
+      { id: "nodeB", x: 900, y: 382, w: 280, h: 92, color: "rose", tag: "NODE", title: "binder_node", sub: "buffer->target_node", lines: ["B 拥有的目标对象"], detail: "node" },
+      { id: "buffers", x: 50, y: 484, w: 280, h: 100, color: "amber", tag: "LIST", title: "alloc->buffers", sub: "按地址串起所有 buffer", lines: ["binder_buffer.entry"], detail: "alloc" },
+      { id: "free", x: 360, y: 484, w: 282, h: 100, color: "amber", tag: "RB TREE", title: "free_buffers", sub: "空闲 buffer，按 size", lines: ["best-fit 分配"], detail: "alloc" },
+      { id: "allocated", x: 672, y: 484, w: 300, h: 100, color: "amber", tag: "RB TREE", title: "allocated_buffers", sub: "已分配，按地址", lines: ["BC_FREE_BUFFER 查找"], detail: "alloc" }
+    ],
+    edges: [
+      { from: "procB", to: "allocB", type: "contain", label: "内嵌 alloc", labelDx: 64, labelDy: 4 },
+      { from: "allocB", to: "bufferB", type: "data", label: "new_buf()", fromSide: "right", toSide: "left", fromOffset: 0.52, toOffset: 0.5, labelAt: 0.4, labelDx: -26, labelDy: -10 },
+      { from: "bufferB", to: "txn", type: "data", fromSide: "right", toSide: "left", fromOffset: 0.34, toOffset: 0.42, double: true },
+      { from: "txn", to: "nodeB", type: "ptr", fromSide: "bottom", toSide: "top", fromOffset: 0.58, toOffset: 0.52 },
+      { from: "userB", to: "bufferB", type: "ptr", label: "映射读 / 写", fromSide: "bottom", toSide: "top", fromOffset: 0.36, toOffset: 0.36, labelDx: -40, labelDy: 4 },
+      { from: "senderA", to: "bufferB", type: "flow", label: "copy_from_user", fromSide: "bottom", toSide: "top", toOffset: 0.82, labelAt: 0.44, labelDx: 8, labelDy: -16 },
+      { from: "allocB", to: "buffers", type: "ptr", label: "所有 buffer", fromSide: "bottom", toSide: "top", fromOffset: 0.22, toOffset: 0.45, labelDx: 34, labelDy: 4 },
+      { from: "allocB", to: "free", type: "ptr", label: "空闲树", fromSide: "bottom", toSide: "top", fromOffset: 0.55, toOffset: 0.5, labelDx: 6, labelDy: 4 },
+      { from: "allocB", to: "allocated", type: "ptr", label: "已分配树", fromSide: "right", toSide: "left", fromOffset: 0.92, toOffset: 0.55, labelAt: 0.63, labelDx: 12, labelDy: 8 }
+    ]
+  };
+
+  /* =========================================================
+     事务时序图
+     ========================================================= */
+  const TOUR_STEPS = [
+    {
+      title: "请求进入内核",
+      desc: "客户端线程发起 BC_TRANSACTION，带上目标 handle、code 和用户态 data / offsets 指针。驱动开始在 A 的进程上下文里解析目标。",
+      chips: [["binder_proc", "cyan"], ["binder_thread", "blue"], ["binder_transaction_data", "amber"]],
+      code: "binder_ioctl(BINDER_WRITE_READ)\n  → binder_thread_write()\n    → BC_TRANSACTION → binder_transaction()"
+    },
+    {
+      title: "把 handle 翻译成 node",
+      desc: "驱动在 A 的 refs_by_desc 树里按 handle 找到 binder_ref，再沿 ref->node 找到服务端 node；同时对 node / proc 取强引用和临时引用，保证事务构造期间对象不消失。",
+      chips: [["binder_ref", "amber"], ["binder_node", "rose"], ["tmp_refs", "violet"]],
+      code: "binder_get_ref_olocked(proc, handle)\n  → ref->node\n  → binder_get_node_refs_for_txn()"
+    },
+    {
+      title: "在目标进程分配 buffer",
+      desc: "Buffer 不在发送方分配，而在服务端 proc 的 binder_alloc 中分配。data / offsets 被拷入目标 buffer，flat_binder_object 也在这里被翻译成接收方视角的 handle 或 binder。",
+      chips: [["binder_alloc", "green"], ["binder_buffer", "green"], ["flat_binder_object", "cyan"]],
+      code: "binder_alloc_new_buf(&target_proc->alloc, ...)\n  → 拷贝 data / offsets\n  → 翻译 flat_binder_object"
+    },
+    {
+      title: "组装 transaction",
+      desc: "创建 binder_transaction：记录 from、to_proc、to_thread 和 buffer。同步调用会把 t 压入客户端线程的 transaction_stack，from_parent 指向上一层。",
+      chips: [["binder_transaction", "violet"], ["transaction_stack", "blue"], ["work", "amber"]],
+      code: "t->from = A.thread\nt->to_proc = B.proc\nt->buffer = target_buffer\nt->work.type = BINDER_WORK_TRANSACTION"
+    },
+    {
+      title: "入队并唤醒目标",
+      desc: "同步事务优先塞进目标 thread->todo；没有可用线程时进入 proc->todo。单向事务如果 node 已有异步事务，则进入 node->async_todo 串行化。发送方的 BR_TRANSACTION_COMPLETE 在同步场景下会延迟返回。",
+      chips: [["thread->todo", "blue"], ["proc->todo", "amber"], ["node->async_todo", "rose"]],
+      code: "binder_proc_transaction(t, target_proc, target_thread)\n  → binder_enqueue_thread_work_ilocked()\n  → binder_wakeup_thread_ilocked()"
+    },
+    {
+      title: "服务端读走事务",
+      desc: "服务端线程的 binder_thread_read() 出队 t->work，返回 BR_TRANSACTION。buffer->allow_user_free 置 1；同步事务被压入接收线程的 transaction_stack，to_parent 记录上一层。",
+      chips: [["BR_TRANSACTION", "green"], ["allow_user_free", "green"], ["to_parent", "violet"]],
+      code: "binder_thread_read()\n  → dequeue binder_work\n  → copy_to_user(binder_transaction_data)\n  → t->to_parent = thread->transaction_stack"
+    },
+    {
+      title: "回复是另一笔 transaction",
+      desc: "BC_REPLY 根据服务端栈顶的 in_reply_to 找到发起线程；在客户端地址空间分配回复 buffer，创建回复事务 t′ 并投递到 A 的 thread->todo。请求 t 被释放，但请求 buffer 仍由服务端持有到 BC_FREE_BUFFER。",
+      chips: [["in_reply_to", "violet"], ["is_reply = 1", "rose"], ["BR_REPLY", "rose"]],
+      code: "in_reply_to = B.thread->transaction_stack\ntarget_thread = in_reply_to->from\nnew reply buffer = binder_alloc_new_buf(&A.alloc, ...)\n  → A.thread->todo"
+    },
+    {
+      title: "释放 buffer，闭环完成",
+      desc: "双方分别对各自的 buffer 执行 BC_FREE_BUFFER。binder_alloc 在 allocated_buffers 中按 user_data 找到 buffer，归还到 free_buffers；transaction 和 buffer 的释放路径在这里解耦。",
+      chips: [["BC_FREE_BUFFER", "cyan"], ["binder_alloc_free_buf()", "green"], ["free_buffers", "amber"]],
+      code: "BC_FREE_BUFFER (A) → binder_alloc_prepare_to_free(&A.alloc, ptr)\nBC_FREE_BUFFER (B) → binder_alloc_prepare_to_free(&B.alloc, ptr)\n  → binder_free_buf() → free_buffers"
+    }
+  ];
+
+  const SEQ_SPEC = {
+    width: 1080,
+    height: 920,
+    actionWidths: { kernel: 480, client: 310, server: 320 },
+    lanes: [
+      { id: "client", x: 250, w: 220, title: "客户端线程", sub: "A · binder_thread", tag: "THREAD", color: "cyan" },
+      { id: "kernel", x: 540, w: 260, title: "Binder 驱动", sub: "binder_transaction", tag: "KERNEL", color: "violet" },
+      { id: "server", x: 830, w: 220, title: "服务端线程", sub: "B · binder_thread", tag: "THREAD", color: "green" }
+    ],
+    items: [
+      { step: 1, kind: "arrow", from: "client", to: "kernel", y: 152, label: "BC_TRANSACTION", sub: "handle = 1 · code · data / offsets", tag: "binder_transaction_data", color: "cyan" },
+      { step: 2, kind: "action", lane: "kernel", y: 198, h: 56, title: "handle → ref → node", sub: "refs_by_desc 查找 ref，再沿 ref->node 找到服务端 node", tag: "ref / node", color: "rose" },
+      { step: 3, kind: "action", lane: "kernel", y: 276, h: 56, title: "在目标进程分配 buffer", sub: "binder_alloc_new_buf() · 拷入 data/offsets · 翻译 flat_binder_object", tag: "buffer", color: "green" },
+      { step: 4, kind: "action", lane: "kernel", y: 354, h: 56, title: "创建 transaction t 并入栈", sub: "t->from / to_proc / buffer · from_parent · 延迟 tcomplete", tag: "txn", color: "violet" },
+      { step: 5, kind: "arrow", from: "kernel", to: "server", y: 442, label: "t->work 入队 + wake", sub: "thread->todo / proc->todo / node->async_todo", tag: "binder_work", color: "amber" },
+      { step: 6, kind: "action", lane: "server", y: 482, h: 64, title: "thread_read() → BR_TRANSACTION", sub: "出队 t->work · allow_user_free=1 · 压入 transaction_stack", tag: "BR_TRANSACTION", color: "green" },
+      { step: 7, kind: "arrow", from: "server", to: "kernel", y: 584, label: "BC_REPLY", sub: "接收线程栈顶就是 in_reply_to", tag: "binder_transaction", color: "rose" },
+      { step: 7, kind: "action", lane: "kernel", y: 624, h: 56, title: "创建回复事务 t′", sub: "target = in_reply_to->from · 回复 buffer 在 A 的 alloc", tag: "reply t", color: "violet" },
+      { step: 7, kind: "arrow", from: "kernel", to: "client", y: 716, label: "BR_REPLY", sub: "A 的 binder_thread_read 返回回复", tag: "BR_REPLY", color: "rose" },
+      { step: 8, kind: "action", lane: "client", y: 768, h: 60, title: "BC_FREE_BUFFER", sub: "释放回复 buffer（在 A 的 alloc）", tag: "free", color: "cyan" },
+      { step: 8, kind: "action", lane: "server", y: 768, h: 60, title: "BC_FREE_BUFFER", sub: "释放请求 buffer（在 B 的 alloc）", tag: "free", color: "green" }
+    ]
+  };
+
+  function renderSequence(container, spec) {
+    if (!container) return;
+    const svg = svgEl("svg", {
+      viewBox: "0 0 " + spec.width + " " + spec.height,
+      role: "group",
+      "aria-label": "Binder 同步事务时序图：客户端、驱动、服务端线程之间的八步交互"
+    });
+    svg.setAttribute("preserveAspectRatio", "xMidYMid meet");
+    svg.style.fontFamily = '"Inter", "Segoe UI", "Noto Sans SC", "Microsoft YaHei", sans-serif';
+    container.innerHTML = "";
+    container.appendChild(svg);
+
+    const defs = svgEl("defs");
+    Object.keys(PALETTE).forEach(key => {
+      const marker = svgEl("marker", {
+        id: "seq-arrow-" + key,
+        markerWidth: "9", markerHeight: "9",
+        refX: "7", refY: "3.5", orient: "auto",
+        markerUnits: "strokeWidth"
+      });
+      marker.appendChild(svgEl("path", { d: "M0,0 L8,3.5 L0,7 Z", fill: PALETTE[key] }));
+      defs.appendChild(marker);
+    });
+    svg.appendChild(defs);
+
+    const laneMap = {};
+    spec.lanes.forEach(l => { laneMap[l.id] = l; });
+    const headerY = 30, headerH = 70, lifeStart = 106, lifeEnd = 862;
+    const laneLayer = svgEl("g");
+    const itemLayer = svgEl("g");
+    const numberLayer = svgEl("g");
+    svg.appendChild(laneLayer);
+    svg.appendChild(itemLayer);
+    svg.appendChild(numberLayer);
+
+    // 请求 / 回复分区
+    laneLayer.appendChild(svgEl("text", { x: 34, y: 140, class: "seq-phase" })).textContent = "REQUEST";
+    laneLayer.appendChild(svgEl("text", { x: 34, y: 566, class: "seq-phase" })).textContent = "REPLY";
+    const divider = svgEl("line", {
+      x1: 34, y1: 552, x2: 1044, y2: 552,
+      stroke: "rgba(148,176,218,.1)", "stroke-dasharray": "3 8"
+    });
+    laneLayer.appendChild(divider);
+
+    spec.lanes.forEach(lane => {
+      const color = PALETTE[lane.color] || PALETTE.cyan;
+      const g = svgEl("g");
+      g.appendChild(svgEl("rect", {
+        x: lane.x - lane.w / 2, y: headerY, width: lane.w, height: headerH, rx: 13,
+        fill: hexAlpha(color, .07), stroke: hexAlpha(color, .34), "stroke-width": 1.1
+      }));
+      g.appendChild(svgEl("rect", {
+        x: lane.x - lane.w / 2, y: headerY, width: lane.w, height: 3, rx: 1.5,
+        fill: color, opacity: .8
+      }));
+      const title = svgEl("text", {
+        x: lane.x - lane.w / 2 + 16, y: headerY + 31,
+        class: "seq-lane-title", "font-family": mono
+      });
+      title.textContent = lane.title;
+      g.appendChild(title);
+      fitText(title, lane.w - 86, 11);
+      const sub = svgEl("text", {
+        x: lane.x - lane.w / 2 + 16, y: headerY + 51,
+        class: "seq-lane-sub"
+      });
+      sub.textContent = lane.sub;
+      g.appendChild(sub);
+      fitText(sub, lane.w - 32, 8);
+      const tag = svgEl("text", {
+        x: lane.x + lane.w / 2 - 14, y: headerY + 20,
+        "text-anchor": "end", class: "node-tag", fill: color, "font-family": mono
+      });
+      tag.textContent = lane.tag;
+      g.appendChild(tag);
+      laneLayer.appendChild(g);
+
+      laneLayer.appendChild(svgEl("line", {
+        x1: lane.x, y1: lifeStart, x2: lane.x, y2: lifeEnd,
+        stroke: "rgba(148,176,218,.17)", "stroke-dasharray": "4 8", "stroke-width": 1
+      }));
+    });
+
+    const wByLane = spec.actionWidths || { kernel: 480, client: 300, server: 300 };
+    spec.items.forEach(item => {
+      const color = PALETTE[item.color] || PALETTE.cyan;
+      const g = svgEl("g", { class: "seq-step", "data-step": item.step });
+      itemLayer.appendChild(g);
+
+      if (item.kind === "arrow") {
+        const from = laneMap[item.from], to = laneMap[item.to];
+        if (!from || !to) return;
+        const x1 = from.x, x2 = to.x;
+        g.appendChild(svgEl("circle", { cx: x1, cy: item.y, r: 2.6, fill: color }));
+        g.appendChild(svgEl("line", {
+          x1: x1, y1: item.y, x2: x2, y2: item.y,
+          class: "seq-arrow", stroke: color,
+          "marker-end": "url(#seq-arrow-" + item.color + ")"
+        }));
+        const midX = (x1 + x2) / 2;
+        const label = svgEl("text", {
+          x: midX, y: item.y - 24, "text-anchor": "middle",
+          class: "seq-label", "font-family": mono
+        });
+        label.textContent = item.label;
+        g.appendChild(label);
+        const sub = svgEl("text", {
+          x: midX, y: item.y - 8, "text-anchor": "middle", class: "seq-sub"
+        });
+        sub.textContent = item.sub;
+        g.appendChild(sub);
+        fitText(sub, Math.abs(x2 - x1) - 30, 7.5);
+        const tag = svgEl("text", {
+          x: midX, y: item.y + 17, "text-anchor": "middle",
+          class: "seq-sub", fill: color, "font-family": mono, "font-size": 8
+        });
+        tag.textContent = item.tag;
+        g.appendChild(tag);
+      } else {
+        const lane = laneMap[item.lane];
+        const w = wByLane[item.lane] || 360;
+        const x = lane.x - w / 2;
+        g.appendChild(svgEl("rect", {
+          x: x, y: item.y, width: w, height: item.h, rx: 11,
+          class: "seq-action",
+          fill: "rgba(10,19,34,.9)", stroke: hexAlpha(color, .3), "stroke-width": 1.05
+        }));
+        g.appendChild(svgEl("rect", {
+          x: x, y: item.y + 10, width: 3, height: item.h - 20, rx: 1.5,
+          fill: color, opacity: .8
+        }));
+        const title = svgEl("text", {
+          x: x + 17, y: item.y + 24,
+          class: "seq-label", "font-family": mono, "font-size": 13
+        });
+        title.textContent = item.title;
+        g.appendChild(title);
+        fitText(title, w - 34, 9.5);
+        const sub = svgEl("text", {
+          x: x + 17, y: item.y + 43,
+          class: "seq-sub"
+        });
+        sub.textContent = item.sub;
+        g.appendChild(sub);
+        fitText(sub, w - 34, 7.5);
+      }
+    });
+
+    // 步骤编号与左侧时间轴
+    const firstY = {};
+    spec.items.forEach(item => {
+      const y = item.kind === "arrow" ? item.y : item.y + 12;
+      if (firstY[item.step] == null || y < firstY[item.step]) firstY[item.step] = y;
+    });
+    numberLayer.appendChild(svgEl("line", {
+      x1: 84, y1: 140, x2: 84, y2: 812, class: "seq-rail"
+    }));
+    Object.keys(firstY).forEach(step => {
+      const g = svgEl("g", { class: "seq-step", "data-step": step });
+      const y = firstY[step];
+      g.appendChild(svgEl("circle", { cx: 84, cy: y, r: 11, class: "seq-step-circle" }));
+      const t = svgEl("text", {
+        x: 84, y: y + 3.5, "text-anchor": "middle",
+        class: "seq-step-num", "font-family": mono
+      });
+      t.textContent = step;
+      g.appendChild(t);
+      numberLayer.appendChild(g);
+    });
+
+    const foot = svgEl("text", {
+      x: 540, y: 900, "text-anchor": "middle",
+      class: "seq-sub", fill: "#5d7594"
+    });
+    foot.textContent = "handle 1 → ref → node ／ 同步调用一来一回，产生请求 t 与回复 t′ 两笔 transaction";
+    svg.appendChild(foot);
+  }
+
+  /* ---------- 交互：事务步骤 ---------- */
+  let tourIndex = 0;
+  let tourTimer = null;
+  let tourPlaying = false;
+  const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  function setTourStep(index) {
+    tourIndex = Math.max(0, Math.min(TOUR_STEPS.length - 1, index));
+    const data = TOUR_STEPS[tourIndex];
+    document.getElementById("tourCount").textContent =
+      String(tourIndex + 1).padStart(2, "0") + " / " + String(TOUR_STEPS.length).padStart(2, "0");
+    document.getElementById("tourTitle").textContent = data.title;
+    document.getElementById("tourDesc").textContent = data.desc;
+    document.getElementById("tourChips").innerHTML = data.chips.map(c =>
+      '<span class="chip" style="--chip:' + (PALETTE[c[1]] || PALETTE.cyan) + '">' + c[0] + "</span>"
+    ).join("");
+    document.getElementById("tourCode").textContent = data.code;
+    document.getElementById("tourProgress").style.width =
+      ((tourIndex + 1) / TOUR_STEPS.length * 100) + "%";
+    document.querySelectorAll("#tourDots .tour-dot").forEach((dot, i) => {
+      dot.classList.toggle("active", i === tourIndex);
+      if (i === tourIndex) dot.setAttribute("aria-current", "step");
+      else dot.removeAttribute("aria-current");
+    });
+    document.querySelectorAll("#tour-diagram .seq-step").forEach(g => {
+      const active = Number(g.dataset.step) === tourIndex + 1;
+      g.classList.toggle("is-active", active);
+      g.classList.toggle("is-dim", !active);
+    });
+    document.getElementById("tourPrev").disabled = tourIndex === 0;
+    document.getElementById("tourNext").disabled = tourIndex === TOUR_STEPS.length - 1;
+  }
+
+  function stopTour() {
+    tourPlaying = false;
+    if (tourTimer) {
+      clearInterval(tourTimer);
+      tourTimer = null;
+    }
+    const btn = document.getElementById("tourPlay");
+    if (btn) {
+      btn.textContent = "▶";
+      btn.setAttribute("aria-label", "自动播放");
+    }
+  }
+  function startTour() {
+    stopTour();
+    if (tourIndex >= TOUR_STEPS.length - 1) setTourStep(0);
+    tourPlaying = true;
+    const btn = document.getElementById("tourPlay");
+    btn.textContent = "❚❚";
+    btn.setAttribute("aria-label", "暂停自动播放");
+    tourTimer = setInterval(() => {
+      if (tourIndex >= TOUR_STEPS.length - 1) {
+        stopTour();
+        return;
+      }
+      setTourStep(tourIndex + 1);
+    }, 4600);
+  }
+  function renderTourDots() {
+    const wrap = document.getElementById("tourDots");
+    wrap.innerHTML = "";
+    TOUR_STEPS.forEach((step, i) => {
+      const b = document.createElement("button");
+      b.type = "button";
+      b.className = "tour-dot";
+      b.textContent = String(i + 1).padStart(2, "0");
+      b.title = step.title;
+      b.setAttribute("aria-label", "第 " + (i + 1) + " 步：" + step.title);
+      b.addEventListener("click", () => { stopTour(); setTourStep(i); });
+      wrap.appendChild(b);
+    });
+  }
+  function initTour() {
+    const container = document.getElementById("tour-diagram");
+    if (!container) return;
+    renderSequence(container, SEQ_SPEC);
+    renderTourDots();
+    setTourStep(0);
+    document.getElementById("tourPrev").addEventListener("click", () => { stopTour(); setTourStep(tourIndex - 1); });
+    document.getElementById("tourNext").addEventListener("click", () => { stopTour(); setTourStep(tourIndex + 1); });
+    document.getElementById("tourPlay").addEventListener("click", () => {
+      if (tourPlaying) stopTour();
+      else startTour();
+    });
+    document.querySelector(".tour-layout").addEventListener("keydown", e => {
+      if (e.key === "ArrowLeft") { e.preventDefault(); stopTour(); setTourStep(tourIndex - 1); }
+      if (e.key === "ArrowRight") { e.preventDefault(); stopTour(); setTourStep(tourIndex + 1); }
+    });
+    document.addEventListener("visibilitychange", () => {
+      if (document.hidden) stopTour();
+    });
+  }
+
+  /* ---------- 交互：node 存活判定器 ---------- */
+  const CALC_DEFAULTS = {
+    localStrong: false,
+    localWeak: false,
+    internalStrong: true,
+    tmp: false,
+    remoteRefs: true
+  };
+  const CALC_ITEMS = [
+    { key: "localStrong", label: "local_strong_refs", hint: "owner 侧的强引用（本地 / 事务）", color: "cyan" },
+    { key: "localWeak", label: "local_weak_refs", hint: "owner 进程自己持有的弱引用", color: "blue" },
+    { key: "internalStrong", label: "internal_strong_refs", hint: "通过跨进程 ref 形成的强引用", color: "rose" },
+    { key: "tmp", label: "tmp_refs", hint: "驱动内部临时引用（查找 / 构造事务）", color: "violet" },
+    { key: "remoteRefs", label: "node->refs ≠ ∅", hint: "还有客户端 ref 挂在这个 node 上", color: "amber" }
+  ];
+  let calcState = { ...CALC_DEFAULTS };
+
+  function renderCalc() {
+    const wrap = document.getElementById("calcRows");
+    if (!wrap) return;
+    wrap.innerHTML = "";
+    CALC_ITEMS.forEach(item => {
+      const on = !!calcState[item.key];
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "calc-row" + (on ? " on" : "");
+      btn.style.setProperty("--row-color", PALETTE[item.color]);
+      btn.setAttribute("aria-pressed", on ? "true" : "false");
+      btn.setAttribute("aria-label", item.label + "，当前" + (on ? "非零" : "为零") + "，点击切换");
+      btn.innerHTML =
+        '<span class="dot"></span>' +
+        '<span><span class="field">' + item.label + '</span><span class="hint">' + item.hint + '</span></span>' +
+        '<span class="value">' + (on ? "1" : "0") + "</span>";
+      btn.addEventListener("click", () => {
+        calcState[item.key] = !calcState[item.key];
+        renderCalc();
+      });
+      wrap.appendChild(btn);
+    });
+
+    const alive = CALC_ITEMS.some(item => calcState[item.key]);
+    const status = document.getElementById("calcStatus");
+    const statusText = document.getElementById("calcStatusText");
+    status.classList.toggle("dead", !alive);
+    statusText.textContent = alive ? "存活" : "可回收";
+    const formula = document.getElementById("calcFormula");
+    formula.innerHTML =
+      '<span class="' + (calcState.localStrong || calcState.localWeak || calcState.internalStrong || calcState.tmp || calcState.remoteRefs ? "on" : "off") + '">alive</span> = ' +
+      [
+        ["local_strong_refs", calcState.localStrong],
+        ["local_weak_refs", calcState.localWeak],
+        ["internal_strong_refs", calcState.internalStrong],
+        ["tmp_refs", calcState.tmp],
+        ["!hlist_empty(&amp;node-&gt;refs)", calcState.remoteRefs]
+      ].map(([name, val]) => '<span class="' + (val ? "on" : "off") + '">' + name + '</span>').join(" || ") +
+      '<br><span class="' + (alive ? "off" : "on") + '">' +
+      (alive ? "→ 至少一项非零：不能释放" : "→ 全部归零：进入释放路径") + "</span>";
+  }
+  function initCalc() {
+    if (!document.getElementById("calcRows")) return;
+    renderCalc();
+    document.getElementById("calcReset").addEventListener("click", () => {
+      calcState = { ...CALC_DEFAULTS };
+      renderCalc();
+    });
+    document.getElementById("calcAllGone").addEventListener("click", () => {
+      calcState = { localStrong: false, localWeak: false, internalStrong: false, tmp: false, remoteRefs: false };
+      renderCalc();
+      showToast("全部引用归零：node 从 proc->nodes 摘除，进入释放路径");
+    });
+  }
+
+  /* ---------- 交互：源码 tabs / 复制 / 搜索 ---------- */
+  function initTabs() {
+    const buttons = Array.from(document.querySelectorAll(".tab-btn"));
+    buttons.forEach(btn => {
+      btn.addEventListener("click", () => {
+        const id = btn.dataset.tab;
+        buttons.forEach(b => {
+          const active = b === btn;
+          b.classList.toggle("active", active);
+          b.setAttribute("aria-selected", active ? "true" : "false");
+        });
+        document.querySelectorAll(".tab-panel").forEach(p => {
+          p.classList.toggle("active", p.id === id);
+        });
+      });
+      btn.addEventListener("keydown", e => {
+        const i = buttons.indexOf(btn);
+        let next = null;
+        if (e.key === "ArrowRight") next = buttons[(i + 1) % buttons.length];
+        if (e.key === "ArrowLeft") next = buttons[(i - 1 + buttons.length) % buttons.length];
+        if (next) {
+          e.preventDefault();
+          next.focus();
+          next.click();
+        }
+      });
+    });
+  }
+
+  let toastTimer = null;
+  function showToast(message) {
+    const toast = document.getElementById("toast");
+    toast.textContent = message;
+    toast.classList.add("show");
+    if (toastTimer) clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => toast.classList.remove("show"), 2200);
+  }
+
+  async function copyText(text, successMessage) {
+    try {
+      await navigator.clipboard.writeText(text);
+      showToast(successMessage || "已复制");
+    } catch (e) {
+      const ta = document.createElement("textarea");
+      ta.value = text;
+      ta.style.position = "fixed";
+      ta.style.opacity = "0";
+      document.body.appendChild(ta);
+      ta.select();
+      try { document.execCommand("copy"); showToast(successMessage || "已复制"); }
+      catch (err) { showToast("复制失败，请手动选择代码"); }
+      ta.remove();
+    }
+  }
+  function initCopyButtons() {
+    document.querySelectorAll(".copy-btn").forEach(btn => {
+      btn.addEventListener("click", () => {
+        const card = btn.closest(".code-card");
+        const code = card && card.querySelector("pre code");
+        if (code) copyText(code.textContent, "代码已复制");
+      });
+    });
+  }
+
+  function escapeHtml(s) {
+    return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  }
+  function highlightC(source) {
+    const tokenRe = /(\/\*[\s\S]*?\*\/|\/\/[^\n]*)|("(?:[^"\\]|\\.)*")|\b(struct|union|enum|unsigned|signed|int|bool|void|char|long|short|size_t|uint32_t|binder_uintptr_t|atomic_t|spinlock_t|wait_queue_head_t|pid_t|kuid_t|ktime_t)\b|\b(if|for|while|switch|return|sizeof|else|break|continue|goto|const|static|extern|inline)\b|\b([A-Za-z_][A-Za-z0-9_]*)\s*(?=\()|\b(\d+)\b/g;
+    let out = "";
+    let last = 0;
+    let m;
+    while ((m = tokenRe.exec(source)) !== null) {
+      out += escapeHtml(source.slice(last, m.index));
+      if (m[1]) out += '<span class="tok-com">' + escapeHtml(m[1]) + "</span>";
+      else if (m[2]) out += '<span class="tok-str">' + escapeHtml(m[2]) + "</span>";
+      else if (m[3]) out += '<span class="tok-type">' + escapeHtml(m[3]) + "</span>";
+      else if (m[4]) out += '<span class="tok-key">' + escapeHtml(m[4]) + "</span>";
+      else if (m[5]) out += '<span class="tok-fn">' + escapeHtml(m[5]) + "</span>";
+      else if (m[6]) out += '<span class="tok-num">' + escapeHtml(m[6]) + "</span>";
+      last = tokenRe.lastIndex;
+    }
+    out += escapeHtml(source.slice(last));
+    return out;
+  }
+  function initCodeHighlight() {
+    document.querySelectorAll(".code-card pre code").forEach(code => {
+      code.innerHTML = highlightC(code.textContent);
+    });
+  }
+
+  function initCheatSearch() {
+    const input = document.getElementById("cheatSearch");
+    if (!input) return;
+    const rows = Array.from(document.querySelectorAll("#cheatBody .cheat-row"));
+    const empty = document.getElementById("cheatEmpty");
+    const count = document.getElementById("cheatCount");
+    const total = rows.length;
+    function apply() {
+      const q = input.value.trim().toLowerCase();
+      let visible = 0;
+      rows.forEach(row => {
+        const hay = row.textContent.toLowerCase();
+        const match = !q || hay.includes(q);
+        row.classList.toggle("hidden", !match);
+        if (match) visible++;
+      });
+      empty.hidden = visible !== 0;
+      count.textContent = q ? visible + " / " + total + " 个结构" : total + " 个结构";
+    }
+    input.addEventListener("input", apply);
+    apply();
+  }
+
+  /* ---------- 导航 / 进度 / 入场动画 ---------- */
+  function initNav() {
+    const topbar = document.getElementById("topbar");
+    const progress = document.getElementById("scrollProgress");
+    const links = Array.from(document.querySelectorAll(".topnav a"))
+      .filter(a => (a.getAttribute("href") || "").startsWith("#"));
+    const sections = links.map(a => document.querySelector(a.getAttribute("href"))).filter(Boolean);
+    let ticking = false;
+    function update() {
+      ticking = false;
+      const y = window.scrollY || window.pageYOffset;
+      topbar.classList.toggle("scrolled", y > 18);
+      const max = Math.max(1, document.documentElement.scrollHeight - window.innerHeight);
+      progress.style.width = Math.min(100, Math.max(0, (y / max) * 100)) + "%";
+      let active = null;
+      const probe = y + 140;
+      sections.forEach(sec => {
+        if (sec.offsetTop <= probe) active = sec.id;
+      });
+      links.forEach(a => a.classList.toggle("active", active && a.getAttribute("href") === "#" + active));
+    }
+    function onScroll() {
+      if (!ticking) {
+        ticking = true;
+        requestAnimationFrame(update);
+      }
+    }
+    window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("resize", update);
+    update();
+  }
+
+  function initReveal() {
+    const items = document.querySelectorAll(".reveal");
+    if (!("IntersectionObserver" in window)) {
+      items.forEach(el => el.classList.add("is-visible"));
+      return;
+    }
+    const io = new IntersectionObserver(entries => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add("is-visible");
+          io.unobserve(entry.target);
+        }
+      });
+    }, { rootMargin: "0px 0px -8% 0px", threshold: .06 });
+    items.forEach(el => io.observe(el));
+  }
+
+  /* ---------- 启动 ---------- */
+  document.documentElement.classList.remove("no-js");
+  if (new URLSearchParams(location.search).has("static")) {
+    document.documentElement.classList.add("static");
+  }
+  renderDiagram(document.getElementById("hero-diagram"), HERO_SPEC);
+  renderDiagram(document.getElementById("overview-diagram"), OVERVIEW_SPEC);
+  renderDiagram(document.getElementById("proc-diagram"), PROC_SPEC);
+  renderDiagram(document.getElementById("refs-diagram"), REFS_SPEC);
+  renderDiagram(document.getElementById("buffer-diagram"), BUFFER_SPEC);
+  initTour();
+  initCalc();
+  initTabs();
+  initCopyButtons();
+  initCodeHighlight();
+  initCheatSearch();
+  initNav();
+  initReveal();
+})();
+</script>
+</body>
+</html>
