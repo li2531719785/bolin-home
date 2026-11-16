@@ -55,7 +55,10 @@ Bolin Lab 的开发记录。每次完成一轮开发后追加一条，至少包�
 - 带 `?v=20261116` 的资源请求可拿到新版本，避免旧缓存继续生效。
 - 本次未新增正式笔记，笔记库仍 8 篇，sitemap 仍 11 个 URL。
 
-**Commit：** 本次提交（见 GitHub history）。
+**Commit：**
+
+- `111aff8` `chore: add code-first writing framework`
+- `f2f878c` `perf: bust static asset cache for code framework`
 
 **下一步：** 作者补 5.1 的板端环境、`ps` / `service list` / `maps` 真实输出；AI 再生成正文和页面。
 
