@@ -39,9 +39,14 @@
 ├── notes/binder-chapter-3.html      # Binder 学习路线第 3 章：第一个 AIDL
 ├── notes/binder-chapter-4.html      # Binder 学习路线第 4 章：AIDL 进阶
 ├── notes/binder-chapter-5.html      # Binder 学习路线第 5 章：ServiceManager 与服务注册
+├── drafts/                          # Markdown 写作草稿（不直接发布）
+│   ├── README.md                    # 写作流程、分工与代码块约定
+│   ├── _template.md                 # 通用文章骨架
+│   └── binder-5-1-service-manager-startup.md
 ├── assets/
-│   ├── css/site.css                 # 全站样式（含深色主题）
-│   ├── js/site.js                   # 主题、筛选、TOC、阅读进度
+│   ├── css/site.css                 # 全站样式（含深色主题、代码块）
+│   ├── js/site.js                   # 主题、筛选、TOC、阅读进度、代码块
+│   ├── vendor/prism/                # 本地 Prism 1.30.0（按需加载，含 LICENSE）
 │   └── og-image.png                 # 1200×630 社交分享图
 ├── avatar.png                       # 站点头像 / favicon
 ├── 404.html
@@ -84,6 +89,9 @@
   `[data-note-card]`、`#notesEmpty`、`#noteCount`。
 - 文章目录 / 阅读进度：`initArticle()`，依赖 `.article-body`、`#readingProgress`、
   `#articleToc`；自动为 `h2/h3` 生成目录。
+- 代码块：`initCodeBlocks()` 依赖 `.article-body pre` 上的 `data-file` / `data-title` /
+  `data-lang`；自动生成代码头、语言标签和复制按钮，并按需加载
+  `assets/vendor/prism/prism-bundle.js`。没有元数据的旧代码块保持原样。
 - 内容默认可见，不要引入“滚动前隐藏全部内容”的 reveal 效果；之前已移除，
   避免整页截图、爬虫和无 JS 场景出现空白。
 
@@ -101,6 +109,11 @@
   `data-search`，否则搜索和筛选找不到它。
 - 笔记页：文章类页面使用 `.article-hero` + `.article-layout` + `.article-body`
   结构，自动生成 TOC 和阅读进度。
+- 新文章先写 `drafts/<slug>.md`，不要在 `notes/*.html` 里直接起稿；作者填真实
+  环境、代码和输出，AI 负责转 HTML、代码块、图、SEO。约定见 `drafts/README.md`。
+  `_headers` 已给 `/drafts/*` 加 `X-Robots-Tag: noindex`。
+- 代码块前写 `源码：路径` 或 `命令：...`，代码围栏标语言；转换时生成
+  `data-file` / `data-lang`，由 `site.js` 统一加代码头和复制按钮。
 - 目前正式笔记有八篇：
   1. `notes/binder-driver.html` — Binder 驱动数据结构图解
   2. `notes/binder-learning-path.html` — Binder 学习路线
@@ -192,6 +205,9 @@
 - 第 1、2、4、5 章使用 CSS flex 流程图（`.flow-diagram`），避免手写 SVG 坐标
   导致连线错位；移动端自动转为纵向排列。第 3、4 章包含 AIDL 实战代码，
   第 5 章从 AIDL 进入 Framework 的 ServiceManager。
+- 代码优先写作框架已搭好：本地 Prism 1.30.0 按需加载、代码头 / 语言标签 /
+  复制按钮、`drafts/` Markdown 模板和 5.1 草稿骨架。5.1 正文尚未发布，
+  现有正式笔记仍为 8 篇。
 - GSC 验证成功；sitemap 已提交成功。新增第 5 章后 sitemap 现有 11 个 URL，
   等待 Google 重新抓取；GSC 上次读取为 5 个页面。
 - 工作区干净，`main` 与 `origin/main` 同步。
@@ -206,11 +222,14 @@
 ## 10. 下一步建议
 
 1. 等待 Google 收录；用 GSC “网页”报告观察索引状态。
-2. 继续写 Binder 学习路线第 6 章：用户态 Binder 对象模型
+2. 完成 `drafts/binder-5-1-service-manager-startup.md`：按 AOSP 13 写
+   ServiceManager 启动与 handle 0，补作者的真实 `ps` / `service list` / `maps` 输出。
+3. 5.1 定稿后把第 5 章改成导学页，再拆 5.2 addService、5.3 getService。
+4. 继续写 Binder 学习路线第 6 章：用户态 Binder 对象模型
    （`IBinder`、`BpBinder`、`BBinder`、`Binder`、`BinderProxy`）。
-3. 继续把 `notes/index.html` 中“在整理中”的主题写成正式笔记。
-4. 可选：RSS / Atom、每篇文章独立 OG 封面、Bing Webmaster。
-5. 新笔记优先保证：可读性 > 结构图 > 源码细节 > SEO。
+5. 继续把 `notes/index.html` 中“在整理中”的主题写成正式笔记。
+6. 可选：RSS / Atom、每篇文章独立 OG 封面、Bing Webmaster。
+7. 新笔记优先保证：可读性 > 代码与实验 > 结构图 > SEO。
 
 ## 11. 给下一个 AI 的启动提示
 

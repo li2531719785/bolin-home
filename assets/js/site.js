@@ -3,6 +3,7 @@
   "use strict";
 
   const root = document.documentElement;
+  const SITE_SCRIPT = document.currentScript;
   const $ = (selector, scope) => (scope || document).querySelector(selector);
   const $$ = (selector, scope) => Array.from((scope || document).querySelectorAll(selector));
 
@@ -175,6 +176,142 @@
     updateProgress();
   }
 
+  /* ---------- code blocks ---------- */
+  const CODE_LABELS = {
+    c: "C", cpp: "C++", "c++": "C++", java: "Java", kotlin: "Kotlin",
+    bash: "Shell", sh: "Shell", shell: "Shell",
+    json: "JSON", javascript: "JavaScript", js: "JavaScript",
+    markup: "HTML", html: "HTML", xml: "HTML", css: "CSS",
+    text: "TEXT", plaintext: "TEXT", plain: "TEXT"
+  };
+  const PRISM_LANGS = ["c", "cpp", "java", "kotlin", "bash", "json", "javascript", "markup", "css"];
+  const PRISM_ALIASES = { "c++": "cpp", sh: "bash", shell: "bash", js: "javascript", html: "markup", xml: "markup" };
+  let prismPromise = null;
+
+  function ensurePrism() {
+    if (window.Prism && window.Prism.languages) return Promise.resolve(window.Prism);
+    if (prismPromise) return prismPromise;
+    if (!SITE_SCRIPT || !SITE_SCRIPT.src) {
+      return Promise.reject(new Error("site script source unavailable"));
+    }
+
+    if (!window.Prism) window.Prism = { manual: true };
+    prismPromise = new Promise((resolve, reject) => {
+      const script = document.createElement("script");
+      script.src = new URL("../vendor/prism/prism-bundle.js", SITE_SCRIPT.src).href;
+      script.onload = () => {
+        if (!window.Prism || !window.Prism.highlightAllUnder) {
+          reject(new Error("Prism unavailable"));
+          return;
+        }
+        const body = $(".article-body");
+        if (body) window.Prism.highlightAllUnder(body);
+        resolve(window.Prism);
+      };
+      script.onerror = () => reject(new Error("Prism failed to load"));
+      document.head.appendChild(script);
+    });
+    return prismPromise;
+  }
+
+  function copyText(text) {
+    if (navigator.clipboard && window.isSecureContext) {
+      return navigator.clipboard.writeText(text);
+    }
+    return new Promise((resolve, reject) => {
+      const area = document.createElement("textarea");
+      area.value = text;
+      area.setAttribute("readonly", "");
+      area.style.position = "fixed";
+      area.style.top = "-1000px";
+      area.style.opacity = "0";
+      document.body.appendChild(area);
+      area.select();
+      try {
+        const ok = document.execCommand("copy");
+        document.body.removeChild(area);
+        ok ? resolve() : reject(new Error("copy failed"));
+      } catch (error) {
+        document.body.removeChild(area);
+        reject(error);
+      }
+    });
+  }
+
+  function initCodeBlocks() {
+    const blocks = $$(".article-body pre");
+    if (!blocks.length) return;
+    let needsPrism = false;
+
+    blocks.forEach(pre => {
+      if (pre.parentElement && pre.parentElement.classList.contains("code-block")) return;
+      const code = $("code", pre);
+      if (!code) return;
+
+      const langClass = Array.from(code.classList).find(name => name.indexOf("language-") === 0);
+      const rawLang = (pre.dataset.lang || (langClass ? langClass.slice("language-".length) : "")).toLowerCase();
+      const lang = PRISM_ALIASES[rawLang] || rawLang;
+      const file = pre.dataset.file || pre.dataset.title || "";
+      if (!lang && !file) return;
+
+      if (lang) {
+        if (rawLang && rawLang !== lang) code.classList.remove("language-" + rawLang);
+        if (PRISM_LANGS.includes(lang)) {
+          code.classList.add("language-" + lang);
+          needsPrism = true;
+        }
+      }
+
+      const block = document.createElement("div");
+      block.className = "code-block";
+      pre.parentNode.insertBefore(block, pre);
+
+      const head = document.createElement("div");
+      head.className = "code-head";
+
+      if (file) {
+        const fileName = document.createElement("span");
+        fileName.className = "code-file";
+        fileName.textContent = file;
+        head.appendChild(fileName);
+      }
+
+      if (lang) {
+        const langName = document.createElement("span");
+        langName.className = "code-lang";
+        langName.textContent = CODE_LABELS[lang.toLowerCase()] || lang.toUpperCase();
+        head.appendChild(langName);
+      }
+
+      const copy = document.createElement("button");
+      copy.type = "button";
+      copy.className = "code-copy";
+      copy.textContent = "复制";
+      copy.setAttribute("aria-label", "复制代码");
+      copy.title = "复制代码";
+      head.appendChild(copy);
+
+      block.appendChild(head);
+      block.appendChild(pre);
+
+      copy.addEventListener("click", async () => {
+        try {
+          await copyText(code.innerText);
+          copy.textContent = "已复制";
+          copy.classList.add("is-copied");
+        } catch (error) {
+          copy.textContent = "复制失败";
+        }
+        setTimeout(() => {
+          copy.textContent = "复制";
+          copy.classList.remove("is-copied");
+        }, 1600);
+      });
+    });
+
+    if (needsPrism) ensurePrism().catch(() => {});
+  }
+
   /* ---------- footer ---------- */
   function initFooter() {
     $$("[data-year]").forEach(el => { el.textContent = new Date().getFullYear(); });
@@ -185,6 +322,7 @@
   initHeader();
   initReveal();
   initNotesFilter();
+  initCodeBlocks();
   initArticle();
   initFooter();
 })();

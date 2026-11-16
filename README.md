@@ -30,9 +30,14 @@ Bolin 的个人学习资料站，公开记录 Android、Linux、Binder、Framewo
 │   ├── binder-chapter-4.html        # 第 4 章：AIDL 进阶
 │   ├── binder-chapter-5.html        # 第 5 章：ServiceManager 与服务注册
 │   └── binder-driver.html           # Binder 驱动数据结构交互图解
+├── drafts/
+│   ├── README.md                    # Markdown 写作流程与代码块约定
+│   ├── _template.md                 # 通用文章骨架
+│   └── binder-5-1-service-manager-startup.md
 ├── assets/
 │   ├── css/site.css                 # 站点样式
-│   ├── js/site.js                   # 主题、筛选、目录、进度条
+│   ├── js/site.js                   # 主题、筛选、目录、进度条、代码块
+│   ├── vendor/prism/                # 本地 Prism 1.30.0（按需加载）
 │   └── og-image.png                 # 1200×630 社交分享图
 ├── avatar.png
 ├── 404.html
@@ -83,6 +88,17 @@ Cloudflare Pages 配置建议：
 5. 本地检查桌面 / 手机布局和控制台错误。
 6. 在 `CHANGELOG.md` 追加本次记录。
 7. 提交并推送到 `main`。
+
+## 写作流程（Markdown 草稿）
+
+新文章先写在 `drafts/`，不要直接改 `notes/*.html`：
+
+1. 复制 `drafts/_template.md`，按骨架填现象、环境、代码、真实输出和结论。
+2. 代码块前写 `源码：路径`，代码围栏标语言（`cpp` / `java` / `bash` / `text` 等）。
+3. AI 把草稿转成 `notes/*.html`，自动生成代码头、语法高亮和复制按钮。
+4. 本地预览并校对后，再更新索引、sitemap 和 `CHANGELOG.md`。
+
+完整约定见 [`drafts/README.md`](drafts/README.md)。作者只写 Markdown，不需要改 HTML / CSS。
 
 ## AI 开发交接
 

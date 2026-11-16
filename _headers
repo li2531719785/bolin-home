@@ -6,3 +6,6 @@
 
 /assets/*
   Cache-Control: public, max-age=3600
+
+/drafts/*
+  X-Robots-Tag: noindex, nofollow

@@ -15,6 +15,51 @@ Bolin Lab 的开发记录。每次完成一轮开发后追加一条，至少包�
 
 ## 2026-11-16
 
+### 搭建代码优先的写作框架
+
+**目标：** 解决文章“偏语言描述、代码少”的问题，先把代码展示和 Markdown 写作流程搭好，再一起写 5.1 正文。
+
+**改动：**
+
+- 本地引入 Prism 1.30.0（`assets/vendor/prism/`，MIT，含 LICENSE），按需加载，不走 CDN。
+- `site.js` 新增 `initCodeBlocks()`：带 `data-file` / `data-title` / `data-lang` 的代码块自动生成代码头、语言标签和复制按钮；旧代码块保持原样。
+- `site.css` 增加代码块容器、代码头、复制按钮和 Prism token 配色，适配浅色 / 深色主题。
+- 新增 `drafts/README.md`：作者 / AI 分工、文章骨架、代码块约定、发布检查。
+- 新增 `drafts/_template.md` 与 `drafts/binder-5-1-service-manager-startup.md`，先搭 5.1 的源码锚点和待补实验清单。
+- `_headers` 给 `/drafts/*` 加 `X-Robots-Tag: noindex`，避免草稿被搜索引擎收录。
+- README、AGENTS 同步写作流程和目录结构。
+
+**涉及文件：**
+
+- `assets/css/site.css`
+- `assets/js/site.js`
+- `assets/vendor/prism/prism-bundle.js`
+- `assets/vendor/prism/LICENSE`
+- `drafts/README.md`
+- `drafts/_template.md`
+- `drafts/binder-5-1-service-manager-startup.md`
+- `_headers`
+- `README.md`
+- `AGENTS.md`
+- `CHANGELOG.md`
+
+**验证：**
+
+- 首页、笔记库、第 0–5 章、学习路线、关于、404 共 11 个页面，在 1440px / 390px 下均无页面级横向溢出，控制台无 JS 错误。
+- 旧文章不加载 Prism（`prism=false`），代码块不被改写。
+- 临时 demo 页：2 个代码块正常生成代码头，C++ / bash 高亮 57 个 token，复制按钮可用，390px 无溢出。
+- 深色主题代码块背景为 `rgb(7, 9, 12)`，代码头与 token 对比度正常。
+- `site.js` 与 `prism-bundle.js` 通过 `node --check`。
+- 本次未新增正式笔记，笔记库仍 8 篇，sitemap 仍 11 个 URL。
+
+**Commit：** 本次提交（见 GitHub history）。
+
+**下一步：** 作者补 5.1 的板端环境、`ps` / `service list` / `maps` 真实输出；AI 再生成正文和页面。
+
+---
+
+## 2026-11-16
+
 ### 发布 Binder 学习路线第 5 章
 
 **目标：** 从“自己写 AIDL 服务”进入 Android 系统服务的注册与查找机制。
@@ -375,6 +420,8 @@ Bolin Lab 的开发记录。每次完成一轮开发后追加一条，至少包�
 - 第 1/2/4/5 章使用 `.flow-diagram` 流程图组件，后续结构说明优先使用 CSS 布局或
   Mermaid / D2，不再继续手写复杂 SVG 坐标；第 3/4 章为 AIDL 实战，第 5 章进入
   Framework 的服务注册与查找
+- 代码展示：本地 Prism 1.30.0 按需加载；代码块自动生成代码头、语言标签和复制
+  按钮；新文章先写 `drafts/*.md`，再转 `notes/*.html`
 - 工作区：干净，`main` 与 `origin/main` 同步
 - 已知注意点：
   - 不要删除 Google 验证文件与 `_redirects` 规则。
@@ -385,6 +432,9 @@ Bolin Lab 的开发记录。每次完成一轮开发后追加一条，至少包�
 
 - [ ] 等待 Google 索引，观察 GSC “网页”报告
 - [x] 写 Binder 学习路线第 5 章：ServiceManager 与服务注册
+- [x] 搭建 Markdown 草稿 + 代码展示框架（Prism / 代码头 / 复制）
+- [ ] 完成第 5 章 5.1：ServiceManager 启动与 handle 0（源码实战）
+- [ ] 完成第 5 章 5.2 / 5.3：addService、getService
 - [ ] 写 Binder 学习路线第 6 章：用户态 Binder 对象模型
 - [ ] 评估把旧 Binder 长图中的静态关系图迁移到 D2
 - [ ] 增加 RSS / Atom
