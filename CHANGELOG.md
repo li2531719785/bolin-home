@@ -13,6 +13,48 @@ Bolin Lab 的开发记录。每次完成一轮开发后追加一条，至少包�
 > 给 AI 的提示：开始工作前先读最新一条；完成后不要忘记追加记录并更新
 > `AGENTS.md` 的“当前状态”。
 
+## 2026-11-16
+
+### 发布 Binder 学习路线第 5 章
+
+**目标：** 从“自己写 AIDL 服务”进入 Android 系统服务的注册与查找机制。
+
+**改动：**
+
+- 新增 `notes/binder-chapter-5.html`：servicemanager 的启动与 context manager、
+  handle 0、addService / getService 的两次事务、handle 的进程内语义、
+  getSystemService、三个 servicemanager 的分工与 SELinux 安全边界。
+- 新增 3 张 `.flow-diagram` 流程图：context manager 建立、服务注册、服务查找。
+- 补充 8 道自测题、adb 观察命令和常见误解表。
+- 笔记库加入第 5 章卡片，已发布数量更新为 08。
+- 首页更新为 08 篇，新增 NOTE 008 最新笔记入口，最近更新保持 3 篇。
+- 学习路线第 5 章添加“完整展开”链接，sitemap 新增第 5 章 URL。
+
+**涉及文件：**
+
+- `notes/binder-chapter-5.html`
+- `notes/index.html`
+- `index.html`
+- `notes/binder-learning-path.html`
+- `sitemap.xml`
+- `AGENTS.md`
+- `README.md`
+- `CHANGELOG.md`
+
+**验证：**
+
+- 第 5 章页面 200；16 个 TOC 项、8 个自测答案、3 张流程图。
+- 1440px / 390px 下首页、笔记库、关于、404、第 5 章、学习路线均无页面级横向溢出。
+- 笔记库 8 张卡片；搜索“context manager”命中第 5 章；roadmap 筛选 7 篇。
+- 主题切换、搜索、筛选、TOC、阅读进度正常；控制台无 JS 错误。
+- 全站 HTML 内部链接检查 173 条，无缺失；sitemap 11 个唯一 URL。
+
+**Commit：** 本次提交（见 GitHub history）。
+
+**下一步：** 第 6 章：用户态 Binder 对象模型。
+
+---
+
 ## 2026-11-15
 
 ### 发布 Binder 学习路线第 4 章
@@ -327,11 +369,12 @@ Bolin Lab 的开发记录。每次完成一轮开发后追加一条，至少包�
 
 - 线上地址：<https://home.bolinlab.top/>
 - 最近部署：Cloudflare Pages，`main` 分支自动部署
-- 已发布页面：首页、笔记库、关于、404、Binder 图解、Binder 学习路线、第 0/1/2/3/4 章
-- GSC：所有权验证成功；sitemap 成功。新增第 4 章后 sitemap 有 10 个 URL，
+- 已发布页面：首页、笔记库、关于、404、Binder 图解、Binder 学习路线、第 0/1/2/3/4/5 章
+- GSC：所有权验证成功；sitemap 成功。新增第 5 章后 sitemap 有 11 个 URL，
   等待 Google 重新抓取；上次读取为 5 个页面
-- 第 1/2/4 章使用 `.flow-diagram` 流程图组件，后续结构说明优先使用 CSS 布局或
-  Mermaid / D2，不再继续手写复杂 SVG 坐标；第 3/4 章为 AIDL 实战
+- 第 1/2/4/5 章使用 `.flow-diagram` 流程图组件，后续结构说明优先使用 CSS 布局或
+  Mermaid / D2，不再继续手写复杂 SVG 坐标；第 3/4 章为 AIDL 实战，第 5 章进入
+  Framework 的服务注册与查找
 - 工作区：干净，`main` 与 `origin/main` 同步
 - 已知注意点：
   - 不要删除 Google 验证文件与 `_redirects` 规则。
@@ -341,7 +384,8 @@ Bolin Lab 的开发记录。每次完成一轮开发后追加一条，至少包�
 ## 后续计划
 
 - [ ] 等待 Google 索引，观察 GSC “网页”报告
-- [ ] 写 Binder 学习路线第 5 章：ServiceManager 与服务注册
+- [x] 写 Binder 学习路线第 5 章：ServiceManager 与服务注册
+- [ ] 写 Binder 学习路线第 6 章：用户态 Binder 对象模型
 - [ ] 评估把旧 Binder 长图中的静态关系图迁移到 D2
 - [ ] 增加 RSS / Atom
 - [ ] 补齐“在整理中”的 Linux 驱动、Framework、JNI 笔记

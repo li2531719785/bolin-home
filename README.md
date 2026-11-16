@@ -28,6 +28,7 @@ Bolin 的个人学习资料站，公开记录 Android、Linux、Binder、Framewo
 │   ├── binder-chapter-2.html        # 第 2 章：Binder 的心智模型
 │   ├── binder-chapter-3.html        # 第 3 章：第一个 AIDL
 │   ├── binder-chapter-4.html        # 第 4 章：AIDL 进阶
+│   ├── binder-chapter-5.html        # 第 5 章：ServiceManager 与服务注册
 │   └── binder-driver.html           # Binder 驱动数据结构交互图解
 ├── assets/
 │   ├── css/site.css                 # 站点样式

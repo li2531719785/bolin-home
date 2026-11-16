@@ -38,6 +38,7 @@
 ├── notes/binder-chapter-2.html      # Binder 学习路线第 2 章：心智模型
 ├── notes/binder-chapter-3.html      # Binder 学习路线第 3 章：第一个 AIDL
 ├── notes/binder-chapter-4.html      # Binder 学习路线第 4 章：AIDL 进阶
+├── notes/binder-chapter-5.html      # Binder 学习路线第 5 章：ServiceManager 与服务注册
 ├── assets/
 │   ├── css/site.css                 # 全站样式（含深色主题）
 │   ├── js/site.js                   # 主题、筛选、TOC、阅读进度
@@ -100,7 +101,7 @@
   `data-search`，否则搜索和筛选找不到它。
 - 笔记页：文章类页面使用 `.article-hero` + `.article-layout` + `.article-body`
   结构，自动生成 TOC 和阅读进度。
-- 目前正式笔记有七篇：
+- 目前正式笔记有八篇：
   1. `notes/binder-driver.html` — Binder 驱动数据结构图解
   2. `notes/binder-learning-path.html` — Binder 学习路线
   3. `notes/binder-chapter-0.html` — 第 0 章：Binder 的预备知识
@@ -108,7 +109,8 @@
   5. `notes/binder-chapter-2.html` — 第 2 章：Binder 的心智模型
   6. `notes/binder-chapter-3.html` — 第 3 章：第一个 AIDL
   7. `notes/binder-chapter-4.html` — 第 4 章：AIDL 进阶
-- 首页和笔记库里的统计数字（07 篇、04 个方向等）必须与真实内容一致。
+  8. `notes/binder-chapter-5.html` — 第 5 章：ServiceManager 与服务注册
+- 首页和笔记库里的统计数字（08 篇、04 个方向等）必须与真实内容一致。
 - 不要把“计划中”的内容写成已完成；不确定的内容标注为整理中。
 - 作者信息以仓库现有内容为准：Bolin、GitHub `li2531719785`、
   `2531719785@qq.com`。不要编造公司、学历或项目经历。
@@ -129,6 +131,7 @@
   - Binder 第 2 章：`https://home.bolinlab.top/notes/binder-chapter-2`
   - Binder 第 3 章：`https://home.bolinlab.top/notes/binder-chapter-3`
   - Binder 第 4 章：`https://home.bolinlab.top/notes/binder-chapter-4`
+  - Binder 第 5 章：`https://home.bolinlab.top/notes/binder-chapter-5`
 - 页面内部链接仍可保留 `.html`，方便 `python -m http.server` 本地预览；
   线上会 308 跳转，功能正常。
 - 新增页面后必须：
@@ -181,17 +184,19 @@
 5. 每次完成后更新 `CHANGELOG.md`；如果项目状态有变化，同步更新本文件的
    “当前状态”和“下一步”。
 
-## 9. 当前状态（2026-11-15）
+## 9. 当前状态（2026-11-16）
 
 - 线上站点正常，HTTP 200，Cloudflare 安全头生效。
-- 首页 / 笔记库 / 关于 / 404 / 七篇笔记全部可访问。
+- 首页 / 笔记库 / 关于 / 404 / 八篇笔记全部可访问。
 - 浅色 + 深色主题、移动端适配、搜索筛选、文章 TOC、阅读进度均已实现。
-- 第 1、2、4 章使用 CSS flex 流程图（`.flow-diagram`），避免手写 SVG 坐标导致
-  连线错位；移动端自动转为纵向排列。第 3、4 章包含 AIDL 实战代码。
-- GSC 验证成功；sitemap 已提交成功。新增第 4 章后 sitemap 现有 10 个 URL，
+- 第 1、2、4、5 章使用 CSS flex 流程图（`.flow-diagram`），避免手写 SVG 坐标
+  导致连线错位；移动端自动转为纵向排列。第 3、4 章包含 AIDL 实战代码，
+  第 5 章从 AIDL 进入 Framework 的 ServiceManager。
+- GSC 验证成功；sitemap 已提交成功。新增第 5 章后 sitemap 现有 11 个 URL，
   等待 Google 重新抓取；GSC 上次读取为 5 个页面。
 - 工作区干净，`main` 与 `origin/main` 同步。
 - 最近关键提交：
+  - `56a766a` 发布 Binder 第 4 章
   - `b5c2904` 固定 Google 验证文件的 200 路径
   - `83f440f` 添加 Google 验证文件
   - `f552f01` canonical 使用无 `.html` 最终地址
@@ -201,7 +206,8 @@
 ## 10. 下一步建议
 
 1. 等待 Google 收录；用 GSC “网页”报告观察索引状态。
-2. 继续写 Binder 学习路线第 5 章：ServiceManager 与服务注册。
+2. 继续写 Binder 学习路线第 6 章：用户态 Binder 对象模型
+   （`IBinder`、`BpBinder`、`BBinder`、`Binder`、`BinderProxy`）。
 3. 继续把 `notes/index.html` 中“在整理中”的主题写成正式笔记。
 4. 可选：RSS / Atom、每篇文章独立 OG 封面、Bing Webmaster。
 5. 新笔记优先保证：可读性 > 结构图 > 源码细节 > SEO。
