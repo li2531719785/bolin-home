@@ -198,7 +198,9 @@
     if (!window.Prism) window.Prism = { manual: true };
     prismPromise = new Promise((resolve, reject) => {
       const script = document.createElement("script");
-      script.src = new URL("../vendor/prism/prism-bundle.js", SITE_SCRIPT.src).href;
+      const prismUrl = new URL("../vendor/prism/prism-bundle.js", SITE_SCRIPT.src);
+      prismUrl.search = new URL(SITE_SCRIPT.src).search;
+      script.src = prismUrl.href;
       script.onload = () => {
         if (!window.Prism || !window.Prism.highlightAllUnder) {
           reject(new Error("Prism unavailable"));

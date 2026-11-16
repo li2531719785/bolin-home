@@ -27,6 +27,7 @@ Bolin Lab 的开发记录。每次完成一轮开发后追加一条，至少包�
 - 新增 `drafts/README.md`：作者 / AI 分工、文章骨架、代码块约定、发布检查。
 - 新增 `drafts/_template.md` 与 `drafts/binder-5-1-service-manager-startup.md`，先搭 5.1 的源码锚点和待补实验清单。
 - `_headers` 给 `/drafts/*` 加 `X-Robots-Tag: noindex`，避免草稿被搜索引擎收录。
+- 所有 HTML 的 CSS / JS 引用加 `?v=20261116` 缓存版本号；`site.js` 动态加载 Prism 时继承该版本号，避免 Cloudflare 继续返回旧资源。
 - README、AGENTS 同步写作流程和目录结构。
 
 **涉及文件：**
@@ -39,6 +40,7 @@ Bolin Lab 的开发记录。每次完成一轮开发后追加一条，至少包�
 - `drafts/_template.md`
 - `drafts/binder-5-1-service-manager-startup.md`
 - `_headers`
+- `*.html`（CSS / JS 资源版本号）
 - `README.md`
 - `AGENTS.md`
 - `CHANGELOG.md`
@@ -50,6 +52,7 @@ Bolin Lab 的开发记录。每次完成一轮开发后追加一条，至少包�
 - 临时 demo 页：2 个代码块正常生成代码头，C++ / bash 高亮 57 个 token，复制按钮可用，390px 无溢出。
 - 深色主题代码块背景为 `rgb(7, 9, 12)`，代码头与 token 对比度正常。
 - `site.js` 与 `prism-bundle.js` 通过 `node --check`。
+- 带 `?v=20261116` 的资源请求可拿到新版本，避免旧缓存继续生效。
 - 本次未新增正式笔记，笔记库仍 8 篇，sitemap 仍 11 个 URL。
 
 **Commit：** 本次提交（见 GitHub history）。

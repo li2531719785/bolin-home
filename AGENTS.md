@@ -92,6 +92,8 @@
 - 代码块：`initCodeBlocks()` 依赖 `.article-body pre` 上的 `data-file` / `data-title` /
   `data-lang`；自动生成代码头、语言标签和复制按钮，并按需加载
   `assets/vendor/prism/prism-bundle.js`。没有元数据的旧代码块保持原样。
+- 修改 `site.css` / `site.js` 后，同步递增所有 HTML 里的 `?v=YYYYMMDD` 版本号，
+  避免 Cloudflare 继续返回旧缓存。
 - 内容默认可见，不要引入“滚动前隐藏全部内容”的 reveal 效果；之前已移除，
   避免整页截图、爬虫和无 JS 场景出现空白。
 

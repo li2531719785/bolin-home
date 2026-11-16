@@ -100,6 +100,9 @@ Cloudflare Pages 配置建议：
 
 完整约定见 [`drafts/README.md`](drafts/README.md)。作者只写 Markdown，不需要改 HTML / CSS。
 
+修改 `assets/css/site.css` 或 `assets/js/site.js` 后，记得同步更新所有页面引用里的
+`?v=YYYYMMDD` 版本号，避免 Cloudflare 缓存旧资源。
+
 ## AI 开发交接
 
 这个仓库是使用 AI 辅助开发的，根目录保留了两份关键上下文：
