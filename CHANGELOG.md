@@ -15,6 +15,44 @@ Bolin Lab 的开发记录。每次完成一轮开发后追加一条，至少包�
 
 ## 2026-11-17
 
+### 精简第 2 章：只保留新手主线
+
+**目标：** 按新手视角做减法：只保留一次调用的核心模型，把 oneway、死亡通知、死锁等后移。
+
+**改动：**
+
+- 删除“同步 vs oneway”整节；oneway 改为“先跳过，第 4 章再看”。
+- 删除“嵌套调用与死锁”整节和 `BinderProxy.linkToDeath` 代码块；只留一条实践规则。
+- “本地对象与远程对象”压缩成两段；死亡通知改为“先跳过”提示。
+- 常见误解从 6 条压到 4 条：handle、Proxy、Binder 线程、一次拷贝。
+- `ps -T` 输出过滤 `HwBinder`，只保留 `binder:` 线程；修复 `pidof` 命令的设备侧展开引号。
+- 补充“本章只讲主线”callout；自测题从 7 题压到 5 题；代码块 18→16，保留 4 张 SVG。
+- 阅读时间改为约 17 分钟；笔记库卡片、学习路线描述同步。
+
+**涉及文件：**
+
+- `notes/binder-chapter-2.html`
+- `notes/index.html`
+- `notes/binder-learning-path.html`
+- `CHANGELOG.md`
+- `AGENTS.md`
+
+**验证：**
+
+- 第 2 章：16 个代码块全部有 `data-title`/`data-file` + `data-lang`；4 张 SVG 明/暗切换正常。
+- 1440 / 390 无页面级横向溢出，控制台无错误；图片全部加载。
+- 全站链接 164 条，缺失 0；`site.js`、`sitemap.xml`、`git diff --check` 通过。
+
+**Commit：** 本次提交（见 GitHub history）。
+
+**部署：** 推送 `main` 后由 Cloudflare Pages 自动部署。
+
+**下一步：** 等作者评审第 2 章；通过后再精简第 3 章。
+
+---
+
+## 2026-11-17
+
 ### 参考通俗教程补 RPC/一次拷贝，移除平台信息
 
 **目标：** 参考 ahaoframework 的 Binder 讲法，把“RPC 四步、一次拷贝”讲得更直观；同时按作者要求，文档不记录具体平台。
@@ -582,14 +620,14 @@ Bolin Lab 的开发记录。每次完成一轮开发后追加一条，至少包�
 - 教程定位：Android 系统开发 / Framework / Native / Kernel，不写 App；AIDL 只作为协议入口
 - GSC：所有权验证成功；sitemap 成功。当前 sitemap 有 10 个 URL，
   等待 Google 重新抓取；上次读取为 5 个页面
-- 第 1 章有 RPC 四步 / 一次拷贝流程图；第 2 章用 `IServiceManager.checkService` 示例，
-  补 4 张 SVG、真实 `service` / `ps -T` 实验和源码；
+- 第 1 章有 RPC 四步 / 一次拷贝流程图；第 2 章已精简为新手主线，保留 4 张 SVG、
+  真实 `service` / `ps -T` 实验和源码；
   第 3、4 章使用 `.seq-diagram` 时序图和系统源码；第 5 章待重写
 - 代码展示：本地 Prism 1.30.0 按需加载；代码块自动生成代码头、语言标签和复制
   按钮；AIDL 通过 `data-lang="aidl"` 映射到 Java 高亮
 - 写作流程：不再使用 `drafts/`；文章直接写 `notes/*.html`，但必须有源码锚点和
   真实输出，未实测内容明确标注
-- 工作区：本轮改动已提交（第 2 章代码/实验/SVG 补充）
+- 工作区：本轮改动已提交（第 2 章新手主线精简）
 - 已知注意点：
   - 不要删除 Google 验证文件与 `_redirects` 规则。
   - Cloudflare 会把 `*.html` 308 到无扩展名地址；canonical / sitemap 使用最终地址。
@@ -602,7 +640,7 @@ Bolin Lab 的开发记录。每次完成一轮开发后追加一条，至少包�
 - [x] 按真机重写第 3 章（系统源码 + `service call` + 时序图）
 - [x] 教程改为系统开发视角，重写第 4 章（servicemanager + 系统 AIDL）
 - [x] 下线第 5 章，删除 `drafts/` 流程
-- [x] 第 2 章补真实 `service` / `ps -T` 实验和 4 张 SVG 示意图
+- [x] 第 2 章精简为新手主线，保留 `service` / `ps -T` 实验和 4 张 SVG
 - [ ] 第 5 章拆成 5.1 ServiceManager 启动、5.2 addService、5.3 getService 后重写
 - [ ] 第 4 章补 oneway / callback / DeathRecipient 的原生客户端实验（当前为源码走读）
 - [x] 第 1 章补 RPC 四步和“一次拷贝”路径

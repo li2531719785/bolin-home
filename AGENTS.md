@@ -234,7 +234,7 @@ AIDL 只作为进入 Binder 协议的入口。内容应真实、清楚，不写�
 
 ## 10. 下一步建议
 
-1. 第 2 章已补真实 `service` / `ps -T` 实验和 4 张 SVG 示意图；后续按需补 `maps` / `binder/stats` 截图。
+1. 第 2 章已精简并部署，等待作者评审；通过后再精简第 3 章。
 2. 重写第 5 章：先拆 5.1 ServiceManager 启动、5.2 addService、5.3 getService，再恢复入口。
 3. 第 4 章已改为系统服务 AIDL；后续补 oneway / callback 的原生客户端实验（当前为源码走读）。
 4. 重写第 0 章：补真实 `ps` / `fd` / `maps` / `ioctl` 输出和对比实验；第 1 章已补 RPC / 一次拷贝。

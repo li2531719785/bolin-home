@@ -114,9 +114,9 @@
         <p><strong>完整展开：</strong> <a href="binder-chapter-1.html">第 1 章：Android 为什么需要 Binder</a>。包含 RPC 四步、一次拷贝路径、Linux IPC 对比、对象引用和适用边界。</p>
 
         <h3>第 2 章：Binder 的心智模型</h3>
-        <p>用一张图讲清 Client / Server、Proxy / Stub、handle、Parcel、同步调用、oneway 和线程池。示例用 <code>IServiceManager.checkService("activity")</code>，不写 App。</p>
+        <p>用一张图讲清 Client / Server、Proxy / Stub、handle、Parcel、同步调用和 Binder 线程。示例用 <code>IServiceManager.checkService("activity")</code>，不写 App。</p>
         <p><strong>实验：</strong>不写代码，手画一次 shell <code>service</code> 命令调用 servicemanager 的完整链路。</p>
-        <p><strong>完整展开：</strong> <a href="binder-chapter-2.html">第 2 章：Binder 的心智模型</a>。从一次系统服务查找出发，讲清 Proxy / Stub、handle / node、同步与 oneway、线程池和常见误解。</p>
+        <p><strong>完整展开：</strong> <a href="binder-chapter-2.html">第 2 章：Binder 的心智模型</a>。从一次系统服务查找出发，讲清 Proxy / Stub、handle / node、Parcel、同步调用、Binder 线程和 4 个常见误解。</p>
 
         <h2>模块 2 · 系统服务与 AIDL</h2>
         <p>这一模块不写 App：先用系统命令和服务源码跑通一次真实调用，再看 servicemanager 的注册与用户态对象模型。</p>
