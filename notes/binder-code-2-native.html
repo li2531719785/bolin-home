@@ -98,8 +98,8 @@
 
         <p>第 1 章的地图停在 <code>BpBinder::transact</code> 的 <code>else</code> 分支最后一行：<code>IPCThreadState::self()-&gt;transact(binderHandle(), code, data, reply, flags)</code>。本章从这一行接着读。</p>
         <p><code>IPCThreadState</code> 是每个线程自己的 Binder 连接：一个进程里，每个调用 Binder 的线程各有一份，持有 <code>mOut</code> / <code>mIn</code> 两块缓冲区。<code>mOut</code> 攒要写给驱动的命令，<code>mIn</code> 接驱动返回的命令。</p>
-        <p>下面四个完整函数来自 <code>frameworks/native/libs/binder/IPCThreadState.cpp</code>：<code>transact</code>（808 行）、<code>writeTransactionData</code>（1215 行）、<code>talkWithDriver</code>（1092 行）、<code>waitForResponse</code>（987 行）。先看调用入口，再按一次同步调用实际发生的顺序往下读。</p>
-        <p>为方便阅读，下面代码块里的 <code>// ←</code> 是本站添加的阅读标注，原源码没有；代码本身保持原样。</p>
+        <p>下面四个函数来自 <code>frameworks/native/libs/binder/IPCThreadState.cpp</code>（噪声段已按上述标记节选）：<code>transact</code>（808 行）、<code>writeTransactionData</code>（1215 行）、<code>talkWithDriver</code>（1092 行）、<code>waitForResponse</code>（987 行）。先看调用入口，再按一次同步调用实际发生的顺序往下读。</p>
+        <p>为方便阅读，代码块里的 <code>// ←</code> 是本站添加的阅读标注；<code>// ……（省略：…）</code> 是节选标记，被省略的是与主线无关的噪声段（调试日志、限制检查、遗留分支）。代码语句本身保持原样。</p>
 
         <h2>一、BpBinder::transact</h2>
         <p>这个函数唯一要做的事：检查代理是否还活着、处理 flags 和 stability，然后把调用交给 IPCThreadState。读的时候只看最后那个 <code>else</code> 分支。</p>
@@ -112,40 +112,17 @@
         // don&#x27;t send userspace flags to the kernel
         flags = flags &amp; ~static_cast&lt;uint32_t&gt;(FLAG_PRIVATE_VENDOR);
 
-        // user transactions require a given stability level
-        if (code &gt;= FIRST_CALL_TRANSACTION &amp;&amp; code &lt;= LAST_CALL_TRANSACTION) {
-            using android::internal::Stability;
-
-            int16_t stability = Stability::getRepr(this);
-            Stability::Level required = privateVendor ? Stability::VENDOR
-                : Stability::getLocalLevel();
-
-            if (!Stability::check(stability, required)) [[unlikely]] {
-                ALOGE(&quot;Cannot do a user transaction on a %s binder (%s) in a %s context.&quot;,
-                      Stability::levelString(stability).c_str(),
-                      String8(getInterfaceDescriptor()).c_str(),
-                      Stability::levelString(required).c_str());
-                return BAD_TYPE;
-            }
-        }
+        // ……（省略：stability 接口稳定性检查）
 
         status_t status;
         if (isRpcBinder()) [[unlikely]] { // ← 另一条 RPC Binder 路径，本章不走
-            status = rpcSession()-&gt;transact(sp&lt;IBinder&gt;::fromExisting(this), code, data, reply,
-                                            flags);
+            // ……（省略：RPC Binder 分支，本章不走）
         } else {
-            if constexpr (!kEnableKernelIpc) {
-                LOG_ALWAYS_FATAL(&quot;Binder kernel driver disabled at build time&quot;);
-                return INVALID_OPERATION;
-            }
+            // ……（省略：内核 Binder 被裁剪时的保护）
 
             status = IPCThreadState::self()-&gt;transact(binderHandle(), code, data, reply, flags); // ← 交给线程自己的 Binder 连接，本章从这里接着读
         }
-        if (data.dataSize() &gt; LOG_TRANSACTIONS_OVER_SIZE) {
-            RpcMutexUniqueLock _l(mLock);
-            ALOGW(&quot;Large outgoing transaction of %zu bytes, interface descriptor %s, code %d&quot;,
-                  data.dataSize(), String8(mDescriptorCache).c_str(), code);
-        }
+        // ……（省略：大事务告警日志）
 
         if (status == DEAD_OBJECT) mAlive = 0; // ← 对端已死，这个代理永久失效
 
@@ -169,16 +146,9 @@
 
     flags |= TF_ACCEPT_FDS; // ← 允许 Parcel 携带文件描述符
 
-    IF_LOG_TRANSACTIONS() {
-        std::ostringstream logStream;
-        logStream &lt;&lt; &quot;BC_TRANSACTION thr &quot; &lt;&lt; (void*)pthread_self() &lt;&lt; &quot; / hand &quot; &lt;&lt; handle
-                  &lt;&lt; &quot; / code &quot; &lt;&lt; TypeCode(code) &lt;&lt; &quot;: \t&quot; &lt;&lt; data &lt;&lt; &quot;\n&quot;;
-        std::string message = logStream.str();
-        ALOGI(&quot;%s&quot;, message.c_str());
-    }
+    // ……（省略：事务日志）
 
-    LOG_ONEWAY(&quot;&gt;&gt;&gt;&gt; SEND from pid %d uid %d %s&quot;, getpid(), getuid(),
-        (flags &amp; TF_ONE_WAY) == 0 ? &quot;READ REPLY&quot; : &quot;ONE WAY&quot;);
+    // ……（省略：oneway 日志）
     err = writeTransactionData(BC_TRANSACTION, flags, handle, code, data, nullptr); // ← 组装成一条命令写进 mOut
 
     if (err != NO_ERROR) {
@@ -187,36 +157,16 @@
     }
 
     if ((flags &amp; TF_ONE_WAY) == 0) {
-        if (mCallRestriction != ProcessState::CallRestriction::NONE) [[unlikely]] {
-            if (mCallRestriction == ProcessState::CallRestriction::ERROR_IF_NOT_ONEWAY) {
-                ALOGE(&quot;Process making non-oneway call (code: %u) but is restricted.&quot;, code);
-                CallStack::logStack(&quot;non-oneway call&quot;, CallStack::getCurrent(10).get(),
-                    ANDROID_LOG_ERROR);
-            } else /* FATAL_IF_NOT_ONEWAY */ {
-                LOG_ALWAYS_FATAL(&quot;Process may not make non-oneway calls (code: %u).&quot;, code);
-            }
-        }
+        // ……（省略：进程调用限制检查）
 
-#if 0
-        if (code == 4) { // relayout
-            ALOGI(&quot;&gt;&gt;&gt;&gt;&gt;&gt; CALLING transaction 4&quot;);
-        } else {
-            ALOGI(&quot;&gt;&gt;&gt;&gt;&gt;&gt; CALLING transaction %d&quot;, code);
-        }
-#endif
+        // ……（省略：遗留调试日志）
         if (reply) {
             err = waitForResponse(reply); // ← 同步调用：阻塞等 BR_REPLY
         } else {
             Parcel fakeReply;
             err = waitForResponse(&amp;fakeReply);
         }
-        #if 0
-        if (code == 4) { // relayout
-            ALOGI(&quot;&lt;&lt;&lt;&lt;&lt;&lt; RETURNING transaction 4&quot;);
-        } else {
-            ALOGI(&quot;&lt;&lt;&lt;&lt;&lt;&lt; RETURNING transaction %d&quot;, code);
-        }
-        #endif
+        // ……（省略：遗留调试日志）
 
         IF_LOG_TRANSACTIONS() {
             std::ostringstream logStream;
@@ -242,7 +192,6 @@
           <li>同步分支 <code>(flags &amp; TF_ONE_WAY) == 0</code>：<code>waitForResponse(reply)</code> 等回复；没有 <code>reply</code> 时传一个临时 <code>fakeReply</code> 走同一流程。</li>
           <li>oneway 分支：<code>waitForResponse(nullptr, nullptr)</code>，只等 <code>BR_TRANSACTION_COMPLETE</code>，不等业务返回值。</li>
         </ul>
-        <p><code>LOG_ALWAYS_FATAL_IF</code>、<code>IF_LOG_TRANSACTIONS</code> 和 <code>mCallRestriction</code> 是日志与进程限制检查，不影响这条主线的走向。</p>
         <p><strong>writeTransactionData 究竟把什么写进了 mOut？</strong>下一节看这个函数。</p>
 
         <h2>三、writeTransactionData</h2>
@@ -323,21 +272,7 @@
         bwr.read_buffer = 0;
     }
 
-    IF_LOG_COMMANDS() {
-        std::ostringstream logStream;
-        if (outAvail != 0) {
-            logStream &lt;&lt; &quot;Sending commands to driver: &quot;;
-            const void* cmds = (const void*)bwr.write_buffer;
-            const void* end = ((const uint8_t*)cmds) + bwr.write_size;
-            logStream &lt;&lt; &quot;\t&quot; &lt;&lt; HexDump(cmds, bwr.write_size) &lt;&lt; &quot;\n&quot;;
-            while (cmds &lt; end) cmds = printCommand(logStream, cmds);
-        }
-        logStream &lt;&lt; &quot;Size of receive buffer: &quot; &lt;&lt; bwr.read_size &lt;&lt; &quot;, needRead: &quot; &lt;&lt; needRead
-                  &lt;&lt; &quot;, doReceive: &quot; &lt;&lt; doReceive &lt;&lt; &quot;\n&quot;;
-
-        std::string message = logStream.str();
-        ALOGI(&quot;%s&quot;, message.c_str());
-    }
+    // ……（省略：调试日志）
 
     // Return immediately if there is nothing to do.
     if ((bwr.write_size == 0) &amp;&amp; (bwr.read_size == 0)) return NO_ERROR;
@@ -346,12 +281,7 @@
     bwr.read_consumed = 0;
     status_t err;
     do {
-        IF_LOG_COMMANDS() {
-            std::ostringstream logStream;
-            logStream &lt;&lt; &quot;About to read/write, write size = &quot; &lt;&lt; mOut.dataSize() &lt;&lt; &quot;\n&quot;;
-            std::string message = logStream.str();
-            ALOGI(&quot;%s&quot;, message.c_str());
-        }
+        // ……（省略：调试日志）
 #if defined(__ANDROID__)
         if (ioctl(mProcess-&gt;mDriverFD, BINDER_WRITE_READ, &amp;bwr) &gt;= 0) // ← 一次系统调用：写 BC_*、读回 BR_*
             err = NO_ERROR;
@@ -363,22 +293,10 @@
         if (mProcess-&gt;mDriverFD &lt; 0) {
             err = -EBADF;
         }
-        IF_LOG_COMMANDS() {
-            std::ostringstream logStream;
-            logStream &lt;&lt; &quot;Finished read/write, write size = &quot; &lt;&lt; mOut.dataSize() &lt;&lt; &quot;\n&quot;;
-            std::string message = logStream.str();
-            ALOGI(&quot;%s&quot;, message.c_str());
-        }
+        // ……（省略：调试日志）
     } while (err == -EINTR); // ← 被信号打断就重试
 
-    IF_LOG_COMMANDS() {
-        std::ostringstream logStream;
-        logStream &lt;&lt; &quot;Our err: &quot; &lt;&lt; (void*)(intptr_t)err
-                  &lt;&lt; &quot;, write consumed: &quot; &lt;&lt; bwr.write_consumed &lt;&lt; &quot; (of &quot; &lt;&lt; mOut.dataSize()
-                  &lt;&lt; &quot;), read consumed: &quot; &lt;&lt; bwr.read_consumed &lt;&lt; &quot;\n&quot;;
-        std::string message = logStream.str();
-        ALOGI(&quot;%s&quot;, message.c_str());
-    }
+    // ……（省略：调试日志）
 
     if (err &gt;= NO_ERROR) {
         if (bwr.write_consumed &gt; 0) {
@@ -397,17 +315,7 @@
             mIn.setDataSize(bwr.read_consumed); // ← 驱动读回多少，mIn 就有多少
             mIn.setDataPosition(0);
         }
-        IF_LOG_COMMANDS() {
-            std::ostringstream logStream;
-            logStream &lt;&lt; &quot;Remaining data size: &quot; &lt;&lt; mOut.dataSize() &lt;&lt; &quot;\n&quot;;
-            logStream &lt;&lt; &quot;Received commands from driver: &quot;;
-            const void* cmds = mIn.data();
-            const void* end = mIn.data() + mIn.dataSize();
-            logStream &lt;&lt; &quot;\t&quot; &lt;&lt; HexDump(cmds, mIn.dataSize()) &lt;&lt; &quot;\n&quot;;
-            while (cmds &lt; end) cmds = printReturnCommand(logStream, cmds);
-            std::string message = logStream.str();
-            ALOGI(&quot;%s&quot;, message.c_str());
-        }
+        // ……（省略：调试日志）
         return NO_ERROR;
     }
 
@@ -424,7 +332,6 @@
           <li><code>do { ... } while (err == -EINTR)</code>：被信号打断就重试，其他错误直接返回。</li>
           <li>成功返回后，<code>bwr.write_consumed</code> 清空 <code>mOut</code>，<code>bwr.read_consumed</code> 设置 <code>mIn</code> 的大小并把读位置归零。</li>
         </ul>
-        <p><code>IF_LOG_COMMANDS</code> 里的 HexDump 和命令打印只是调试日志，跳过。</p>
         <p><strong>ioctl 返回后 mIn 里是驱动发回的 BR_* 命令，谁解析它们？</strong>下一节 <code>waitForResponse</code>。</p>
 
         <h2>五、waitForResponse</h2>
@@ -442,26 +349,15 @@
 
         cmd = (uint32_t)mIn.readInt32(); // ← mIn 开头是命令号
 
-        IF_LOG_COMMANDS() {
-            std::ostringstream logStream;
-            logStream &lt;&lt; &quot;Processing waitForResponse Command: &quot; &lt;&lt; getReturnString(cmd) &lt;&lt; &quot;\n&quot;;
-            std::string message = logStream.str();
-            ALOGI(&quot;%s&quot;, message.c_str());
-        }
+        // ……（省略：调试日志）
 
         switch (cmd) {
-        case BR_ONEWAY_SPAM_SUSPECT:
-            ALOGE(&quot;Process seems to be sending too many oneway calls.&quot;);
-            CallStack::logStack(&quot;oneway spamming&quot;, CallStack::getCurrent().get(),
-                    ANDROID_LOG_ERROR);
-            [[fallthrough]];
+        // ……（省略：oneway 刷屏告警 case）
         case BR_TRANSACTION_COMPLETE: // ← oneway 的完成标志
             if (!reply &amp;&amp; !acquireResult) goto finish;
             break;
 
-        case BR_TRANSACTION_PENDING_FROZEN:
-            ALOGW(&quot;Sending oneway calls to frozen process.&quot;);
-            goto finish;
+        // ……（省略：冻结进程相关 case）
 
         case BR_DEAD_REPLY:
             err = DEAD_OBJECT;
@@ -471,19 +367,9 @@
             err = FAILED_TRANSACTION;
             goto finish;
 
-        case BR_FROZEN_REPLY:
-            ALOGW(&quot;Transaction failed because process frozen.&quot;);
-            err = FAILED_TRANSACTION;
-            goto finish;
+        // ……（省略：冻结进程相关 case）
 
-        case BR_ACQUIRE_RESULT:
-            {
-                ALOG_ASSERT(acquireResult != NULL, &quot;Unexpected brACQUIRE_RESULT&quot;);
-                const int32_t result = mIn.readInt32();
-                if (!acquireResult) continue;
-                *acquireResult = result ? NO_ERROR : INVALID_OPERATION;
-            }
-            goto finish;
+        // ……（省略：引用计数结果 case）
 
         case BR_REPLY: // ← 主线：服务端把结果送回来了
             {

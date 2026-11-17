@@ -28,6 +28,7 @@ Bolin Lab 的开发记录。每次完成一轮开发后追加一条，至少包�
 - 笔记库新增第 2 章卡片（不加 `is-featured`），统计 04 篇；首页统计 `04`、latest-note `NOTE 004` 同步。
 - sitemap 增加第 2 章 URL；README / AGENTS 更新目录、正式笔记列表、当前状态和下一步。
 - 第 2 章代码块加行内阅读标注和读前引导句。
+- 第 2 章代码块按节选规则删噪声段，AGENTS.md 固化该规则。
 
 **涉及文件：**
 
@@ -44,7 +45,7 @@ Bolin Lab 的开发记录。每次完成一轮开发后追加一条，至少包�
 **验证：**
 
 - `python -m http.server 8123` 本地预览：第 2 章 200；TOC 生成 6 个标题；5 个代码块均带 `data-file` / `data-lang="cpp"`。
-- 五个代码块去掉本站添加的 `// ←` 标注后，与 `/home/libolin/v610` 源码逐字符比对通过；BpBinder 362–412、transact 808–883、writeTransactionData 1215–1249、talkWithDriver 1092–1213、waitForResponse 987–1090。
+- 五个代码块保留的主线语句去掉 `// ←` 标注后与 `/home/libolin/v610` 源码一致；噪声段用 `// ……（省略：…）` 标记。
 - 站内链接检查通过；笔记库搜索 `waitForResponse` 可命中新卡片，`roadmap` 标签包含第 2 章；`noteCount` 初始为 04。
 - sitemap XML 解析通过，新 URL 本地可访问；未改 `site.css` / `site.js`，版本保持 `?v=20261116e`。
 - 收尾段引用本树 `binder_ioctl` 实际行号 5673（提供的资料写 5454，与本地树不一致）。

@@ -107,6 +107,7 @@
 - 源码引用写清文件 / 函数 / 行号；不要编造运行输出。需要运行证据时少量保留，不要用 `adb shell service check` 这类命令示例。
 - 文档中不要写具体硬件平台、产品型号、build fingerprint、内核字符串或内部 AOSP 树名；只写 Android / 内核版本。
 - 代码块必须带 `data-file` / `data-title` 和 `data-lang`；`site.js` 统一加代码头、语法高亮和复制按钮。
+- 代码块可节选：与主线无关的噪声段（调试日志、进程限制检查、`#if 0` 遗留代码）用一行注释 `// ……（省略：原因）` 标记省略，省略内容在标记里说清；主线语句原样保留。若读者要看全文，按 `data-file` 路径查源码。
 - 不再新增概念示意图；`notes/binder-driver.html` 保留为数据结构交互图，不要重写其内部逻辑。
 - 旧第 0–4 章已删除，旧 URL 由 `_redirects` 308 到 `notes/binder-learning-path`；第 5 章旧链接同样处理；旧第 1 章 `binder-code-1-client` 308 到总览章。
 - 目前正式笔记有四篇：
@@ -192,7 +193,7 @@
 - 旧第 0–4 章已删除，旧 URL 308 到源码阅读路线；第 5 章旧链接同样 308；旧第 1 章 `binder-code-1-client` 308 到总览章。
 - 源码阅读路线固定 6 章：总览 → C++ 客户端 → 驱动 → 服务端 → servicemanager → Java/JNI 收尾。
 - 第 1 章已写：`notes/binder-code-1-overview.html`，只做导航（调用链地图、名词速查、阅读约定）。
-- 第 2 章已写：`notes/binder-code-2-native.html`，BpBinder 段加 IPCThreadState 的四个完整函数：`transact`、`writeTransactionData`、`talkWithDriver`、`waitForResponse`；第 3–6 章待写。
+- 第 2 章已写：`notes/binder-code-2-native.html`，BpBinder 段加 IPCThreadState 的四个函数（噪声段节选）：`transact`、`writeTransactionData`、`talkWithDriver`、`waitForResponse`；第 3–6 章待写。
 - 旧第 1 章的 BinderProxy / JNI 正文已从导航层移除，写第 6 章时从 git 历史取回；BpBinder 正文已并入第 2 章。
 - 内核源码：`/home/libolin/v610/vendor/open_source/common-kernel-6.6`（6.6.47）。
 - 学习路线不再讲知识点；首页 / 笔记库统计为 04 篇，sitemap 7 个 URL。
