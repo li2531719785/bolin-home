@@ -15,6 +15,44 @@ Bolin Lab 的开发记录。每次完成一轮开发后追加一条，至少包�
 
 ## 2026-11-17
 
+### 精简第 3 章：只保留一次 AIDL 调用主线
+
+**目标：** 把第 3 章从 36 个代码块压到核心调用链，删掉 lazy、VINTF、dumpPriority、binder stats 等分支。
+
+**改动：**
+
+- 章节压成 9 个 h2：service check、AIDL 接口、生成代码、手写 Proxy、调用链、真机证据、失败场景、自测、小结。
+- 代码块 36→18；保留 `IServiceManager.aidl`、生成 Proxy/Stub、`service.cpp`、`BpBinder` / `IPCThreadState`、`ps -T` / `maps`。
+- 新增 `binder-aidl-generated-*` SVG，并复用 `binder-architecture-*`；共 2 张图。
+- 删除 lazy service、dumpPriority、VINTF/isDeclared、binder/stats、binder_calls_stats、code 7/8/999 细节和 Java 侧长段源码。
+- 失败场景从 4 个压到 2 个：服务不存在、事务码非法。
+- 自测题压到 4 个；阅读时间 30→18 分钟；笔记库卡片同步。
+
+**涉及文件：**
+
+- `notes/binder-chapter-3.html`
+- `assets/img/binder-aidl-generated-*.svg`
+- `notes/index.html`
+- `CHANGELOG.md`
+- `AGENTS.md`
+
+**验证：**
+
+- 第 3 章：18 个代码块全部有 `data-title`/`data-file` + `data-lang`；2 张图明/暗切换正常。
+- 1440 / 390 无页面级横向溢出，控制台无错误；图片全部加载。
+- 线上/本地均无 `lazy`、`VINTF`、`dumpPriority`、`binder/stats`、`binder_calls_stats`。
+- 全站链接 174 条，缺失 0；SVG 通过 `xmllint`。
+
+**Commit：** 本次提交（见 GitHub history）。
+
+**部署：** 推送 `main` 后由 Cloudflare Pages 自动部署。
+
+**下一步：** 等作者评审第 3 章；通过后精简第 4 章（选读）。
+
+---
+
+## 2026-11-17
+
 ### 重写第 1 章：只回答“为什么需要 Binder”
 
 **目标：** 按新手主线重写第 1 章：只讲 RPC 四步、通用 IPC 的缺口和一次拷贝，去掉 oneway、死锁、安全长表等分支。
@@ -741,7 +779,7 @@ Bolin Lab 的开发记录。每次完成一轮开发后追加一条，至少包�
   按钮；AIDL 通过 `data-lang="aidl"` 映射到 Java 高亮
 - 写作流程：不再使用 `drafts/`；文章直接写 `notes/*.html`，但必须有源码锚点和
   真实输出，未实测内容明确标注
-- 工作区：第 1 章重写已提交，等待评审
+- 工作区：第 3 章精简已提交，等待评审
 - 已知注意点：
   - 不要删除 Google 验证文件与 `_redirects` 规则。
   - Cloudflare 会把 `*.html` 308 到无扩展名地址；canonical / sitemap 使用最终地址。
@@ -759,6 +797,7 @@ Bolin Lab 的开发记录。每次完成一轮开发后追加一条，至少包�
 - [ ] 第 5 章拆成 5.1 ServiceManager 启动、5.2 addService、5.3 getService 后重写
 - [ ] 第 4 章补 oneway / callback / DeathRecipient 的原生客户端实验（当前为源码走读）
 - [x] 第 1 章重写：RPC 四步、一次拷贝、3 张 SVG 和真机输出
+- [x] 第 3 章精简为一次 AIDL 调用主线
 - [ ] 重写第 0 章：补真实 `ps` / `fd` / `maps` / `ioctl` 输出
 - [ ] 写 Binder 学习路线第 6 章：用户态 Binder 对象模型
 - [ ] 评估把旧 Binder 长图中的静态关系图迁移到 D2

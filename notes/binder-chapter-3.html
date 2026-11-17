@@ -75,9 +75,9 @@
         <a href="../index.html">Bolin Lab</a><span>/</span><a href="./">笔记</a><span>/</span><a href="binder-learning-path.html">Binder 学习路线</a><span>/</span><span>第 3 章</span>
       </div>
       <h1>第 3 章：第一个<br>AIDL</h1>
-      <p class="article-lead">系统里已经有 240 个 Binder 服务；我们用自带的 <code>service</code> 命令调用 <code>IServiceManager</code>，把 AIDL、Parcel、Proxy / Stub、Binder 线程和 <code>/dev/binder</code> 一次走完。</p>
+      <p class="article-lead">系统里已经有很多 Binder 服务；我们用自带的 <code>service</code> 命令调用 <code>IServiceManager</code>，把 AIDL、Parcel、Proxy / Stub、Binder 线程和 <code>/dev/binder</code> 一次走完。</p>
       <div class="article-meta">
-        <span>2026.11.17</span><span class="dot"></span><span>Binder 学习路线 · 第 3 章</span><span class="dot"></span><span>约 30 分钟</span><span class="dot"></span><span class="meta-badge">真机实测</span>
+        <span>2026.11.17</span><span class="dot"></span><span>Binder 学习路线 · 第 3 章</span><span class="dot"></span><span>约 18 分钟</span><span class="dot"></span><span class="meta-badge">真机实测</span>
       </div>
     </header>
 
@@ -91,39 +91,18 @@
           <dl class="article-env-grid">
             <div class="env-item"><dt>Android</dt><dd>15 / SDK 35</dd></div>
             <div class="env-item"><dt>AOSP</dt><dd>Android 15</dd></div>
-            <div class="env-item"><dt>服务数量</dt><dd>240</dd></div>
-            <div class="env-item"><dt>验证方式</dt><dd>adb shell / root adb</dd></div>
+            <div class="env-item"><dt>样本</dt><dd>servicemanager<br>IServiceManager</dd></div>
+            <div class="env-item"><dt>验证方式</dt><dd>adb shell</dd></div>
           </dl>
         </div>
 
-        <p>前两章都在建立直觉。这一章要回答一个很具体的问题：<strong>AIDL 调用到底长什么样？</strong></p>
-        <p>很多教程会把最关键的东西藏在工程模板后面：AIDL 生成的 Proxy / Stub、Parcel 的读写顺序、<code>transact</code> 的 code 从哪来、服务端线程是谁。</p>
-        <p>这一章换一条路：直接用系统自带的 <code>service</code> 命令调用 <code>IServiceManager</code>。它是 AIDL 接口，servicemanager 是它的服务端，<code>service</code> 命令是它的客户端。你会在真机上看到 240 个服务、两个 PID、Binder 线程和 <code>/dev/binder</code> 映射。</p>
+        <p>这一章只回答一个问题：<strong>AIDL 接口怎么变成一次真正的 Binder 调用？</strong>我们不写业务工程，直接用系统自带的 <code>service</code> 命令调用 <code>IServiceManager</code>，把接口、生成代码、Parcel、Proxy / Stub 和 Binder 线程一次走完。</p>
 
-        <div class="callout">
-          <span class="callout-mark">✓</span>
-          <div><strong>本章目标：</strong>跟着一次真实的 <code>checkService("activity")</code>，从 shell 命令的 Parcel 一直走到 servicemanager 的 <code>onTransact</code>，把 AIDL 的“接口描述”与“运行时事务”对上。</div>
-        </div>
-
-        <h2>为什么用 IServiceManager 作为第一个 AIDL</h2>
-        <p>Binder 的第一课很容易变成“抄一个 AIDL 模板”：新建接口、写实现、绑定服务、打印日志。代码能跑，但读者往往说不清三件事：接口里的方法怎么变成事务码、Parcel 里到底写了什么、服务端的 <code>onTransact</code> 为什么会进入正确分支。</p>
-        <p><code>IServiceManager</code> 适合作为第一个接口，原因有三个：</p>
-        <ul>
-          <li><strong>它足够小。</strong>核心方法只有 <code>getService</code>、<code>checkService</code>、<code>addService</code>、<code>listServices</code>，参数是字符串、布尔和 IBinder，不涉及复杂 Parcelable。</li>
-          <li><strong>它是真实入口。</strong>任何进程想找系统服务，第一步都是通过它；它不是教学用的玩具接口。</li>
-          <li><strong>它能直接观察。</strong>系统自带 <code>service</code> 命令，不用编译 APK、不用装应用，就能在真机上发起同一种调用。</li>
-        </ul>
-        <p>更重要的是，<code>IServiceManager</code> 是 Android 启动链的一部分。servicemanager 先把自己注册成 <code>"manager"</code>，再通过 <code>BINDER_SET_CONTEXT_MGR_EXT</code>（失败时回退到 <code>BINDER_SET_CONTEXT_MGR</code>）成为 handle 0 对应的 context manager。之后所有客户端都可以用 handle 0 找到它，而不需要知道它的 PID。这条启动链会在后续的 ServiceManager 专章展开，这里先记住结论：<strong>handle 0 不是普通服务，它是 Binder 的“电话总机”</strong>。</p>
-
-        <h2>一、先看结果：service check 就是 AIDL 调用</h2>
-        <p>先把设备连上，确认三个服务是否存在：</p>
-        <pre data-title="命令：检查服务是否存在" data-lang="bash"><code class="language-bash">adb shell service check activity
-adb shell service check manager
-adb shell service check does.not.exist</code></pre>
-        <pre data-title="输出：service check" data-lang="text"><code class="language-text">Service activity: found
-Service manager: found
-Service does.not.exist: not found</code></pre>
-        <p>这三行输出背后不是“查文件”，而是一次跨进程调用。<code>service</code> 命令在 <code>frameworks/native/cmds/service/service.cpp</code> 里拿到 <code>IServiceManager</code>，然后调用它的 <code>checkService(String16(name))</code>。下面是相关代码（节选）：</p>
+        <h2>一、先看结果：service check activity</h2>
+        <p><code>service</code> 命令本身就是一个 Binder 客户端。它拿到 <code>IServiceManager</code>，再按名字查询服务：</p>
+        <pre data-title="命令：查询 activity 服务" data-lang="bash"><code class="language-bash">adb shell service check activity</code></pre>
+        <pre data-title="输出：service check" data-lang="text"><code class="language-text">Service activity: found</code></pre>
+        <p>源码里对应 <code>service.cpp</code> 的这一段：</p>
         <pre data-file="frameworks/native/cmds/service/service.cpp" data-lang="cpp"><code class="language-cpp">sp&lt;IServiceManager&gt; sm = defaultServiceManager();
 
 if (strcmp(argv[optind], "check") == 0) {
@@ -131,83 +110,45 @@ if (strcmp(argv[optind], "check") == 0) {
     aout &lt;&lt; "Service " &lt;&lt; argv[optind] &lt;&lt;
         (service == nullptr ? ": not found" : ": found") &lt;&lt; endl;
 }</code></pre>
-        <p><code>IServiceManager</code> 是 AIDL 接口，<code>checkService</code> 是接口里的一个方法。也就是说，你在 shell 里敲的 <code>service check</code>，本质上和进程里调用一个 AIDL Proxy 是同一条路径。</p>
-        <p>再看服务总数：</p>
-        <pre data-title="命令：列出服务" data-lang="bash"><code class="language-bash">adb shell 'service list | grep -E "^[0-9]+[[:space:]]+(SurfaceFlinger(AIDL)?|activity|manager|media.player|package):"'
-adb shell 'service list | wc -l'</code></pre>
-        <pre data-title="输出：service list（真机，节选）" data-lang="text"><code class="language-text">2	SurfaceFlinger: [android.ui.ISurfaceComposer]
-3	SurfaceFlingerAIDL: [android.gui.ISurfaceComposer]
-7	activity: [android.app.IActivityManager]
-108	manager: [android.os.IServiceManager]
-115	media.player: [android.media.IMediaPlayerService]
-141	package: [android.content.pm.IPackageManager]
-241</code></pre>
-        <p>输出里的 <code>[android.ui.ISurfaceComposer]</code>、<code>[android.app.IActivityManager]</code> 就是服务端实现的 interface descriptor。它是 AIDL 生成的 <code>DESCRIPTOR</code>，也是 Parcel 里最先写入的 interface token。</p>
-        <div class="table-wrap">
-          <table>
-            <thead><tr><th>命令</th><th>实际调用</th><th>服务端</th></tr></thead>
-            <tbody>
-              <tr><td><code>service check X</code></td><td><code>IServiceManager.checkService(X)</code></td><td>servicemanager</td></tr>
-              <tr><td><code>service list</code></td><td><code>IServiceManager.listServices(DUMP_FLAG_PRIORITY_ALL)</code></td><td>servicemanager</td></tr>
-              <tr><td><code>service call S C ...</code></td><td><code>S</code> 对应 IBinder 的 <code>transact(C, ...)</code></td><td><code>S</code> 的服务端</td></tr>
-            </tbody>
-          </table>
-        </div>
+        <p>再直接调用 <code>checkService</code>，可以看到返回的 Parcel 里是一个 binder 引用：</p>
+        <pre data-title="命令：直接调用 checkService" data-lang="bash"><code class="language-bash">adb shell service call manager 2 s16 activity</code></pre>
+        <pre data-title="输出：Parcel（真机）" data-lang="text"><code class="language-text">Result: Parcel(
+0x00000000: 00000000 73682a85 00000000 00000002 '.....*hs........'
+0x00000010: 00000000 00000000 00000000 0000000c '................'Object #0 @ 0x4: 'sh*' = 2)</code></pre>
+        <p>这里的 <code>2</code> 是当前 <code>service</code> 进程里的 handle，不是全局服务 ID。换一个客户端进程查同一个 <code>activity</code>，handle 可能不同。</p>
 
         <h2>二、AIDL 接口：IServiceManager.aidl</h2>
-        <p>先把接口本身看清楚。下面是从 AOSP 里截出来的真实定义，省略了注释和部分方法：</p>
+        <p>先把接口看清楚。下面是 AOSP 里的真实定义，省略了其他方法：</p>
         <pre data-file="frameworks/native/libs/binder/aidl/android/os/IServiceManager.aidl" data-lang="aidl" data-label="AIDL"><code class="language-java">package android.os;
 
 interface IServiceManager {
     @nullable IBinder getService(@utf8InCpp String name);
     @nullable IBinder checkService(@utf8InCpp String name);
-    void addService(@utf8InCpp String name, IBinder service,
-        boolean allowIsolated, int dumpPriority);
-    @utf8InCpp String[] listServices(int dumpPriority);
-    boolean isDeclared(@utf8InCpp String name);
-    @utf8InCpp String[] getDeclaredInstances(@utf8InCpp String iface);
-    // ... 还有 registerForNotifications、getServiceDebugInfo 等方法
+    // ... 其他方法先不看
 }</code></pre>
-        <p>AIDL 只描述“接口长什么样”，不写实现。<code>aidl</code> 编译器会根据它生成 Java / C++ / NDK / Rust 的 Proxy 和 Stub。AIDL 的类型也不是 Java 类型照搬，生成代码会把它们映射成具体的 Parcel 读写：</p>
-        <div class="table-wrap">
-          <table>
-            <thead><tr><th>AIDL 类型</th><th>客户端写入</th><th>服务端读取</th></tr></thead>
-            <tbody>
-              <tr><td><code>String</code></td><td><code>writeString</code></td><td><code>readString</code></td></tr>
-              <tr><td><code>int</code></td><td><code>writeInt</code></td><td><code>readInt</code></td></tr>
-              <tr><td><code>boolean</code></td><td><code>writeInt(0/1)</code></td><td><code>readInt() != 0</code></td></tr>
-              <tr><td><code>IBinder</code></td><td><code>writeStrongBinder</code></td><td><code>readStrongBinder</code></td></tr>
-              <tr><td><code>String[]</code></td><td><code>writeStringArray</code></td><td><code>createStringArray</code></td></tr>
-              <tr><td><code>Parcelable</code></td><td><code>writeTypedObject</code></td><td><code>readTypedObject</code></td></tr>
-            </tbody>
-          </table>
-        </div>
-        <p><code>@utf8InCpp</code> 是给 C++ 后端的优化提示，不影响 Java 的读写顺序；<code>@nullable</code> 表示返回值可能为 null，客户端必须处理。AIDL 的 <code>in</code> / <code>out</code> / <code>inout</code> 也在这里生效：默认是 <code>in</code>，只有标记 <code>out</code> / <code>inout</code> 的参数才会在调用返回后回写。</p>
-        <p>方法在接口里的声明顺序决定了事务码：</p>
+        <p>方法在接口里的声明顺序决定事务码：</p>
         <div class="table-wrap">
           <table>
             <thead><tr><th>事务码</th><th>方法</th><th>用途</th></tr></thead>
             <tbody>
-              <tr><td><code>1</code></td><td><code>getService</code></td><td>旧版查找入口；找不到时可能尝试启动 lazy service</td></tr>
+              <tr><td><code>1</code></td><td><code>getService</code></td><td>旧版查找入口</td></tr>
               <tr><td><code>2</code></td><td><code>checkService</code></td><td>查找服务，找不到返回 null</td></tr>
-              <tr><td><code>3</code></td><td><code>addService</code></td><td>注册服务</td></tr>
-              <tr><td><code>4</code></td><td><code>listServices</code></td><td>按 dumpPriority 列出服务</td></tr>
-              <tr><td><code>7</code></td><td><code>isDeclared</code></td><td>是否在 VINTF 中声明</td></tr>
-              <tr><td><code>8</code></td><td><code>getDeclaredInstances</code></td><td>列出声明实例</td></tr>
             </tbody>
           </table>
         </div>
-        <p><code>getService</code> 和 <code>checkService</code> 还有一个容易忽略的差异：<code>ServiceManager.cpp</code> 里 <code>getService()</code> 调 <code>tryGetService(name, true)</code>，允许触发 lazy service 启动；<code>checkService()</code> 传 false，只查当前注册表。AIDL 注释说两者“语义相同”，但实现上启动行为不同，排查服务“第一次查不到、第二次才出现”时要想到这一点。</p>
-        <p>注意：事务码是<strong>每个接口各自从 1 开始</strong>，不是全局编号。后面你会看到，<code>IActivityManager</code> 的 code 7 和 <code>IServiceManager</code> 的 code 7 完全不是一回事。</p>
+        <p>事务码是每个接口各自从 1 开始的。不同接口的 code 2 可能对应完全不同的方法。注册服务用的 <code>addService</code> 放到 ServiceManager 章节再看。</p>
 
         <h2>三、生成代码：Proxy 和 Stub 没有魔法</h2>
-        <p>用 Android 15 的 <code>aidl</code> 35 现场生成 Java，得到的 <code>IServiceManager.java</code> 里有下面两段。先看常量：</p>
-        <pre data-title="IServiceManager.java（aidl 35 生成，节选）" data-lang="java"><code class="language-java">public static final java.lang.String DESCRIPTOR = "android.os.IServiceManager";
+        <figure>
+          <img class="fig-light" src="../assets/img/binder-aidl-generated-light.svg" alt="AIDL 生成代码：接口、Proxy、Parcel、Stub 和实际方法的关系">
+          <img class="fig-dark" src="../assets/img/binder-aidl-generated-dark.svg" alt="AIDL 生成代码：接口、Proxy、Parcel、Stub 和实际方法的关系">
+          <figcaption>图 3-1：AIDL 只描述接口；aidl 编译器生成 Proxy / Stub 和 Parcel 读写。</figcaption>
+        </figure>
+        <p>用 Android 15 的 <code>aidl</code> 现场生成 Java，先看常量：</p>
+        <pre data-title="IServiceManager.java（aidl 生成，节选）" data-lang="java"><code class="language-java">public static final java.lang.String DESCRIPTOR = "android.os.IServiceManager";
 
 static final int TRANSACTION_getService = (android.os.IBinder.FIRST_CALL_TRANSACTION + 0);
-static final int TRANSACTION_checkService = (android.os.IBinder.FIRST_CALL_TRANSACTION + 1);
-static final int TRANSACTION_addService = (android.os.IBinder.FIRST_CALL_TRANSACTION + 2);
-static final int TRANSACTION_listServices = (android.os.IBinder.FIRST_CALL_TRANSACTION + 3);</code></pre>
+static final int TRANSACTION_checkService = (android.os.IBinder.FIRST_CALL_TRANSACTION + 1);</code></pre>
         <p>客户端 Proxy 的 <code>checkService</code>：</p>
         <pre data-title="IServiceManager.java（Proxy.checkService）" data-lang="java"><code class="language-java">@Override public android.os.IBinder checkService(java.lang.String name)
         throws android.os.RemoteException {
@@ -236,62 +177,26 @@ static final int TRANSACTION_listServices = (android.os.IBinder.FIRST_CALL_TRANS
     reply.writeStrongBinder(_result);
     break;
 }</code></pre>
-        <p>把两段对上，就是一次完整的 AIDL 调用：</p>
-        <ol>
-          <li>客户端先写 interface token，确保服务端拿到的是同一个接口；</li>
-          <li>按 AIDL 参数顺序写参数（这里是 <code>String name</code>）；</li>
-          <li><code>transact(code, data, reply, 0)</code> 把 Parcel 交给 Binder；</li>
-          <li>服务端 <code>onTransact</code> 按 code 进入分支，读参数、调用真实方法；</li>
-          <li>返回值按相反顺序写回 <code>reply</code>，客户端 <code>readStrongBinder()</code> 拿到一个 binder 引用。</li>
-        </ol>
-        <p>生成代码里有几个容易被忽略的细节：</p>
-        <ul>
-          <li><code>Parcel.obtain()</code> 从进程内的 Parcel 缓存池拿对象，<code>recycle()</code> 还回去；如果中途抛异常而没有 <code>finally</code>，对象不会被复用，增加分配和 GC 压力。</li>
-          <li><code>_reply.readException()</code> 负责把服务端写入的异常重新抛成 <code>RemoteException</code>；服务端必须先 <code>writeNoException()</code>，否则客户端读到的异常状态会错位。</li>
-          <li><code>transact()</code> 返回的 <code>_status</code> 在生成的 Proxy 里通常没有被检查；真正的失败通过 <code>readException()</code> 暴露。这是 AIDL 生成代码的既定行为，不是你可以随便省略 <code>readException</code> 的理由。</li>
-          <li>同一个 Proxy 对象可以被多个线程调用，但一次调用里的 <code>_data</code> / <code>_reply</code> 是局部变量；不要把 Parcel 缓存到成员变量里跨线程复用。</li>
-        </ul>
-        <div class="callout">
-          <span class="callout-mark">!</span>
-          <div><strong>关键点：</strong>Proxy 和 Stub 是同一份 AIDL 生成的两端。你不需要手写 <code>Parcel</code> 读写，但出问题时必须能回到这两段代码，检查参数顺序、方向和异常。</div>
-        </div>
+        <p>把两段对上：写 interface token → 按顺序写参数 → <code>transact(code)</code> → 服务端按 code 分发 → 返回值写回 reply。AIDL 生成的代码没有魔法，就是替你写这些 Parcel 读写。</p>
+        <p>对照着读：<code>writeInterfaceToken</code> 写接口标识，<code>writeString</code> 写参数，<code>transact</code> 带上 code 和 handle；服务端先 <code>enforceInterface</code> 校验接口，再按 code 进入分支，最后 <code>writeNoException</code>、<code>writeStrongBinder</code> 把结果写回。你以后排查 AIDL 问题，入口就是这两段生成代码。</p>
 
         <h2>四、service 命令手写了一次 Proxy</h2>
-        <p><code>service call</code> 没有生成代码可用，它自己在 <code>service.cpp</code> 里拼 Parcel。下面是 <code>call</code> 分支的关键代码（节选，省略了 <code>i64</code> / <code>fd</code> / <code>intent</code> 等参数类型分支）：</p>
+        <p><code>service call</code> 没有生成代码可用，它自己拼 Parcel：</p>
         <pre data-file="frameworks/native/cmds/service/service.cpp" data-lang="cpp"><code class="language-cpp">sp&lt;IBinder&gt; service = sm-&gt;checkService(String16(argv[optind++]));
 String16 ifName = (service ? service-&gt;getInterfaceDescriptor() : String16());
 int32_t code = atoi(argv[optind++]);
 if (service != nullptr &amp;&amp; ifName.size() &gt; 0) {
     Parcel data, reply;
     data.markForBinder(service);
-
-    // the interface name is first
     data.writeInterfaceToken(ifName);
-
-    // then the rest of the call arguments
-    while (optind &lt; argc) {
-        if (strcmp(argv[optind], "i32") == 0) {
-            data.writeInt32(atoi(argv[optind++]));
-        } else if (strcmp(argv[optind], "s16") == 0) {
-            data.writeString16(String16(argv[optind++]));
-        }
-        // ... i64 / f / d / null / fd / afd / nfd / intent
-    }
-
+    // ... 按参数类型写入 data
     service-&gt;transact(code, data, &amp;reply);
     aout &lt;&lt; "Result: " &lt;&lt; reply &lt;&lt; endl;
 }</code></pre>
-        <p>这段代码和生成的 Proxy 做的是同一件事：写 interface token、按顺序写参数、<code>transact</code>、读 reply。区别只是：生成的 Proxy 有类型检查，<code>service call</code> 把参数类型交给你在命令行里手写。</p>
-        <p>这里有三个细节值得展开：</p>
-        <ul>
-          <li><code>markForBinder(service)</code> 只在目标是 RPC Binder 时才有实际作用，用来标记 Parcel 属于哪个 RPC session；对内核 Binder 来说它基本是 no-op。不要把它误解成“把目标服务写进 Parcel”。</li>
-          <li><code>ifName</code> 来自 <code>service-&gt;getInterfaceDescriptor()</code>，也就是 AIDL 生成的 <code>DESCRIPTOR</code>。如果服务没有实现 <code>getInterfaceDescriptor()</code>（例如某些 native 服务），<code>service call</code> 会直接报错，因为无法写 interface token。</li>
-          <li>命令行参数必须带类型标签：<code>i32</code> 写 32 位整数，<code>s16</code> 写 UTF-16 字符串，<code>null</code> 写空 binder，<code>fd</code> 写文件描述符。类型写错时，读取端会读到错误的数据布局，最终表现为异常或错误分支。</li>
-        </ul>
-        <p>这也是为什么 <code>service call</code> 必须知道两件事：<strong>服务名</strong>和<strong>事务码</strong>。服务名用来找到 IBinder，事务码用来在服务端 <code>onTransact</code> 里选分支。它不会按服务端的 AIDL 签名检查参数个数和类型；这部分“类型安全”是生成 Proxy 才有的事。</p>
+        <p>它和生成的 Proxy 做的是同一件事：写 interface token、写参数、<code>transact</code>、读 reply。区别只是生成的 Proxy 有类型检查，<code>service call</code> 把参数类型交给你在命令行里写。</p>
 
         <h2>五、一次调用经过了什么</h2>
-        <p>把上面的源码串起来，<code>service check activity</code> 的路径是：</p>
+        <p>把上一节的代码串起来，<code>service check activity</code> 的路径是：</p>
         <div class="seq-diagram" style="--seq-cols:4" aria-label="service check activity 的 Binder 调用时序">
           <div class="seq-head">
             <span>service 进程</span>
@@ -300,354 +205,152 @@ if (service != nullptr &amp;&amp; ifName.size() &gt; 0) {
             <span>servicemanager</span>
           </div>
           <div class="seq-msg" style="--from:1; --to:3">
-            <span class="seq-label" data-route="service 进程 → libbinder">1. defaultServiceManager()</span>
+            <span class="seq-label" data-route="service 进程 → libbinder">1. checkService("activity")</span>
             <span class="seq-line" aria-hidden="true"></span>
-            <span class="seq-note">拿到 handle 0 对应的 IBinder</span>
-          </div>
-          <div class="seq-msg" style="--from:1; --to:3">
-            <span class="seq-label" data-route="service 进程 → libbinder">2. checkService("activity")</span>
-            <span class="seq-line" aria-hidden="true"></span>
-            <span class="seq-note">BpBinder::transact(handle 0, code 2)</span>
+            <span class="seq-note">handle 0，事务码 2</span>
           </div>
           <div class="seq-msg" style="--from:2; --to:4">
-            <span class="seq-label" data-route="libbinder → 驱动">3. ioctl(BINDER_WRITE_READ)</span>
+            <span class="seq-label" data-route="libbinder → 驱动">2. ioctl(BINDER_WRITE_READ)</span>
             <span class="seq-line" aria-hidden="true"></span>
             <span class="seq-note">IPCThreadState::talkWithDriver()</span>
           </div>
           <div class="seq-msg" style="--from:3; --to:5">
-            <span class="seq-label" data-route="驱动 → servicemanager">4. BR_TRANSACTION</span>
+            <span class="seq-label" data-route="驱动 → servicemanager">3. BR_TRANSACTION</span>
             <span class="seq-line" aria-hidden="true"></span>
             <span class="seq-note">目标 handle 0 是 context manager</span>
           </div>
           <div class="seq-msg" style="--from:4; --to:5">
-            <span class="seq-label" data-route="servicemanager">5. ServiceManager::checkService()</span>
+            <span class="seq-label" data-route="servicemanager">4. 查名字 → activity 的 binder</span>
             <span class="seq-line" aria-hidden="true"></span>
-            <span class="seq-note">查 mNameToService，找到 activity 的 binder</span>
+            <span class="seq-note">ServiceManager::checkService()</span>
           </div>
           <div class="seq-msg is-return is-rtl" style="--from:3; --to:5">
-            <span class="seq-label" data-route="servicemanager → 驱动">6. BC_REPLY</span>
+            <span class="seq-label" data-route="servicemanager → 驱动">5. BC_REPLY</span>
             <span class="seq-line" aria-hidden="true"></span>
-            <span class="seq-note">reply 里写入 activity 的 binder 对象</span>
+            <span class="seq-note">reply 里写入 binder 对象</span>
           </div>
           <div class="seq-msg is-return is-rtl" style="--from:2; --to:4">
-            <span class="seq-label" data-route="驱动 → libbinder">7. BR_REPLY</span>
+            <span class="seq-label" data-route="驱动 → libbinder">6. BR_REPLY</span>
             <span class="seq-line" aria-hidden="true"></span>
             <span class="seq-note">客户端 readStrongBinder() 得到 handle 2</span>
           </div>
         </div>
-        <p class="seq-caption">图由 CSS grid 生成；移动端会折叠成步骤列表。箭头方向以文字标签为准。</p>
-        <p>这张图里有三个关键点：</p>
-        <ul>
-          <li><strong>handle 0 是特殊入口。</strong>客户端没有先查一个“servicemanager 的 handle”，而是直接用 0。驱动在 <code>binder_transaction</code> 里发现目标 handle 是 0，就把它解析成 <code>binder_context_mgr_node</code>，而不是普通 ref 表。这个 node 只能由一次成功的 <code>BINDER_SET_CONTEXT_MGR</code> 设置。</li>
-          <li><strong>同步调用会阻塞。</strong><code>IPCThreadState::transact()</code> 在 <code>flags</code> 没有 <code>TF_ONE_WAY</code> 时会调用 <code>waitForResponse()</code>，一直等到驱动返回 <code>BR_REPLY</code>。所以客户端线程在等待期间不能干别的；服务端如果卡住，客户端也会卡住。</li>
-          <li><strong>线程是 Binder 线程。</strong>服务端的 <code>BR_TRANSACTION</code> 由 Binder 线程读取，不是服务端主线程。system_server 里那些 <code>binder:3139_N</code> 就是干这个的。</li>
-        </ul>
-        <p>对应源码里，<code>becomeContextManager()</code> 做的是：</p>
-        <pre data-file="frameworks/native/libs/binder/ProcessState.cpp" data-lang="cpp"><code class="language-cpp">bool ProcessState::becomeContextManager()
-{
-    std::unique_lock&lt;std::mutex&gt; _l(mLock);
-
-    flat_binder_object obj {
-        .flags = FLAT_BINDER_FLAG_TXN_SECURITY_CTX,
-    };
-
-    int result = ioctl(mDriverFD, BINDER_SET_CONTEXT_MGR_EXT, &amp;obj);
-
-    // fallback to original method
-    if (result != 0) {
-        android_errorWriteLog(0x534e4554, "121035042");
-
-        int unused = 0;
-        result = ioctl(mDriverFD, BINDER_SET_CONTEXT_MGR, &amp;unused);
-    }
-
-    if (result == -1) {
-        ALOGE("Binder ioctl to become context manager failed: %s\n", strerror(errno));
-    }
-
-    return result == 0;
-}</code></pre>
-        <p>源码在 <code>ProcessState.cpp:207</code>。只允许一个进程成功设置 context manager；第二个进程再调用会得到 <code>-EBUSY</code>。这也是为什么 servicemanager 必须在系统启动早期运行，并且通常由 init 拉起。</p>
+        <p class="seq-caption">图由 CSS grid 生成；移动端会折叠成步骤列表。</p>
         <p>对应的源码锚点（AOSP Android 15）：</p>
         <div class="table-wrap">
           <table>
             <thead><tr><th>文件</th><th>位置</th><th>作用</th></tr></thead>
             <tbody>
-              <tr><td><code>frameworks/native/cmds/service/service.cpp</code></td><td><code>main()</code> · 80、93、117</td><td>拿到 manager，调用 checkService</td></tr>
-              <tr><td><code>frameworks/native/cmds/service/service.cpp</code></td><td>125、316</td><td>写 interface token，调用 transact</td></tr>
-              <tr><td><code>frameworks/native/libs/binder/BpBinder.cpp</code></td><td><code>BpBinder::transact()</code> · 362</td><td>把调用转给 IPCThreadState</td></tr>
-              <tr><td><code>frameworks/native/libs/binder/IPCThreadState.cpp</code></td><td><code>transact()</code> · 808；<code>writeTransactionData()</code> · 828</td><td>组装 BC_TRANSACTION</td></tr>
-              <tr><td><code>frameworks/native/libs/binder/IPCThreadState.cpp</code></td><td><code>talkWithDriver()</code> · 1092</td><td><code>ioctl(BINDER_WRITE_READ)</code></td></tr>
-              <tr><td><code>frameworks/native/cmds/servicemanager/main.cpp</code></td><td><code>main()</code> · 126；<code>addService("manager")</code> · 144；<code>becomeContextManager()</code> · 149</td><td>servicemanager 启动并成为 context manager</td></tr>
-              <tr><td><code>frameworks/native/cmds/servicemanager/ServiceManager.cpp</code></td><td><code>checkService()</code> · 356；<code>listServices()</code> · 507</td><td>真正查表、按 dumpPriority 过滤</td></tr>
-              <tr><td><code>frameworks/base/core/java/android/os/BinderProxy.java</code></td><td><code>transact()</code> · 528</td><td>Java 侧代理入口</td></tr>
-              <tr><td><code>frameworks/base/core/java/android/os/Binder.java</code></td><td><code>execTransact()</code> · 1425</td><td>Java 服务端分发到 onTransact</td></tr>
+              <tr><td><code>frameworks/native/cmds/service/service.cpp</code></td><td>80、93、117、125、316</td><td>拿到 manager，写 token，调用 transact</td></tr>
+              <tr><td><code>frameworks/native/libs/binder/BpBinder.cpp</code></td><td><code>transact()</code> · 362</td><td>把调用转给 IPCThreadState</td></tr>
+              <tr><td><code>frameworks/native/libs/binder/IPCThreadState.cpp</code></td><td><code>transact()</code> · 808；<code>talkWithDriver()</code> · 1092</td><td>组装 BC_TRANSACTION，调用 ioctl</td></tr>
+              <tr><td><code>frameworks/native/cmds/servicemanager/ServiceManager.cpp</code></td><td><code>checkService()</code> · 356</td><td>真正查名字</td></tr>
             </tbody>
           </table>
         </div>
+        <p><code>BpBinder::transact</code> 和 <code>IPCThreadState::transact</code> 的关键路径：</p>
+        <pre data-file="frameworks/native/libs/binder/BpBinder.cpp" data-lang="cpp"><code class="language-cpp">status_t BpBinder::transact(
+    uint32_t code, const Parcel&amp; data, Parcel* reply, uint32_t flags)
+{
+    // ...
+    status = IPCThreadState::self()-&gt;transact(binderHandle(), code, data, reply, flags);
+    // ...
+    return status;
+}</code></pre>
+        <pre data-file="frameworks/native/libs/binder/IPCThreadState.cpp" data-lang="cpp"><code class="language-cpp">status_t IPCThreadState::transact(int32_t handle,
+                                  uint32_t code, const Parcel&amp; data,
+                                  Parcel* reply, uint32_t flags)
+{
+    // ...
+    err = writeTransactionData(BC_TRANSACTION, flags, handle, code, data, nullptr);
+    // ...
+    err = waitForResponse(reply);
+    return err;
+}</code></pre>
+        <p>同步调用会在 <code>waitForResponse()</code> 里等 <code>BR_REPLY</code>；这个等待最终落到 <code>talkWithDriver()</code> 的 <code>ioctl(BINDER_WRITE_READ)</code>。所以“客户端线程阻塞”不是框架假装的，而是线程真的停在 ioctl 上。</p>
 
-        <h2>六、真机证据：进程、线程、映射</h2>
-        <p>先看进程。设备上同时有 servicemanager、hwservicemanager、vndservicemanager 和 system_server：</p>
-        <pre data-title="命令：查看 Binder 相关进程" data-lang="bash"><code class="language-bash">adb shell ps -A -o USER,PID,PPID,STAT,NAME | grep -E "servicemanager|system_server"</code></pre>
+        <h2>六、真机证据：两个进程、Binder 线程、/dev/binder</h2>
+        <figure>
+          <img class="fig-light" src="../assets/img/binder-architecture-light.svg" alt="Binder 系统全景：客户端、驱动、服务进程和 Binder 线程">
+          <img class="fig-dark" src="../assets/img/binder-architecture-dark.svg" alt="Binder 系统全景：客户端、驱动、服务进程和 Binder 线程">
+          <figcaption>图 3-2：一次调用经过客户端、Binder 驱动和服务端 Binder 线程。</figcaption>
+        </figure>
+        <p>先看进程：</p>
+        <pre data-title="命令：查看 Binder 相关进程" data-lang="bash"><code class="language-bash">adb shell 'ps -A -o USER,PID,PPID,STAT,NAME | grep -E "servicemanager|system_server"'</code></pre>
         <pre data-title="输出：ps -A（真机）" data-lang="text"><code class="language-text">system       2567    1 S     servicemanager
 system       2569    1 S     hwservicemanager
 system       2574    1 S     vndservicemanager
 system       3139 2714 S&lt;    system_server</code></pre>
-        <p>servicemanager 和 system_server 是两个不同 PID。前者管“名字到 IBinder”的注册表，后者是大多数 Java 系统服务的宿主。hwservicemanager 和 vndservicemanager 分别服务 HAL 和 vendor 域。</p>
-        <p>再看 system_server 的线程。过滤 <code>binder</code> 可以看到一组阻塞在 <code>binder_ioctl_write_read</code> 的线程。下面用 <code>pidof</code> 取 PID，避免重启后 PID 变化；本文抓取时 system_server=3139、servicemanager=2567：</p>
-        <pre data-title="命令：查看 system_server 的 Binder 线程" data-lang="bash"><code class="language-bash">adb shell ps -T -p $(pidof system_server) -o USER,PID,TID,PPID,WCHAN,S,CMD | grep -i binder | head -n 12</code></pre>
+        <p>servicemanager 管注册表，system_server 是大量系统服务的宿主。它们不是同一个进程。</p>
+        <p>再看 system_server 的 Binder 线程：</p>
+        <pre data-title="命令：查看 system_server 的 Binder 线程" data-lang="bash"><code class="language-bash">adb shell 'ps -T -p $(pidof system_server) -o USER,PID,TID,PPID,WCHAN,S,CMD | grep "binder:" | head -n 8'</code></pre>
         <pre data-title="输出：ps -T（真机，节选）" data-lang="text"><code class="language-text">system       3139  3183 2714 binder_ioctl_write_read S binder:3139_1
 system       3139  3184 2714 binder_ioctl_write_read S binder:3139_2
-system       3139  3208 2714 binder_ioctl_write_read S HwBinder:3139_1
 system       3139  3338 2714 binder_ioctl_write_read S binder:3139_3
-system       3139  3566 2714 binder_ioctl_write_read S HwBinder:3139_2
 system       3139  3809 2714 binder_ioctl_write_read S binder:3139_4
 system       3139  4105 2714 binder_ioctl_write_read S binder:3139_5
-system       3139  4632 2714 binder_ioctl_write_read S HwBinder:3139_3
 system       3139  4665 2714 binder_ioctl_write_read S binder:3139_6
 system       3139  4758 2714 binder_ioctl_write_read S binder:3139_7
-system       3139  4763 2714 binder_ioctl_write_read S binder:3139_8
-system       3139  4766 2714 binder_ioctl_write_read S binder:3139_9</code></pre>
-        <p>这些线程名不是随便起的：libbinder 在启动 Binder 线程时会把名字设成 <code>binder:&lt;pid&gt;_&lt;n&gt;</code>，HAL 侧则是 <code>HwBinder:&lt;pid&gt;_&lt;n&gt;</code>。它们都停在 <code>binder_ioctl_write_read</code>，说明正在等驱动把下一笔事务送进来。</p>
-        <p>对照 servicemanager：它只有主线程，没有一堆 Binder 线程。原因在启动代码里：</p>
-        <pre data-file="frameworks/native/cmds/servicemanager/main.cpp" data-lang="cpp"><code class="language-cpp">sp&lt;ProcessState&gt; ps = ProcessState::initWithDriver(driver);
-ps-&gt;setThreadPoolMaxThreadCount(0);
-ps-&gt;setCallRestriction(ProcessState::CallRestriction::FATAL_IF_NOT_ONEWAY);
+system       3139  4763 2714 binder_ioctl_write_read S binder:3139_8</code></pre>
+        <p>这些线程都停在 <code>binder_ioctl_write_read</code>，等驱动把下一笔事务送进来。最后看 <code>/dev/binder</code> 是否真的映射进了进程：</p>
+        <pre data-title="命令：查看 Binder 设备映射" data-lang="bash"><code class="language-bash">adb shell 'cat /proc/$(pidof system_server)/maps | grep "/dev/binder"'</code></pre>
+        <pre data-title="输出：maps（真机）" data-lang="text"><code class="language-text">9d134000-9d232000 r--p 00000000 00:12 969                                /dev/binder</code></pre>
+        <p>服务端不是“主线程收到调用”，而是某个 Binder 线程从驱动里读到事务，再进入 Stub。第 2 章和图 3-2 里的线程模型，在真机上就是这几行。</p>
+        <p>顺带对比一下：servicemanager 用主线程 + Looper 处理 Binder fd，没有一组 <code>binder:pid_N</code> 线程；system_server 才有线程池。两个进程处理 Binder 的方式不同，但都通过 <code>/dev/binder</code> 接事务。</p>
 
-sp&lt;ServiceManager&gt; manager = sp&lt;ServiceManager&gt;::make(std::make_unique&lt;Access&gt;());
-if (!manager-&gt;addService("manager", manager, false,
-        IServiceManager::DUMP_FLAG_PRIORITY_DEFAULT).isOk()) {
-    LOG(ERROR) &lt;&lt; "Could not self register servicemanager";
-}
-
-IPCThreadState::self()-&gt;setTheContextObject(manager);
-if (!ps-&gt;becomeContextManager()) {
-    LOG(FATAL) &lt;&lt; "Could not become context manager";
-}
-
-sp&lt;Looper&gt; looper = Looper::prepare(false /*allowNonCallbacks*/);
-sp&lt;BinderCallback&gt; binderCallback = BinderCallback::setupTo(looper);
-while(true) {
-    looper-&gt;pollAll(-1);
-}</code></pre>
-        <p>它把线程池上限设为 0，不使用多线程 looper，而是把 Binder fd 注册到主线程的 <code>Looper</code> 里。所以 <code>ps -T</code> 只看到一行，主线程阻塞在 <code>ep_poll</code>；有事务时回调 <code>BinderCallback::handleEvent()</code>，再调用 <code>IPCThreadState::handlePolledCommands()</code>。</p>
-        <p>system_server 则是另一种模式：它启动 Binder 线程池，驱动在需要并发处理事务时返回 <code>BR_SPAWN_LOOPER</code>，libbinder 收到后创建新的 Binder 线程，线程入口最后停在 <code>talkWithDriver()</code> 的 <code>ioctl(BINDER_WRITE_READ)</code> 上。因此你看到的不是固定的几个线程，而是随着服务调用逐步长出来的 <code>binder:3139_1</code>、<code>binder:3139_2</code>……线程名里的 3139 是进程 PID，不是 handle；真正的 TID 在 <code>ps</code> 输出的 TID 列，例如 3183。</p>
-        <p>Binder 设备本身也能直接看到。下面是 root adb 下抓到的映射和 fd：</p>
-        <pre data-title="命令：查看 Binder 设备映射" data-lang="bash"><code class="language-bash">adb shell cat /proc/$(pidof system_server)/maps | grep -E "/dev/(hw|vnd)?binder"
-adb shell cat /proc/$(pidof servicemanager)/maps | grep binder
-adb shell ls -l /proc/$(pidof servicemanager)/fd | grep binder</code></pre>
-        <pre data-title="输出：maps 与 fd（真机，节选）" data-lang="text"><code class="language-text">9a026000-9a124000 r--p 00000000 00:12 1086    /dev/hwbinder
-9d134000-9d232000 r--p 00000000 00:12 969     /dev/binder
-
-eb002000-eb100000 r--p 00000000 00:12 969     /dev/binder
-eb585000-eb5b5000 r--p 00000000 fd:00 2816    /system/lib/libbinder.so
-
-lrwx------ 1 system system 64 2026-11-16 18:01 3 -&gt; /dev/binder</code></pre>
-        <p>servicemanager 只映射了 <code>/dev/binder</code>，fd 3 指向它；system_server 同时映射了 <code>/dev/binder</code> 和 <code>/dev/hwbinder</code>，分别服务普通 Binder 和 HAL。</p>
-        <p>如果还想看驱动计数，可以读 debugfs：</p>
-        <pre data-title="命令：Binder 驱动统计" data-lang="bash"><code class="language-bash">adb shell cat /sys/kernel/debug/binder/stats | head -n 26</code></pre>
-        <pre data-title="输出：binder/stats（真机，节选）" data-lang="text"><code class="language-text">binder stats:
-BC_TRANSACTION: 212913
-BC_REPLY: 194889
-BC_FREE_BUFFER: 954310
-BC_INCREFS: 72035
-BC_ACQUIRE: 72035
-BC_RELEASE: 69805
-BC_DECREFS: 69785
-BC_INCREFS_DONE: 3146
-BC_ACQUIRE_DONE: 3148
-BC_REGISTER_LOOPER: 177
-BC_ENTER_LOOPER: 137
-BC_REQUEST_DEATH_NOTIFICATION: 1177
-BC_CLEAR_DEATH_NOTIFICATION: 497
-BC_DEAD_BINDER_DONE: 17
-BC_TRANSACTION_SG: 276007
-BC_REPLY_SG: 270543
-BR_TRANSACTION: 488912
-BR_REPLY: 465431
-BR_DEAD_REPLY: 1
-BR_TRANSACTION_COMPLETE: 954319
-BR_INCREFS: 3154
-BR_ACQUIRE: 3156
-BR_RELEASE: 1914
-BR_DECREFS: 1912
-BR_SPAWN_LOOPER: 182</code></pre>
-        <p><code>BC_*</code> 是客户端写给驱动的命令，<code>BR_*</code> 是驱动读给客户端的返回。这里的数值是设备启动以来的累计值，会随时间增长；上面的数字是抓取时刻的快照，不是单次调用。</p>
-
-        <h2>七、直接调用 IServiceManager 的 AIDL</h2>
-        <p><code>service check</code> 只是封装好的命令。我们可以用 <code>service call</code> 直接指定 code 和参数，观察 Parcel 的原始返回。先调用 code 2（<code>checkService</code>）：</p>
-        <pre data-title="命令：直接调用 checkService" data-lang="bash"><code class="language-bash">adb shell service call manager 2 s16 activity</code></pre>
-        <pre data-title="输出：Parcel（真机）" data-lang="text"><code class="language-text">Result: Parcel(
-0x00000000: 00000000 73682a85 00000000 00000002 '.....*hs........'
-0x00000010: 00000000 00000000 00000000 0000000c '................'Object #0 @ 0x4: 'sh*' = 2)</code></pre>
-        <p>开头的 <code>00000000</code> 是“没有异常”；后面的 binder 对象里能看到 <code>handle = 2</code>。这表示：<code>activity</code> 在 <strong>当前这个 <code>service</code> 进程</strong>里的引用编号是 2。它不是全局编号，换一个进程查同一个服务，handle 可能不同。</p>
-        <p><code>Parcel</code> 的打印不是给人逐字节读的，但可以按结构拆：开头 4 字节是异常状态（0 表示没有异常）；后面是 AIDL 返回的 <code>IBinder</code>，在 Parcel 里表现为一个 binder 对象。<code>Object #0 @ 0x4: 'sh*' = 2</code> 是 Parcel 打印器给出的摘要：偏移 4 处有一个对象，<code>'sh*'</code> 是对象头的可打印字节，<code>= 2</code> 是 handle。你不需要背这些字节，但要知道 <strong>handle 是 Parcel 里的一个整数，不是服务名</strong>。</p>
-        <p>为什么 handle 是 2 而不是 1？因为 handle 0 被 context manager 占用，客户端在第一次收到目标服务的 binder 时，驱动会在它的 ref 表里分配一个非 0 的 handle。具体值取决于进程已经持有哪些引用，不要把它当成稳定协议。</p>
-        <p>查一个不存在的服务，返回的是 null binder，而不是异常：</p>
-        <pre data-title="命令：查询不存在的服务" data-lang="bash"><code class="language-bash">adb shell service call manager 2 s16 does.not.exist</code></pre>
-        <pre data-title="输出：null binder" data-lang="text"><code class="language-text">Result: Parcel(
-0x00000000: 00000000 73622a85 00000000 00000000 '.....*bs........'
-0x00000010: 00000000 00000000 00000000 00000000 '................')</code></pre>
-        <p>最后 4 个字节变成 0，表示没有 binder 对象。这也是 <code>IServiceManager.checkService</code> 和 <code>getService</code> 的语义：找不到就返回 null，不抛异常。</p>
-        <p>再看 <code>isDeclared</code> 和 <code>getDeclaredInstances</code>。它们查的是 VINTF 声明，不是运行中的服务注册表：</p>
-        <pre data-title="命令：isDeclared / getDeclaredInstances" data-lang="bash"><code class="language-bash">adb shell service call manager 7 s16 activity
-adb shell service call manager 7 s16 android.hardware.light.ILights/default
-adb shell service call manager 8 s16 android.hardware.light.ILights</code></pre>
-        <pre data-title="输出：声明查询（真机）" data-lang="text"><code class="language-text">Result: Parcel(  00000000 00000000   '........')
-Result: Parcel(  00000000 00000001   '........')
-Result: Parcel(
-0x00000000: 00000000 00000001 00000007 00650064 '............d.e.'
-0x00000010: 00610066 006c0075 00000074          'f.a.u.l.t...    ')</code></pre>
-        <p><code>activity</code> 是运行中的 Java 服务，但不在 VINTF 声明里，所以 <code>isDeclared</code> 返回 false；<code>android.hardware.light.ILights/default</code> 是 HAL 实例，返回 true；<code>getDeclaredInstances</code> 返回字符串 <code>default</code>。</p>
-        <p>接下来换一个接口：<code>activity</code> 对应的 <code>IActivityManager</code>。AIDL 里第 7 个方法是 <code>isUidActive(int uid, String callingPackage)</code>，第 8 个是 <code>getUidProcessState(int uid, in String callingPackage)</code>：</p>
-        <pre data-title="命令：调用 IActivityManager 的 code 7 / 8" data-lang="bash"><code class="language-bash">adb shell service call activity 7 i32 1000 s16 android
-adb shell service call activity 8 i32 1000 s16 android</code></pre>
-        <pre data-title="输出：isUidActive / getUidProcessState（真机）" data-lang="text"><code class="language-text">Result: Parcel(  00000000 00000001   '........')
-Result: Parcel(  00000000 00000000   '........')</code></pre>
-        <p>第一行返回 1：uid 1000（system）是 active；第二行返回 0：对应 <code>ActivityManager.PROCESS_STATE_PERSISTENT</code>（值为 0），符合 system uid 的进程状态。注意，这里的 code 7 / 8 和刚才 <code>IServiceManager</code> 的 code 7 / 8 含义完全不同——<strong>事务码只在各自接口内有意义</strong>。</p>
-        <h3>system_server 的 Java 侧</h3>
-        <p><code>activity</code> 的服务端是 <code>ActivityManagerService</code>，它继承 <code>IActivityManager.Stub</code>，而 <code>Stub</code> 又继承 <code>android.os.Binder</code>。Java 侧的入口在 <code>Binder.execTransact()</code>（节选，省略了部分注释）：</p>
-        <pre data-file="frameworks/base/core/java/android/os/Binder.java" data-title="frameworks/base/core/java/android/os/Binder.java（节选）" data-lang="java"><code class="language-java">private boolean execTransact(int code, long dataObj, long replyObj, int flags) {
-    Parcel data = Parcel.obtain(dataObj);
-    Parcel reply = Parcel.obtain(replyObj);
-
-    final int callingUid = data.isForRpc() ? -1 : Binder.getCallingUid();
-    final long origWorkSource = callingUid == -1
-            ? -1 : ThreadLocalWorkSource.setUid(callingUid);
-
-    try {
-        return execTransactInternal(code, data, reply, flags, callingUid);
-    } finally {
-        reply.recycle();
-        data.recycle();
-
-        if (callingUid != -1) {
-            ThreadLocalWorkSource.restore(origWorkSource);
-        }
-    }
-}</code></pre>
-        <p><code>execTransactInternal()</code> 会调用子类的 <code>onTransact()</code>。大多数服务直接用 AIDL 生成的 <code>Stub.onTransact()</code>；<code>ActivityManagerService</code> 额外覆盖了 <code>onTransact()</code>，先处理 <code>SYSPROPS_TRANSACTION</code>，再把其余 code 交回 <code>super.onTransact()</code>：</p>
-        <pre data-file="frameworks/base/services/core/java/com/android/server/am/ActivityManagerService.java" data-title="ActivityManagerService.java（节选）" data-lang="java"><code class="language-java">@Override
-public boolean onTransact(int code, Parcel data, Parcel reply, int flags)
-        throws RemoteException {
-    if (code == SYSPROPS_TRANSACTION) {
-        // ... 通知所有进程系统属性变化
-    }
-    try {
-        return super.onTransact(code, data, reply, flags);
-    } catch (RuntimeException e) {
-        // ... 记录未预期的 Activity Manager 崩溃
-    }
-}</code></pre>
-        <p>所以 <code>service call activity 7 ...</code> 的调用链在服务端是：Binder 线程 → <code>Binder.execTransact()</code> → <code>ActivityManagerService.onTransact()</code> → <code>IActivityManager.Stub.onTransact()</code> → <code>isUidActive()</code>。你在 shell 里看到的 <code>Result: Parcel(...)</code>，就是这条链最后写回的返回值。</p>
-        <p>再试一个不存在的 code：</p>
-        <pre data-title="命令：非法事务码" data-lang="bash"><code class="language-bash">adb shell service call activity 999</code></pre>
-        <pre data-title="输出：Not a data message" data-lang="text"><code class="language-text">Result: Parcel(Error: 0xffffffb6 "Not a data message")</code></pre>
-        <p>服务端在 <code>onTransact</code> 里发现 Parcel 里没有合法的 interface token / 数据，直接返回错误。这就是“事务码 + interface token”共同构成协议边界的证据。</p>
-        <p>最后看 <code>listServices</code> 的 <code>dumpPriority</code> 参数。<code>service list</code> 能列出 240 个服务，但直接传 0 会得到空列表：</p>
-        <pre data-title="命令：dumpPriority 0 vs 15" data-lang="bash"><code class="language-bash">adb shell service call manager 4 i32 0
-adb shell service call manager 4 i32 15</code></pre>
-        <pre data-title="输出：listServices 的过滤参数（真机，节选）" data-lang="text"><code class="language-text">Result: Parcel(  00000000 00000000   '........')
-Result: Parcel(
-0x00000000: 00000000 000000f0 0000000c 006f0044 '............D.o.'
-0x00000010: 006b0063 0062004f 00730065 00720076 'c.k.O.b.s.e.r.v.'
-... 后面是 240 个服务名</code></pre>
-        <p><code>ServiceManager::listServices()</code> 用 <code>service.dumpPriority &amp; dumpPriority</code> 过滤；<code>service list</code> 走的是默认参数 <code>DUMP_FLAG_PRIORITY_ALL</code>（值为 15），所以能看到全部服务。</p>
-
-        <h2>八、这些调用在系统里有多常见</h2>
-        <p>如果你还觉得 Binder 只发生在少数进程之间，看一眼 <code>dumpsys binder_calls_stats</code>。完整输出包含 cpu_time、latency、exception_count、call_count 等列；下面只保留 <code>call_desc</code>，避免计数随时间变化：</p>
-        <pre data-title="命令：提取 framework Binder 调用描述" data-lang="bash"><code class="language-bash">adb shell "dumpsys binder_calls_stats | grep -oE 'com\.android\.[^,]*#[^,]*' | head -n 8"</code></pre>
-        <pre data-title="输出：binder_calls_stats 的 call_desc（真机，节选）" data-lang="text"><code class="language-text">com.android.server.am.ImActivityManagerService#getRunningAppProcesses
-com.android.server.wifi.WifiServiceImpl#getScanResults
-com.android.server.am.ImActivityManagerService#stopService
-com.android.server.accessibility.AccessibilityManagerService#sendAccessibilityEvent
-com.android.server.accessibility.AccessibilityManagerService#sendAccessibilityEvent
-com.android.server.am.ImActivityManagerService#getConfiguration
-com.android.server.ConnectivityService#getProxyForNetwork
-com.android.server.wifi.util.NetdWrapper$NetdUnsolicitedEventListener#9</code></pre>
-        <p>这些名字就是 AIDL 生成的服务端实现类和方法。<code>ImActivityManagerService</code> 是 framework 服务，<code>WifiServiceImpl</code>、<code>ConnectivityService</code> 是系统网络服务。系统里每个进程都在用 Binder，不只是某个业务进程。</p>
-
-        <h2>九、常见失败场景</h2>
-        <p>真实调用不会总是成功。下面四种失败都来自这台设备，分别对应不同的协议层：</p>
+        <h2>七、两个失败场景</h2>
+        <p>真实调用不会总是成功。先看两个和协议边界有关的失败：</p>
         <div class="table-wrap">
           <table>
-            <thead><tr><th>命令</th><th>真实输出</th><th>失败位置</th></tr></thead>
+            <thead><tr><th>命令</th><th>真实输出</th><th>说明</th></tr></thead>
             <tbody>
-              <tr><td><code>service check does.not.exist</code></td><td><code>Service does.not.exist: not found</code></td><td>servicemanager 查表，返回 null</td></tr>
-              <tr><td><code>service call does.not.exist 1</code></td><td><code>service: Service does.not.exist does not exist</code></td><td>客户端还没发事务就失败</td></tr>
-              <tr><td><code>service call manager 2</code></td><td><code>fffffffc 00000000 ...</code></td><td>参数个数不对，readString 失败</td></tr>
-              <tr><td><code>service call activity 999</code></td><td><code>Error: 0xffffffb6 "Not a data message"</code></td><td>服务端 onTransact 拒绝非法事务码</td></tr>
+              <tr><td><code>service check does.not.exist</code></td><td><code>Service does.not.exist: not found</code></td><td>servicemanager 查不到名字，返回 null</td></tr>
+              <tr><td><code>service call activity 999</code></td><td><code>Result: Parcel(Error: 0xffffffb6 "Not a data message")</code></td><td>事务码不在接口协议里，服务端拒绝</td></tr>
             </tbody>
           </table>
         </div>
-        <p>第一条和第二条的区别很重要：<code>check</code> 是“查名字”，查不到是正常业务结果；<code>call</code> 是“向某个服务发事务”，服务根本不存在时，客户端连 IBinder 都拿不到，所以直接报错。</p>
-        <p>第三条的 <code>fffffffc</code> 是 Parcel 里的异常状态（<code>-4</code>）。我们让 <code>checkService(String)</code> 去读一个没有写入的字符串，服务端在读参数的阶段就失败了，reply 里没有正常返回值。具体错误码随读取路径不同会变化，不要把它当成稳定的业务错误。</p>
-        <p>第四条的 <code>0xffffffb6</code> 对应 <code>-EBADMSG</code>（Not a data message）。这次 interface token 是对的，但 code 999 不在 AIDL 协议里，服务端没有匹配分支，最终把“这不是一条合法数据消息”返回给客户端。它和“服务不存在”是两种完全不同的错误，排障时不要混为一谈。</p>
+        <p>第一条是“服务不存在”，第二条是“事务码不合法”。两者都不是“网络错误”，而是 Binder 协议层给出的不同结果。</p>
 
-        <h2>十、常见误解</h2>
-        <div class="table-wrap">
-          <table>
-            <thead><tr><th>误解</th><th>实际</th></tr></thead>
-            <tbody>
-              <tr><td>handle 是全局编号</td><td>handle 只在当前进程的 ref 表里有意义；同一个服务在不同进程里 handle 不同。</td></tr>
-              <tr><td><code>service list</code> 里的服务都在 system_server</td><td>servicemanager、hwservicemanager、vndservicemanager、media、厂商服务都可能在列表里。</td></tr>
-              <tr><td><code>service call</code> 的 code 可以随便写</td><td>code 由 AIDL 声明顺序决定；不同接口各自编号，写错会得到 <code>Not a data message</code> 或走错分支。</td></tr>
-              <tr><td>看到 Parcel 十六进制就等于看懂了</td><td>还要知道 interface token、参数顺序、方向（in / out / inout）和返回值布局。</td></tr>
-            </tbody>
-          </table>
-        </div>
-
-        <h2>源码阅读顺序</h2>
-        <p>如果你准备自己读一遍源码，建议按下面的顺序，不要从驱动开始：</p>
-        <ol>
-          <li><code>frameworks/native/libs/binder/aidl/android/os/IServiceManager.aidl</code>：先看接口和事务码。</li>
-          <li>用 <code>aidl --lang=java</code> 生成 <code>IServiceManager.java</code>：看 Proxy / Stub 的 Parcel 读写。</li>
-          <li><code>frameworks/native/cmds/service/service.cpp</code>：看一个手写客户端如何拼 Parcel。</li>
-          <li><code>BpBinder.cpp</code> 和 <code>IPCThreadState.cpp</code>：看 <code>transact</code>、<code>talkWithDriver</code> 和 <code>ioctl</code>。</li>
-          <li><code>frameworks/native/cmds/servicemanager/main.cpp</code> 和 <code>ServiceManager.cpp</code>：看 handle 0 和查表逻辑。</li>
-          <li>最后再看 <code>BinderProxy.java</code> / <code>Binder.java</code>：把 Java 侧的 Proxy / Stub 与 native 侧对上。</li>
-        </ol>
-        <p>读的时候始终带着一条真实调用：<code>service call manager 2 s16 activity</code>。每读一层，就问自己“这一步对应输出里的哪一部分”。</p>
-
-        <h2>十一、动手练习</h2>
-        <p>下面这些命令都可以在真机或模拟器上跑，只读，不会修改系统设置：</p>
+        <h2>八、自测题</h2>
         <details>
-          <summary>练习 1：把 code 和方法对上</summary>
-          <p>打开生成的 <code>IServiceManager.java</code>，找到 <code>TRANSACTION_checkService</code>。再用 <code>service call manager 2 s16 activity</code> 验证 code 2 确实是 <code>checkService</code>。</p>
-          <p>然后打开 <code>IActivityManager.aidl</code>，数一数第 7、8 个方法，解释为什么 <code>service call activity 7</code> 和 <code>service call manager 7</code> 完全不是一回事。</p>
+          <summary>1. AIDL 生成代码里，DESCRIPTOR 是做什么的？</summary>
+          <p>它是接口标识，会写进 Parcel 的 interface token；服务端收到后用它确认调用的是同一个接口。</p>
         </details>
         <details>
-          <summary>练习 2：解释 dumpPriority</summary>
-          <p>分别执行 <code>service call manager 4 i32 0</code> 和 <code>service call manager 4 i32 15</code>，再对照 <code>ServiceManager.cpp</code> 的 <code>listServices()</code>，说明为什么一个为空、一个返回全部服务。</p>
+          <summary>2. Proxy 和 Stub 各在哪一侧？</summary>
+          <p>Proxy 在客户端进程，负责打包 Parcel 和调用 <code>transact</code>；Stub 在服务端进程，负责按 code 解包并调用实际方法。</p>
         </details>
         <details>
-          <summary>练习 3：找到 Binder 线程</summary>
-          <p>执行 <code>ps -T -p $(pidof system_server) | grep binder</code>，记录线程名和 <code>WCHAN</code>。再执行 <code>cat /proc/$(pidof servicemanager)/maps | grep binder</code>，解释为什么 servicemanager 的线程数和 system_server 差这么多。</p>
+          <summary>3. 事务码 2 在 IServiceManager 里是什么？</summary>
+          <p>是 <code>checkService</code>。事务码按接口声明顺序编号，不同接口的 code 2 含义不同。</p>
         </details>
         <details>
-          <summary>练习 4：制造一次失败</summary>
-          <p>执行 <code>service call activity 999</code>，观察 <code>Not a data message</code>。再查 <code>service check does.not.exist</code>，对比“找不到服务”和“事务码非法”两种失败为什么返回不同结果。</p>
+          <summary>4. 真正的服务方法在哪个线程执行？</summary>
+          <p>通常不在服务端主线程，而是在某个 Binder 线程里执行。可以用 <code>ps -T</code> 观察 <code>binder:pid_N</code>。</p>
         </details>
 
-        <h2>十二、本章小结</h2>
+        <h2>九、本章小结</h2>
         <ul>
-          <li>AIDL 是接口描述，<code>aidl</code> 编译器生成 Proxy 和 Stub；事务码按方法声明顺序编号，且只在各自接口内有意义。</li>
-          <li>一次调用 = 写 interface token + 按顺序写参数 + <code>transact(code)</code>；服务端在 <code>onTransact</code> 里按 code 分发。</li>
-          <li><code>service</code> 命令是一个手写的 AIDL 客户端；<code>servicemanager</code> 是 <code>IServiceManager</code> 的服务端。</li>
-          <li>真机上能看到 240 个服务、两个 PID、<code>binder:3139_N</code> 线程、<code>/dev/binder</code> 映射和驱动统计。</li>
-          <li>下一章会把这些能力扩展成回调、oneway、Parcelable 和死亡通知，仍然从系统源码和真机输出出发。</li>
+          <li>AIDL 是接口描述，<code>aidl</code> 生成 Proxy / Stub 和 Parcel 读写。</li>
+          <li>一次调用 = interface token + 按顺序写参数 + <code>transact(code)</code> + 服务端 <code>onTransact</code>。</li>
+          <li><code>service</code> 命令是一个手写的 AIDL 客户端；servicemanager 是 <code>IServiceManager</code> 的服务端。</li>
+          <li>真机上能看到两个 PID、<code>binder:pid_N</code> 线程和 <code>/dev/binder</code> 映射。</li>
         </ul>
-
-        <div class="callout">
-          <span class="callout-mark">→</span>
-          <div><strong>下一站：</strong>如果你已经能解释 <code>service call manager 2 s16 activity</code> 的每一行输出，就可以继续看第 4 章：系统服务里的 AIDL。</div>
-        </div>
+        <h3>源码阅读顺序</h3>
+        <ol>
+          <li><code>IServiceManager.aidl</code>：先看接口和事务码。</li>
+          <li>生成的 <code>IServiceManager.java</code>：看 Proxy / Stub 的 Parcel 读写。</li>
+          <li><code>service.cpp</code>：看一个手写客户端如何拼 Parcel。</li>
+          <li><code>BpBinder.cpp</code> / <code>IPCThreadState.cpp</code>：看 <code>transact</code> 和 <code>talkWithDriver</code>。</li>
+        </ol>
+        <p>下一章是选读：Parcelable、oneway、callback 和 DeathRecipient。主线仍然可以按学习路线继续。</p>
 
         <div class="article-end">
           <a class="text-link" href="./">← 返回笔记库</a>
-          <a class="text-link" href="binder-chapter-4.html">第 4 章：系统服务里的 AIDL <span class="arrow" aria-hidden="true">→</span></a>
+          <a class="text-link" href="binder-learning-path.html">返回 Binder 学习路线 <span class="arrow" aria-hidden="true">→</span></a>
         </div>
         <div class="article-footer-meta">Bolin Lab · Binder 学习路线第 3 章 · 最后更新 2026.11.17<br>验证环境：Android 15；源码：AOSP 15。</div>
+
       </article>
 
       <aside class="article-toc" aria-label="文章目录">
