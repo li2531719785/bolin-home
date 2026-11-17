@@ -213,7 +213,7 @@ String weather = reply.readString();</code></pre>
         <p>注意：oneway 的“异步”是<strong>不等待结果</strong>，不是“保证立即执行”或“不会占用资源”。它依然要经过 Parcel、驱动、队列和服务端线程。</p>
 
         <h2>服务端到底是谁在跑</h2>
-        <p>这是新手最容易误解的地方：</p>
+        <p>这是最容易误解的地方：</p>
         <p><strong>Binder 方法通常不在服务端主线程执行，而是在 Binder 线程池里的某个线程执行。</strong></p>
         <p>一个进程可以有多个 Binder 线程，因此：</p>
         <ul>

@@ -14,7 +14,8 @@
 - **语言**：页面正文以中文为主，技术术语保留英文
 
 站点用于记录 Android、Linux、Binder、Framework 和 Native 开发的学习笔记。
-内容应真实、清楚、面向初学者，不写虚构经历或无法验证的结论。
+读者定位是 Android 系统开发、Framework / Native / Kernel 方向，不以 App 开发为主线；
+AIDL 只作为进入 Binder 协议的入口。内容应真实、清楚，不写虚构经历或无法验证的结论。
 
 ## 2. 开始工作前
 
@@ -37,7 +38,7 @@
 ├── notes/binder-chapter-1.html      # Binder 学习路线第 1 章：为什么需要 Binder
 ├── notes/binder-chapter-2.html      # Binder 学习路线第 2 章：心智模型
 ├── notes/binder-chapter-3.html      # Binder 学习路线第 3 章：第一个 AIDL（系统源码 + 真机）
-├── notes/binder-chapter-4.html      # Binder 学习路线第 4 章：AIDL 进阶
+├── notes/binder-chapter-4.html      # Binder 学习路线第 4 章：系统服务里的 AIDL
 ├── assets/
 │   ├── css/site.css                 # 全站样式（含深色主题、代码块）
 │   ├── js/site.js                   # 主题、筛选、TOC、阅读进度、代码块
@@ -124,7 +125,7 @@
   4. `notes/binder-chapter-1.html` — 第 1 章：Android 为什么需要 Binder
   5. `notes/binder-chapter-2.html` — 第 2 章：Binder 的心智模型
   6. `notes/binder-chapter-3.html` — 第 3 章：第一个 AIDL（系统源码 + 真机）
-  7. `notes/binder-chapter-4.html` — 第 4 章：AIDL 进阶
+  7. `notes/binder-chapter-4.html` — 第 4 章：系统服务里的 AIDL（源码 + 真机）
 - 第 5 章已暂时下线，学习路线中标注“整理中”，后续按同一标准重写。
 - 首页和笔记库里的统计数字（07 篇、04 个方向等）必须与真实内容一致。
 - 不要把“计划中”的内容写成已完成；不确定的内容标注为整理中。
@@ -199,11 +200,15 @@
 5. 每次完成后更新 `CHANGELOG.md`；如果项目状态有变化，同步更新本文件的
    “当前状态”和“下一步”。
 
-## 9. 当前状态（2026-11-16，返工中）
+## 9. 当前状态（2026-11-17，返工中）
 
 - 首页 / 笔记库 / 关于 / 404 / 七篇笔记可访问；第 5 章正文已下线，学习路线中标记“整理中”。
 - 浅色 + 深色主题、移动端适配、搜索筛选、文章 TOC、阅读进度均已实现。
-- 第 1、2、4 章使用 CSS flex 流程图（`.flow-diagram`）；第 3 章已改为系统源码 + 真机实测版。
+- 第 1、2 章使用 CSS flex 流程图（`.flow-diagram`）；第 3、4 章已改为系统源码 + 真机实测版。
+- 第 4 章以 servicemanager 为样本，讲 Parcelable、in/out/inout、oneway、callback、DeathRecipient；
+  其中 Parcelable 有 `service call manager 14` 真机实验，其余为源码走读。
+- 学习路线改为系统开发视角：模块 2 改名“系统服务与 AIDL”，第 7 章改为 Framework / SystemServer，
+  Capstone 改为真实系统服务追踪；首页 / 笔记库 / 关于同步。
 - 第 3 章使用真实设备 VST610（Android 15，adb `192.168.51.6:5555`）采集：
   `service list` 240 个服务、servicemanager / system_server PID、`binder:3139_N` 线程、
   `/dev/binder` / `/dev/hwbinder` 映射、`binder/stats`、`service call` 原始 Parcel。
@@ -223,9 +228,9 @@
 
 ## 10. 下一步建议
 
-1. 按第 3 章的标准重写第 2 章：真实 `service list` / `dumpsys` / `maps` + libbinder 源码 + 时序图。
+1. 按第 3、4 章的标准重写第 2 章：真实 `service list` / `dumpsys` / `maps` + libbinder 源码 + 时序图。
 2. 重写第 5 章：先拆 5.1 ServiceManager 启动、5.2 addService、5.3 getService，再恢复入口。
-3. 重写第 4 章：在系统层用 `service call` / `dumpsys` 验证 oneway、callback、DeathRecipient，补真实线程与失败日志。
+3. 第 4 章已改为系统服务 AIDL；后续补 oneway / callback 的原生客户端实验（当前为源码走读）。
 4. 重写第 0、1 章：补真实 `ps` / `fd` / `maps` / `ioctl` 输出和对比实验。
 5. 继续写第 6 章：用户态 Binder 对象模型（`IBinder`、`BpBinder`、`BBinder`、`Binder`、`BinderProxy`）。
 6. 可选：RSS / Atom、每篇文章独立 OG 封面、Bing Webmaster。

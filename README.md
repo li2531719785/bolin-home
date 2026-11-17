@@ -2,6 +2,8 @@
 
 Bolin 的个人学习资料站，公开记录 Android、Linux、Binder、Framework 与 Native 开发的学习过程。
 
+面向 Android 系统开发、Framework / Native / Kernel 方向，不教 App 开发；AIDL 只作为进入 Binder 协议的入口。
+
 **线上地址：** <https://home.bolinlab.top/>
 
 由 **Cloudflare Pages** 托管，推送到 `main` 后自动部署。
@@ -27,7 +29,7 @@ Bolin 的个人学习资料站，公开记录 Android、Linux、Binder、Framewo
 │   ├── binder-chapter-1.html        # 第 1 章：为什么需要 Binder
 │   ├── binder-chapter-2.html        # 第 2 章：Binder 的心智模型
 │   ├── binder-chapter-3.html        # 第 3 章：第一个 AIDL（系统源码 + 真机）
-│   ├── binder-chapter-4.html        # 第 4 章：AIDL 进阶
+│   ├── binder-chapter-4.html        # 第 4 章：系统服务里的 AIDL（源码 + 真机）
 │   └── binder-driver.html           # Binder 驱动数据结构交互图解
 ├── assets/
 │   ├── css/site.css                 # 站点样式

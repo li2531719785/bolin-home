@@ -13,6 +13,52 @@ Bolin Lab 的开发记录。每次完成一轮开发后追加一条，至少包�
 > 给 AI 的提示：开始工作前先读最新一条；完成后不要忘记追加记录并更新
 > `AGENTS.md` 的“当前状态”。
 
+## 2026-11-17
+
+### 教程改为系统开发视角：重写第 4 章并调整学习路线
+
+**目标：** 读者是 Android 系统开发，不写 App；教程主线改为系统服务、AOSP 源码、Framework / Native / Kernel。
+
+**改动：**
+
+- 重写 `notes/binder-chapter-4.html`：以 servicemanager 为样本，讲 `ServiceDebugInfo` Parcelable、
+  `in/out/inout`、oneway、`registerForNotifications` callback 和 `DeathRecipient`。
+- 真机实验：`service call manager 14` 返回 `ServiceDebugInfo[]`，正文按字段解析出服务名 / debugPid；
+  其余能力明确标“源码走读”。
+- 新增第 4 章时序图：服务注册、callback 注册、`onRegistration`、进程死亡、`binderDied` 清理。
+- 学习路线改为“Android 系统开发的 Binder 学习路线”，模块 2 改为“系统服务与 AIDL”，
+  第 7 章改为 Framework / SystemServer 视角，Capstone 改为真实系统服务追踪。
+- 第 3 章把“把这条链路用到 App 层”改为“App 层只是这套协议的使用者”，不再展开 App 工程。
+- 首页、笔记库、关于页、README、AGENTS 同步系统开发定位和第 4 章标题。
+
+**涉及文件：**
+
+- `notes/binder-chapter-4.html`
+- `notes/binder-chapter-3.html`
+- `notes/binder-learning-path.html`
+- `notes/index.html`
+- `index.html`
+- `about/index.html`
+- `README.md`
+- `AGENTS.md`
+- `CHANGELOG.md`
+
+**验证：**
+
+- 第 4 章：23 个代码块全部有 `data-file`/`data-title` + `data-lang`；10 个 TOC 项；
+  Chrome 1440 / 390 / 360 无页面级横向溢出；控制台无错误；浅色 / 深色正常。
+- 真机复核：`service call manager 14` 返回的 DockObserver / SurfaceFlinger / activity 等条目与正文一致；
+  `dumpsys activity processes` 能看到 `IApplicationThread$Stub$Proxy` 与 PID。
+- 全站内部链接 156 条，缺失 0；`site.js`、`sitemap.xml`、`git diff --check` 通过。
+
+**Commit：** 本次提交（见 GitHub history）。
+
+**部署：** 推送 `main` 后由 Cloudflare Pages 自动部署。
+
+**下一步：** 按同一标准重写第 2 章；第 5 章按 5.1 / 5.2 / 5.3 重写。
+
+---
+
 ## 2026-11-16
 
 ### 按真机重写第 3 章，下线第 5 章与草稿流程
@@ -479,15 +525,16 @@ Bolin Lab 的开发记录。每次完成一轮开发后追加一条，至少包�
 - 最近部署：Cloudflare Pages，`main` 分支自动部署
 - 已发布页面：首页、笔记库、关于、404、Binder 图解、Binder 学习路线、第 0/1/2/3/4 章
 - 第 5 章正文已下线，学习路线中标记“整理中”
+- 教程定位：Android 系统开发 / Framework / Native / Kernel，不写 App；AIDL 只作为协议入口
 - GSC：所有权验证成功；sitemap 成功。当前 sitemap 有 10 个 URL，
   等待 Google 重新抓取；上次读取为 5 个页面
-- 第 1/2/4 章使用 `.flow-diagram`；第 3 章使用 `.seq-diagram` 时序图和真机证据；
-  第 3/4 章为 AIDL 实战，第 5 章待重写
+- 第 1/2 章使用 `.flow-diagram`；第 3、4 章使用 `.seq-diagram` 时序图和系统源码；
+  第 3 章为系统服务调用，第 4 章为 servicemanager AIDL 进阶，第 5 章待重写
 - 代码展示：本地 Prism 1.30.0 按需加载；代码块自动生成代码头、语言标签和复制
   按钮；AIDL 通过 `data-lang="aidl"` 映射到 Java 高亮
 - 写作流程：不再使用 `drafts/`；文章直接写 `notes/*.html`，但必须有源码锚点和
   真实输出，未实测内容明确标注
-- 工作区：本轮改动已提交（第 3 章返工、第 5 章下线、drafts 删除）
+- 工作区：本轮改动已提交（第 4 章返工、教程结构评审）
 - 已知注意点：
   - 不要删除 Google 验证文件与 `_redirects` 规则。
   - Cloudflare 会把 `*.html` 308 到无扩展名地址；canonical / sitemap 使用最终地址。
@@ -498,8 +545,9 @@ Bolin Lab 的开发记录。每次完成一轮开发后追加一条，至少包�
 
 - [ ] 等待 Google 索引，观察 GSC “网页”报告
 - [x] 按真机重写第 3 章（系统源码 + `service call` + 时序图）
+- [x] 教程改为系统开发视角，重写第 4 章（servicemanager + 系统 AIDL）
 - [x] 下线第 5 章，删除 `drafts/` 流程
-- [ ] 按第 3 章标准重写第 2 章
+- [ ] 按第 3/4 章标准重写第 2 章
 - [ ] 第 5 章拆成 5.1 ServiceManager 启动、5.2 addService、5.3 getService 后重写
 - [ ] 重写第 4 章：oneway / callback / DeathRecipient 真机验证
 - [ ] 重写第 0、1 章：补真实 `ps` / `fd` / `maps` / `ioctl` 输出

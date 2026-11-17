@@ -602,9 +602,9 @@ com.android.server.net.NetworkManagementService$NetdUnsolicitedEventListener#9</
           </table>
         </div>
 
-        <h2>把这条链路用到 App 层</h2>
-        <p>你可能会问：不写 App，怎么知道 App 里的 AIDL 也是这样？答案是生成代码完全一样。App 里 <code>bindService()</code> 拿到的 <code>IBinder</code>，最终会交给 <code>IHelloService.Stub.asInterface()</code>；如果目标在另一个进程，<code>asInterface()</code> 会创建 <code>Stub.Proxy</code>，之后每次方法调用都走本节的 <code>writeInterfaceToken → transact → onTransact</code>。区别只是多了 Binder 线程池、生命周期和权限检查。</p>
-        <p>所以本章先把“协议层”看清楚：AIDL 接口、事务码、Parcel 布局、handle 和 Binder 线程。第 4 章再在这个协议层上增加 Parcelable、oneway、callback 和死亡通知；那些能力不会改变这条主链路，只是改变参数和返回值的组织方式。</p>
+        <h2>App 层只是这套协议的使用者</h2>
+        <p>App 里的 AIDL 生成代码和这里看到的完全相同：<code>bindService()</code> 拿到 <code>IBinder</code> 后，<code>Stub.asInterface()</code> 在跨进程时创建 Proxy，后续调用仍然走 <code>writeInterfaceToken → transact → onTransact</code>。差别主要在进程生命周期、权限检查和线程调度。</p>
+        <p>本教程不展开 App 工程，下一章直接回到系统服务，用 servicemanager 和 framework 的真实接口增加 Parcelable、oneway、callback 和死亡通知；那些能力不会改变这条主链路，只是改变参数、返回值和生命周期的组织方式。</p>
 
         <h2>源码阅读顺序</h2>
         <p>如果你准备自己读一遍源码，建议按下面的顺序，不要从驱动开始：</p>
@@ -649,12 +649,12 @@ com.android.server.net.NetworkManagementService$NetdUnsolicitedEventListener#9</
 
         <div class="callout">
           <span class="callout-mark">→</span>
-          <div><strong>下一站：</strong>如果你已经能解释 <code>service call manager 2 s16 activity</code> 的每一行输出，就可以继续看第 4 章：AIDL 进阶。</div>
+          <div><strong>下一站：</strong>如果你已经能解释 <code>service call manager 2 s16 activity</code> 的每一行输出，就可以继续看第 4 章：系统服务里的 AIDL。</div>
         </div>
 
         <div class="article-end">
           <a class="text-link" href="./">← 返回笔记库</a>
-          <a class="text-link" href="binder-chapter-4.html">第 4 章：AIDL 进阶 <span class="arrow" aria-hidden="true">→</span></a>
+          <a class="text-link" href="binder-chapter-4.html">第 4 章：系统服务里的 AIDL <span class="arrow" aria-hidden="true">→</span></a>
         </div>
         <div class="article-footer-meta">Bolin Lab · Binder 学习路线第 3 章 · 最后更新 2026.11.16<br>验证设备：VST610 / Android 15 / AP3A.240905.015.A2；源码：AOSP v610。</div>
       </article>
