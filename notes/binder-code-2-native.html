@@ -428,11 +428,20 @@ finish:
         <p>这个函数（987 行）是同步调用的等待循环：<code>talkWithDriver</code> 取回命令，读一个 <code>cmd</code>，按命令类型处理。主线如下：</p>
         <ul>
           <li><code>while (1)</code>：<code>talkWithDriver</code> 返回错误就跳出；<code>mIn.dataAvail() == 0</code> 时继续下一轮。</li>
-          <li><strong><code>BR_REPLY</code></strong>：读出 <code>binder_transaction_data</code>，用 <code>ipcSetDataReference</code> 把驱动缓冲区直接挂到 <code>reply</code> Parcel，不复制数据；带 <code>TF_STATUS_CODE</code> 时从 buffer 读错误码并释放缓冲区。</li>
+          <li><strong><code>BR_REPLY</code></strong>：读出 <code>binder_transaction_data</code>，把回复数据接上 <code>reply</code> Parcel（见下）；带 <code>TF_STATUS_CODE</code> 时从 buffer 读错误码并释放缓冲区。</li>
           <li><strong><code>BR_TRANSACTION_COMPLETE</code></strong>：oneway 完成的标志；没有 <code>reply</code> 和 <code>acquireResult</code> 时直接结束。同步调用收到它只表示写端已入队，还要继续等 <code>BR_REPLY</code>。</li>
           <li><strong><code>BR_DEAD_REPLY</code></strong> 转成 <code>DEAD_OBJECT</code>，<strong><code>BR_FAILED_REPLY</code></strong> 转成 <code>FAILED_TRANSACTION</code>；其他错误分支同样走 <code>finish</code> 返回。</li>
           <li><strong><code>default: executeCommand(cmd)</code></strong>：调用方线程也可能收到 <code>BR_TRANSACTION</code>，那是嵌套进来的新调用，留到第 4 章。</li>
         </ul>
+        <p><code>BR_REPLY</code> 里这段地址为什么能直接用：每个 Binder 进程启动时
+        <code>ProcessState</code> 会 mmap 一块约 1MB 的区域交给驱动管理（本树
+        ProcessState.cpp 574 行）。服务端写回的回复数据，驱动就放进<strong>你自己进程的
+        这块 mmap 区域</strong>，再把地址通过 <code>BR_REPLY</code> 告诉你——所以
+        <code>ipcSetDataReference</code> 只需把 Parcel 的数据指针直接指过去，不
+        malloc、不 memcpy。这块内存属于驱动，Parcel 只是借用，因此登记
+        <code>freeBuffer</code> 回调：Parcel 析构或被复用时会向驱动发
+        <code>BC_FREE_BUFFER</code> 归还缓冲区，不还的话进程那 1MB 会被事务缓冲区耗尽。
+        mmap 区域怎么分配缓冲区，第 3 章读驱动时再看。</p>
         <p><strong>BR_REPLY 里这段内存是驱动从服务端缓冲区送回来的：</strong>驱动怎么找到目标、怎么把数据送回来？第 3 章从 <code>binder_ioctl</code> 开始读。</p>
 
         <h2>下一章</h2>
