@@ -35,6 +35,7 @@ Bolin 的个人学习资料站，公开记录 Android、Linux、Binder、Framewo
 │   ├── css/site.css                 # 站点样式
 │   ├── js/site.js                   # 主题、筛选、目录、进度条、代码块
 │   ├── vendor/prism/                # 本地 Prism 1.30.0（按需加载）
+│   ├── img/                         # 文章静态示意图（SVG，明/暗两套）
 │   └── og-image.png                 # 1200×630 社交分享图
 ├── avatar.png
 ├── 404.html
@@ -93,8 +94,9 @@ Cloudflare Pages 配置建议：
 1. 源码引用写清楚文件、函数和行号；代码块使用 `data-file` / `data-lang`。
 2. 终端输出必须是真机原始记录，保留命令和输出；不能确认的内容标“未实测”。
 3. 调用链 / 时序图优先使用 `.flow-diagram`、`.seq-diagram` 等 CSS 组件。
-4. 文章开头放验证环境（设备、Android 版本、build fingerprint、AOSP 树、日期）。
-5. 完成后同步更新笔记库、学习路线、sitemap 和 `CHANGELOG.md`。
+4. 复杂结构图可以用 `assets/img/` 下的静态 SVG（明 / 暗两套），并配 `figure` / `figcaption`。
+5. 文章开头放验证环境（Android 版本、AOSP 版本、样本、验证方式、日期）。
+6. 完成后同步更新笔记库、学习路线、sitemap 和 `CHANGELOG.md`。
 
 修改 `assets/css/site.css` 或 `assets/js/site.js` 后，记得同步更新所有页面引用里的
 `?v=...` 版本号，避免 Cloudflare 缓存旧资源。

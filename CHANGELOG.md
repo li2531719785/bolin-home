@@ -27,12 +27,15 @@ Bolin Lab 的开发记录。每次完成一轮开发后追加一条，至少包�
 - 第 3、4 章环境卡移除设备型号、build fingerprint、内核字符串和 AOSP 树名，只保留 Android 15。
 - 终端输出过滤厂商服务名：`service list`、`dumpsys binder_calls_stats`、`dumpsys activity processes` 改用 AOSP framework / systemui 样本。
 - 学习路线第 1、2、5、7、8 章描述同步 RPC/场景化讲法，明确系统服务视角。
+- 第 2 章新增 4 张明/暗两套 SVG 示意图和 `.article-body figure` 样式；资源版本升至 `?v=20261116d`。
 
 **涉及文件：**
 
 - `notes/binder-chapter-0.html`
 - `notes/binder-chapter-1.html`
 - `notes/binder-chapter-2.html`
+- `assets/img/binder-*.svg`
+- `assets/css/site.css`
 - `notes/binder-chapter-3.html`
 - `notes/binder-chapter-4.html`
 - `notes/binder-learning-path.html`
@@ -44,14 +47,15 @@ Bolin Lab 的开发记录。每次完成一轮开发后追加一条，至少包�
 **验证：**
 
 - 第 0/1/2/3/4/学习路线：Chrome 1440 / 390 无页面级横向溢出，控制台无错误。
+- 第 2 章：18 个代码块全部有 `data-title`/`data-file` + `data-lang`；4 张 SVG 在明/暗主题下正确切换。
 - 所有代码块都有 `data-title`/`data-file` + `data-lang`；TOC 和复制按钮正常。
-- 全站链接 156 条，缺失 0；sitemap 10 个 URL；`site.js`、`sitemap.xml`、`git diff --check` 通过。
+- 全站链接 164 条，缺失 0；sitemap 10 个 URL；`site.js`、`sitemap.xml`、`git diff --check` 通过。
 
 **Commit：** 本次提交（见 GitHub history）。
 
 **部署：** 推送 `main` 后由 Cloudflare Pages 自动部署。
 
-**下一步：** 按第 3/4 章标准给第 2 章补真实系统服务输出；继续第 5 章 5.1 / 5.2 / 5.3 重写。
+**下一步：** 继续第 5 章 5.1 / 5.2 / 5.3 重写；第 2 章后续按需补 `maps` / `binder/stats` 截图。
 
 ---
 
@@ -72,7 +76,8 @@ Bolin Lab 的开发记录。每次完成一轮开发后追加一条，至少包�
   第 7 章改为 Framework / SystemServer 视角，Capstone 改为真实系统服务追踪。
 - 第 3 章把“把这条链路用到 App 层”改为“App 层只是这套协议的使用者”，不再展开 App 工程。
 - 第 1 章补充 RPC 四步流程和“一次拷贝”路径的 CSS 流程图，参考 ahaoframework 的通俗讲法。
-- 第 2 章把“查天气”示例换成 `IServiceManager.checkService("activity")`，去掉 App 主语；
+- 第 2 章把“查天气”示例换成 `IServiceManager.checkService("activity")`，补真实 `service check`、handle、`ps -T` 实验，
+  新增 4 张明/暗两套 SVG 示意图（系统全景、handle/ref/node、同步调用、线程池）。
   第 0、1 章也改为“客户端进程 / 普通进程”的中性表述。
 - 全文移除具体平台型号、build fingerprint、内核字符串和内部 AOSP 树名；只保留 Android 15。
   终端输出中的厂商服务名已替换为 AOSP framework / systemui 等通用样本。
@@ -124,7 +129,7 @@ Bolin Lab 的开发记录。每次完成一轮开发后追加一条，至少包�
   `service call` 原始 Parcel。
 - 新增 `.seq-diagram` 时序 / 泳道组件（CSS grid，移动端折叠）、`.article-env` 环境卡；
   `site.js` 代码头支持 `data-label`，AIDL 高亮映射到 Java 但显示 AIDL。
-- 所有 HTML 资源版本号更新为 `?v=20261116c`。
+- 所有 HTML 资源版本号更新为 `?v=20261116b`。
 - 笔记库第 3 章卡片、首页最新笔记、学习路线第 3 章描述同步。
 
 **涉及文件：**
@@ -348,6 +353,8 @@ Bolin Lab 的开发记录。每次完成一轮开发后追加一条，至少包�
 **涉及文件：**
 
 - `notes/binder-chapter-2.html`
+- `assets/img/binder-*.svg`
+- `assets/css/site.css`
 - `notes/index.html`
 - `notes/binder-learning-path.html`
 - `index.html`
@@ -575,13 +582,14 @@ Bolin Lab 的开发记录。每次完成一轮开发后追加一条，至少包�
 - 教程定位：Android 系统开发 / Framework / Native / Kernel，不写 App；AIDL 只作为协议入口
 - GSC：所有权验证成功；sitemap 成功。当前 sitemap 有 10 个 URL，
   等待 Google 重新抓取；上次读取为 5 个页面
-- 第 1 章有 RPC 四步 / 一次拷贝流程图；第 2 章用 `IServiceManager.checkService` 示例；
+- 第 1 章有 RPC 四步 / 一次拷贝流程图；第 2 章用 `IServiceManager.checkService` 示例，
+  补 4 张 SVG、真实 `service` / `ps -T` 实验和源码；
   第 3、4 章使用 `.seq-diagram` 时序图和系统源码；第 5 章待重写
 - 代码展示：本地 Prism 1.30.0 按需加载；代码块自动生成代码头、语言标签和复制
   按钮；AIDL 通过 `data-lang="aidl"` 映射到 Java 高亮
 - 写作流程：不再使用 `drafts/`；文章直接写 `notes/*.html`，但必须有源码锚点和
   真实输出，未实测内容明确标注
-- 工作区：本轮改动已提交（RPC/一次拷贝补充、平台信息清理）
+- 工作区：本轮改动已提交（第 2 章代码/实验/SVG 补充）
 - 已知注意点：
   - 不要删除 Google 验证文件与 `_redirects` 规则。
   - Cloudflare 会把 `*.html` 308 到无扩展名地址；canonical / sitemap 使用最终地址。
@@ -594,7 +602,7 @@ Bolin Lab 的开发记录。每次完成一轮开发后追加一条，至少包�
 - [x] 按真机重写第 3 章（系统源码 + `service call` + 时序图）
 - [x] 教程改为系统开发视角，重写第 4 章（servicemanager + 系统 AIDL）
 - [x] 下线第 5 章，删除 `drafts/` 流程
-- [ ] 按第 3/4 章标准重写第 2 章
+- [x] 第 2 章补真实 `service` / `ps -T` 实验和 4 张 SVG 示意图
 - [ ] 第 5 章拆成 5.1 ServiceManager 启动、5.2 addService、5.3 getService 后重写
 - [ ] 第 4 章补 oneway / callback / DeathRecipient 的原生客户端实验（当前为源码走读）
 - [x] 第 1 章补 RPC 四步和“一次拷贝”路径

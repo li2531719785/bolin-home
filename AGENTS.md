@@ -43,6 +43,7 @@ AIDL 只作为进入 Binder 协议的入口。内容应真实、清楚，不写�
 │   ├── css/site.css                 # 全站样式（含深色主题、代码块）
 │   ├── js/site.js                   # 主题、筛选、TOC、阅读进度、代码块
 │   ├── vendor/prism/                # 本地 Prism 1.30.0（按需加载，含 LICENSE）
+│   ├── img/                         # 文章静态示意图（SVG，明/暗两套）
 │   └── og-image.png                 # 1200×630 社交分享图
 ├── avatar.png                       # 站点头像 / favicon
 ├── 404.html
@@ -120,6 +121,8 @@ AIDL 只作为进入 Binder 协议的入口。内容应真实、清楚，不写�
   高亮，代码头显示 AIDL。
 - 调用链 / 时序图优先使用 `.flow-diagram`（线性）和 `.seq-diagram`（时序 / 泳道），
   移动端会自动折叠；不要手写复杂 SVG 坐标。
+- 复杂结构图可以用预生成的静态 SVG 放在 `assets/img/`，同时提供明 / 暗两套，
+  用 `figure` + `figcaption` 引用；不要依赖外部图片 CDN。
 - 目前正式笔记有七篇：
   1. `notes/binder-driver.html` — Binder 驱动数据结构图解
   2. `notes/binder-learning-path.html` — Binder 学习路线
@@ -206,8 +209,8 @@ AIDL 只作为进入 Binder 协议的入口。内容应真实、清楚，不写�
 
 - 首页 / 笔记库 / 关于 / 404 / 七篇笔记可访问；第 5 章正文已下线，学习路线中标记“整理中”。
 - 浅色 + 深色主题、移动端适配、搜索筛选、文章 TOC、阅读进度均已实现。
-- 第 1 章新增 RPC 四步和“一次拷贝”流程图；第 2 章改用 `IServiceManager.checkService` 示例；
-  第 3、4 章为系统源码 + 真机实测版。
+- 第 1 章新增 RPC 四步和“一次拷贝”流程图；第 2 章改用 `IServiceManager.checkService` 示例，
+  补真实 `service` / `ps -T` 实验和 4 张明/暗 SVG 示意图；第 3、4 章为系统源码 + 真机实测版。
 - 第 4 章以 servicemanager 为样本，讲 Parcelable、in/out/inout、oneway、callback、DeathRecipient；
   其中 Parcelable 有 `service call manager 14` 真机实验，其余为源码走读。
 - 学习路线改为系统开发视角：模块 2 改名“系统服务与 AIDL”，第 7 章改为 Framework / SystemServer，
@@ -219,7 +222,7 @@ AIDL 只作为进入 Binder 协议的入口。内容应真实、清楚，不写�
   代码块支持 `data-label`，AIDL 代码头显示 AIDL、高亮走 Java。
 - `drafts/` 目录已删除，不再使用 Markdown 草稿流程；文章直接写 `notes/*.html`，
   但必须先有源码锚点和真实输出。
-- 本地 Prism 1.30.0 仍按需加载；CSS / JS 版本号为 `?v=20261116c`。
+- 本地 Prism 1.30.0 仍按需加载；CSS / JS 版本号为 `?v=20261116d`。
 - sitemap 现有 10 个 URL（第 5 章已移除），等待 Google 重新抓取。
 - 工作区：本轮改动已提交，Cloudflare Pages 自动部署 `main`。
 - 最近关键提交（返工前）：
@@ -231,10 +234,10 @@ AIDL 只作为进入 Binder 协议的入口。内容应真实、清楚，不写�
 
 ## 10. 下一步建议
 
-1. 按第 3、4 章的标准重写第 2 章：真实 `service list` / `dumpsys` / `maps` + libbinder 源码 + 时序图。
+1. 第 2 章已补真实 `service` / `ps -T` 实验和 4 张 SVG 示意图；后续按需补 `maps` / `binder/stats` 截图。
 2. 重写第 5 章：先拆 5.1 ServiceManager 启动、5.2 addService、5.3 getService，再恢复入口。
 3. 第 4 章已改为系统服务 AIDL；后续补 oneway / callback 的原生客户端实验（当前为源码走读）。
-4. 重写第 0、1 章：补真实 `ps` / `fd` / `maps` / `ioctl` 输出和对比实验。
+4. 重写第 0 章：补真实 `ps` / `fd` / `maps` / `ioctl` 输出和对比实验；第 1 章已补 RPC / 一次拷贝。
 5. 继续写第 6 章：用户态 Binder 对象模型（`IBinder`、`BpBinder`、`BBinder`、`Binder`、`BinderProxy`）。
 6. 可选：RSS / Atom、每篇文章独立 OG 封面、Bing Webmaster。
 7. 新笔记优先保证：证据密度 > 可读性 > 结构图 > SEO；禁止编造运行输出。

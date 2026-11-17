@@ -4,12 +4,12 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>第 2 章：Binder 的心智模型 · Bolin Lab</title>
-<meta name="description" content="Binder 学习路线第 2 章：Client / Server、Proxy / Stub、handle / node、Parcel、同步与 oneway、线程池。">
+<meta name="description" content="Binder 学习路线第 2 章：用真实 service 命令、ps -T 和 AOSP 源码，讲清 Proxy / Stub、handle / ref / node、同步与 oneway、线程池。">
 <meta name="author" content="Bolin">
 <link rel="canonical" href="https://home.bolinlab.top/notes/binder-chapter-2">
 <meta property="og:site_name" content="Bolin Lab">
 <meta property="og:title" content="第 2 章：Binder 的心智模型 · Bolin Lab">
-<meta property="og:description" content="用代理、句柄、事务和线程，把一次跨进程调用在脑子里跑起来。">
+<meta property="og:description" content="用真实服务调用、AOSP 源码和示意图，把一次跨进程调用拆成对象、线程和事务。">
 <meta property="og:type" content="article">
 <meta property="og:url" content="https://home.bolinlab.top/notes/binder-chapter-2">
 <meta property="og:image" content="https://home.bolinlab.top/assets/og-image.png">
@@ -19,11 +19,11 @@
 <meta property="article:published_time" content="2026-11-15">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="第 2 章：Binder 的心智模型 · Bolin Lab">
-<meta name="twitter:description" content="Client、Server、Proxy、Stub、handle、Parcel 与线程模型。">
+<meta name="twitter:description" content="真实 service 命令 + AOSP 源码 + 4 张示意图，讲清 Binder 的对象与线程模型。">
 <meta name="twitter:image" content="https://home.bolinlab.top/assets/og-image.png">
 <meta name="theme-color" content="#f4f1e9">
 <link rel="icon" href="../avatar.png" type="image/png">
-<link rel="stylesheet" href="../assets/css/site.css?v=20261116c">
+<link rel="stylesheet" href="../assets/css/site.css?v=20261116d">
 <script>
 (function () {
   try {
@@ -77,12 +77,25 @@
       <h1>第 2 章：Binder 的<br>心智模型</h1>
       <p class="article-lead">这一章不追源码，先把一次调用在脑子里跑起来：客户端手里的代理到底是什么？handle 为什么不是全局 ID？同步调用阻塞了谁？服务端又是哪个线程在干活？</p>
       <div class="article-meta">
-        <span>2026.11.17</span><span class="dot"></span><span>Binder 学习路线 · 第 2 章</span><span class="dot"></span><span>约 16 分钟</span><span class="dot"></span><span>建立直觉</span>
+        <span>2026.11.17</span><span class="dot"></span><span>Binder 学习路线 · 第 2 章</span><span class="dot"></span><span>约 20 分钟</span><span class="dot"></span><span>建立直觉</span>
       </div>
     </header>
 
     <div class="article-layout">
       <article class="article-body">
+        <div class="article-env">
+          <div class="article-env-head">
+            <span class="env-badge">真机实测</span>
+            <span>验证环境 / 2026-11-17</span>
+          </div>
+          <dl class="article-env-grid">
+            <div class="env-item"><dt>Android</dt><dd>15 / SDK 35</dd></div>
+            <div class="env-item"><dt>AOSP</dt><dd>Android 15</dd></div>
+            <div class="env-item"><dt>样本</dt><dd>servicemanager<br>IServiceManager</dd></div>
+            <div class="env-item"><dt>验证方式</dt><dd>adb shell</dd></div>
+          </dl>
+        </div>
+
         <p>先把 Binder 简化成一句人话：</p>
         <blockquote><p>客户端拿着一个<strong>本地代理</strong>，调用它的方法；代理把参数打包，交给内核驱动；驱动把请求送到服务端的一个<strong>Binder 线程</strong>；服务端的 <strong>Stub</strong> 解包并调用真正的对象；结果再沿原路返回。</p></blockquote>
         <p>这句话里有五个关键角色：Client、Proxy、Driver、Stub、Server。接下来我们逐个拆开。</p>
@@ -92,7 +105,7 @@
           <div><strong>本章目标：</strong>看到一段 AIDL 调用时，能说出“谁在调用谁、参数怎么过去、阻塞了哪个线程、失败时怎么知道”。不需要记住驱动的字段和红黑树。</div>
         </div>
 
-        <h2>先讲一个故事：查一个系统服务</h2>
+        <h2>先看一次真实调用：service check activity</h2>
         <p>假设有一个远程服务：</p>
         <pre data-title="AIDL 接口（概念示例）" data-lang="aidl" data-label="AIDL"><code class="language-java">interface IServiceManager {
     IBinder checkService(String name);
@@ -100,6 +113,17 @@
         <p>客户端代码写的是：</p>
         <pre data-title="客户端调用（概念示例）" data-lang="java"><code class="language-java">IBinder activity = serviceManager.checkService("activity");</code></pre>
         <p>看起来像一次普通 Java 方法调用，但实际上客户端进程里并没有真正的 <code>IServiceManager</code> 服务对象。它拿到的是一个 <strong>Proxy</strong>，这个 Proxy 会把调用翻译成一次 Binder 事务。</p>
+        <p>这不是比喻。在 Android 15 真机上可以直接发起同一种调用：</p>
+        <pre data-title="命令：查询 activity 服务" data-lang="bash"><code class="language-bash">adb shell service check activity</code></pre>
+        <pre data-title="输出：service check" data-lang="text"><code class="language-text">Service activity: found</code></pre>
+        <p><code>service</code> 命令本身就是个 Binder 客户端。它在 <code>service.cpp</code> 里拿到 <code>IServiceManager</code>，再调用 <code>checkService()</code>：</p>
+        <pre data-file="frameworks/native/cmds/service/service.cpp" data-lang="cpp"><code class="language-cpp">sp&lt;IServiceManager&gt; sm = defaultServiceManager();
+
+if (strcmp(argv[optind], "check") == 0) {
+    sp&lt;IBinder&gt; service = sm-&gt;checkService(String16(argv[optind]));
+    aout &lt;&lt; "Service " &lt;&lt; argv[optind] &lt;&lt;
+        (service == nullptr ? ": not found" : ": found") &lt;&lt; endl;
+}</code></pre>
 
         <h2>五个角色</h2>
         <div class="table-wrap">
@@ -115,31 +139,21 @@
           </table>
         </div>
         <p>这里最容易产生误解的是：<strong>Proxy 不是远程对象的引用指针</strong>。它是一个本地对象，内部保存一个 handle。你调用 Proxy 的方法时，远程方法还没有执行；真正执行发生在服务端。</p>
+        <figure>
+          <img class="fig-light" src="../assets/img/binder-architecture-light.svg" alt="Binder 系统全景：客户端进程、Binder 驱动、服务进程和 Binder 线程">
+          <img class="fig-dark" src="../assets/img/binder-architecture-dark.svg" alt="Binder 系统全景：客户端进程、Binder 驱动、服务进程和 Binder 线程">
+          <figcaption>图 2-1：一次调用经过客户端、Binder 驱动和服务端 Binder 线程；servicemanager 维护名字到 IBinder 的映射。</figcaption>
+        </figure>
+        <p>读图时先找三条边界：用户态 / 内核态、客户端 / 服务端、请求 / 回复。Proxy 和 IPCThreadState 在客户端侧；Binder 线程和 Stub 在服务端侧；中间的内核只负责解析 handle、搬运 transaction 和唤醒线程，不执行服务方法。</p>
 
         <h2>对象关系：handle、ref 与 node</h2>
         <p>先看对象是怎么被“指过去”的：</p>
 
-        <div class="flow-diagram" aria-label="Binder 客户端与服务端的对象映射">
-          <div class="flow-step">
-            <span class="flow-label">Client</span>
-            <strong>Proxy</strong>
-            <span>本地代理对象<br>持有 handle = 1</span>
-          </div>
-          <div class="flow-arrow" aria-hidden="true"></div>
-          <div class="flow-step">
-            <span class="flow-label">Kernel</span>
-            <strong>ref → node</strong>
-            <span>客户端的引用<br>指向服务端对象</span>
-          </div>
-          <div class="flow-arrow" aria-hidden="true"></div>
-          <div class="flow-step">
-            <span class="flow-label">Server</span>
-            <strong>Stub → 服务对象</strong>
-            <span>真正的 IServiceManager</span>
-          </div>
-        </div>
-        <p class="flow-note">图是概念映射，不是对象在内核里的真实内存布局。</p>
-
+        <figure>
+          <img class="fig-light" src="../assets/img/binder-handle-node-light.svg" alt="handle、ref、node：客户端 handle 通过 ref 指向服务端 node 和对象">
+          <img class="fig-dark" src="../assets/img/binder-handle-node-dark.svg" alt="handle、ref、node：客户端 handle 通过 ref 指向服务端 node 和对象">
+          <figcaption>图 2-2：handle 只在客户端进程内有效；ref 属于客户端 proc；node 属于服务端 proc。</figcaption>
+        </figure>
         <ul>
           <li><strong>handle</strong> 是客户端进程内的一个小整数，比如 <code>1</code>。它只在当前进程里有意义。</li>
           <li><strong>ref</strong> 是客户端进程里的一条 Binder 引用记录，把 handle 映射到目标对象。</li>
@@ -147,42 +161,47 @@
           <li>同一个服务被两个客户端引用时，两个客户端可能有不同的 handle，但最终都指向同一个服务端 node。</li>
         </ul>
         <p>所以不要把 handle 理解成“全局服务 ID”。它更像一张本地取件码：同一个包裹，在不同快递站可能有不同的编号。</p>
+        <p>在真机上直接看一次 handle 返回：</p>
+        <pre data-title="命令：调用 IServiceManager.checkService" data-lang="bash"><code class="language-bash">adb shell service call manager 2 s16 activity</code></pre>
+        <pre data-title="输出：Parcel（真机）" data-lang="text"><code class="language-text">Result: Parcel(
+0x00000000: 00000000 73682a85 00000000 00000002 '.....*hs........'
+0x00000010: 00000000 00000000 00000000 0000000c '................'Object #0 @ 0x4: 'sh*' = 2)</code></pre>
+        <p>这里的 <code>handle = 2</code> 只属于当前这个 <code>service</code> 进程。换一个客户端进程查同一个 <code>activity</code>，handle 可能不同；它们最终都指向同一个服务端 node。</p>
 
         <h2>一次同步调用，经过了什么</h2>
         <p>还是查服务：</p>
 
-        <div class="flow-diagram" aria-label="Binder 同步调用的执行路径">
-          <div class="flow-step">
-            <span class="flow-label">1 / Caller</span>
-            <strong>客户端线程</strong>
-            <span>调用 Proxy 方法<br>线程开始等待</span>
-          </div>
-          <div class="flow-arrow" aria-hidden="true"></div>
-          <div class="flow-step">
-            <span class="flow-label">2 / Marshal</span>
-            <strong>Parcel + transact</strong>
-            <span>code + 参数<br>FLAG_ONEWAY 决定是否回复</span>
-          </div>
-          <div class="flow-arrow" aria-hidden="true"></div>
-          <div class="flow-step">
-            <span class="flow-label">3 / Kernel</span>
-            <strong>Binder Driver</strong>
-            <span>解析 handle<br>投递 transaction</span>
-          </div>
-          <div class="flow-arrow" aria-hidden="true"></div>
-          <div class="flow-step">
-            <span class="flow-label">4 / Server</span>
-            <strong>Binder 线程</strong>
-            <span>从 todo 取出事务<br>调用 onTransact</span>
-          </div>
-          <div class="flow-arrow" aria-hidden="true"></div>
-          <div class="flow-step">
-            <span class="flow-label">5 / Method</span>
-            <strong>Stub → 服务对象</strong>
-            <span>解包参数<br>执行真正方法</span>
-          </div>
-        </div>
-        <p class="flow-note">同步调用的返回会沿反方向走：结果写入 reply Parcel，再回到第 1 步阻塞的客户端线程。</p>
+        <figure>
+          <img class="fig-light" src="../assets/img/binder-sync-call-light.svg" alt="同步调用时序：客户端等待，服务端 Binder 线程执行">
+          <img class="fig-dark" src="../assets/img/binder-sync-call-dark.svg" alt="同步调用时序：客户端等待，服务端 Binder 线程执行">
+          <figcaption>图 2-3：同步调用中，客户端线程等待 BR_REPLY；服务端由 Binder 线程执行 Stub.onTransact。</figcaption>
+        </figure>
+        <p>图中“等待”的区域就是客户端线程被占住的时间；“执行”只发生在服务端的 Binder 线程里。客户端进程的其他线程仍然可以继续跑，所以“Binder 调用阻塞”通常说的是发起调用的那个线程，而不是整个进程。</p>
+        <p>客户端最终落到 <code>BpBinder::transact</code> 和 <code>IPCThreadState::transact</code>：</p>
+        <pre data-file="frameworks/native/libs/binder/BpBinder.cpp" data-lang="cpp"><code class="language-cpp">status_t BpBinder::transact(
+    uint32_t code, const Parcel&amp; data, Parcel* reply, uint32_t flags)
+{
+    // ...
+    status = IPCThreadState::self()-&gt;transact(binderHandle(), code, data, reply, flags);
+    // ...
+    return status;
+}</code></pre>
+        <pre data-file="frameworks/native/libs/binder/IPCThreadState.cpp" data-lang="cpp"><code class="language-cpp">status_t IPCThreadState::transact(int32_t handle,
+                                  uint32_t code, const Parcel&amp; data,
+                                  Parcel* reply, uint32_t flags)
+{
+    // ...
+    err = writeTransactionData(BC_TRANSACTION, flags, handle, code, data, nullptr);
+
+    if ((flags &amp; TF_ONE_WAY) == 0) {
+        // ...
+        err = waitForResponse(reply);
+    } else {
+        err = waitForResponse(nullptr, nullptr);
+    }
+    return err;
+}</code></pre>
+        <p>同步调用在 <code>waitForResponse()</code> 里等待；它会继续调用 <code>talkWithDriver()</code>，最终阻塞在 <code>ioctl(BINDER_WRITE_READ)</code>，直到驱动返回 <code>BR_REPLY</code>。所以“客户端线程阻塞”不是框架层假装的，而是真实的线程等待。</p>
 
         <h3>为什么要 Parcel</h3>
         <p>第 0 章说过，进程之间不能传指针。Proxy 会把方法参数写进 Parcel：</p>
@@ -222,6 +241,25 @@ IBinder service = reply.readStrongBinder();</code></pre>
           <li>你在服务方法里更新 UI，不能假设自己在主线程。</li>
           <li>同步调用会占住调用方线程；服务端处理慢，调用方就一直等。</li>
         </ul>
+        <figure>
+          <img class="fig-light" src="../assets/img/binder-thread-pool-light.svg" alt="servicemanager 单线程与 system_server Binder 线程池对比">
+          <img class="fig-dark" src="../assets/img/binder-thread-pool-dark.svg" alt="servicemanager 单线程与 system_server Binder 线程池对比">
+          <figcaption>图 2-4：servicemanager 用主线程 + Looper；system_server 按需创建 binder:pid_N 线程，每个线程阻塞在 ioctl(BINDER_WRITE_READ)。</figcaption>
+        </figure>
+        <p>在 Android 15 真机上观察 system_server 的 Binder 线程：</p>
+        <pre data-title="命令：查看 system_server 的 Binder 线程" data-lang="bash"><code class="language-bash">adb shell ps -T -p $(pidof system_server) -o USER,PID,TID,PPID,WCHAN,S,CMD | grep -i binder | head -n 8</code></pre>
+        <pre data-title="输出：ps -T（真机，节选）" data-lang="text"><code class="language-text">system       3139  3183 2714 binder_ioctl_write_read S binder:3139_1
+system       3139  3184 2714 binder_ioctl_write_read S binder:3139_2
+system       3139  3208 2714 binder_ioctl_write_read S HwBinder:3139_1
+system       3139  3338 2714 binder_ioctl_write_read S binder:3139_3
+system       3139  3566 2714 binder_ioctl_write_read S HwBinder:3139_2
+system       3139  3809 2714 binder_ioctl_write_read S binder:3139_4
+system       3139  4105 2714 binder_ioctl_write_read S binder:3139_5
+system       3139  4632 2714 binder_ioctl_write_read S HwBinder:3139_3</code></pre>
+        <p>再对比 servicemanager：它只有主线程，阻塞在 <code>ep_poll</code>，没有一组 <code>binder:pid_N</code> 线程。原因在启动代码：<code>setThreadPoolMaxThreadCount(0)</code>，并把 Binder fd 注册到主线程的 <code>Looper</code>。</p>
+        <pre data-title="命令：查看 servicemanager 线程" data-lang="bash"><code class="language-bash">adb shell ps -T -p $(pidof servicemanager) -o USER,PID,TID,PPID,WCHAN,S,CMD</code></pre>
+        <pre data-title="输出：ps -T（真机）" data-lang="text"><code class="language-text">USER          PID   TID PPID WCHAN  S CMD
+system       2567  2567    1 ep_poll S servicemanager</code></pre>
 
         <h3>嵌套调用与死锁</h3>
         <p>同步调用允许嵌套：A 调用 B，B 在处理过程中又调用 A 的回调。如果 A 和 B 都没有空闲线程，双方就可能互相等待。</p>
@@ -244,6 +282,14 @@ B 的线程 1 还在等 A，无法返回
         <h2>生命周期：对象死了怎么办</h2>
         <p>Binder 的对象引用不只用于“找到对象”，也用于“知道对象还在不在”。</p>
         <p>客户端可以对一个远程 Binder 注册 <code>DeathRecipient</code>。当服务端进程死亡或对象被销毁时，客户端会收到通知，而不是永远等一个不会来的回复。</p>
+        <pre data-file="frameworks/base/core/java/android/os/BinderProxy.java" data-lang="java"><code class="language-java">public void linkToDeath(DeathRecipient recipient, int flags) {
+    linkToDeathNative(recipient, flags);
+}
+
+public boolean unlinkToDeath(DeathRecipient recipient, int flags) {
+    return unlinkToDeathNative(recipient, flags);
+}</code></pre>
+        <p>注意本地 <code>Binder</code> 的 <code>linkToDeath</code> 是 no-op（注释写着 “Local implementation is a no-op”）；只有远程代理才会把死亡通知注册到驱动。注册后，服务端进程死亡会触发客户端的 <code>binderDied()</code>，而不是让调用永远悬着。</p>
         <p>这也是为什么 Binder 比“裸 socket”更适合做系统服务：连接断开、进程死亡、对象失效，都在统一的对象模型里处理。</p>
 
         <h2>几个必须纠正的误解</h2>
@@ -262,28 +308,26 @@ B 的线程 1 还在等 A，无法返回
         </div>
 
         <h2>动手实验</h2>
-        <h3>实验 1：找一组 Proxy / Stub</h3>
-        <p>在 Android Studio 里写一个最小的 AIDL 接口并 Build，然后在生成的 Java 文件中找到：</p>
-        <ul>
-          <li><code>Stub</code>：服务端基类，包含 <code>onTransact()</code>。</li>
-          <li><code>Stub.Proxy</code>：客户端代理，包含 <code>transact()</code>。</li>
-          <li><code>asInterface()</code>：判断本地对象还是远程代理。</li>
-        </ul>
-        <p>先不要求写完整服务，只要能指出这三段代码的位置。</p>
+        <h3>实验 1：看一次真实的服务查询</h3>
+        <pre data-title="命令：查询服务并观察 handle" data-lang="bash"><code class="language-bash">adb shell service check activity
+adb shell service call manager 2 s16 activity</code></pre>
+        <p>第一条命令证明服务存在；第二条命令直接调用 <code>IServiceManager.checkService</code>，在 Parcel 里能看到返回的 handle。试着解释：为什么这里返回的是整数，而不是服务名？</p>
 
-        <h3>实验 2：观察线程名</h3>
-        <p>在服务方法的第一行打印：</p>
-        <pre data-title="服务端线程名（Android 日志示例）" data-lang="java"><code class="language-java">Log.d("BinderDemo", "thread = " + Thread.currentThread().getName());</code></pre>
-        <p>从主线程发起同步调用，观察服务端日志里的线程名。它通常不是服务端主线程。</p>
+        <h3>实验 2：观察 Binder 线程</h3>
+        <pre data-title="命令：观察 Binder 线程与映射" data-lang="bash"><code class="language-bash">adb shell ps -A | grep -E "servicemanager|system_server"
+adb shell ps -T -p $(pidof system_server) | grep -i binder | head -n 8
+adb shell cat /proc/$(pidof servicemanager)/maps | grep binder</code></pre>
+        <p>记录 system_server 的 <code>binder:pid_N</code> 线程数和 <code>WCHAN</code>，再解释为什么 servicemanager 没有同样多的 Binder 线程。</p>
 
-        <h3>实验 3：画对象图</h3>
+        <h3>实验 3：把对象图画出来</h3>
         <p>不看笔记，画出：</p>
         <ul>
-          <li>客户端进程里的 Proxy 和 handle</li>
-          <li>内核里的 ref / node</li>
-          <li>服务端进程里的 Stub 和真实对象</li>
-          <li>一条同步调用的箭头，以及返回箭头的方向</li>
+          <li>客户端进程里的 Proxy 和 handle；</li>
+          <li>内核里的 ref / node；</li>
+          <li>服务端进程里的 Stub 和真实对象；</li>
+          <li>一条同步调用的箭头，以及返回箭头的方向。</li>
         </ul>
+        <p>画完后对照图 2-1 ~ 图 2-4，检查自己有没有把 handle 和 node 混为一谈。</p>
 
         <h2>自测题</h2>
         <details>
@@ -359,6 +403,6 @@ B 的线程 1 还在等 A，无法返回
   </div>
 </footer>
 
-<script src="../assets/js/site.js?v=20261116c" defer></script>
+<script src="../assets/js/site.js?v=20261116d" defer></script>
 </body>
 </html>

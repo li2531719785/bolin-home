@@ -1,0 +1,51 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="780" height="380" viewBox="0 0 780 380" role="img">
+<defs>
+<marker id="arrowB" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#2d55ff"/></marker>
+<marker id="arrowO" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#d8532e"/></marker>
+<marker id="arrowG" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#1c8e62"/></marker>
+</defs>
+<rect width="100%" height="100%" fill="#fbf9f3"/>
+<text x="24" y="28" font-family="Noto Sans SC, Noto Sans CJK SC, system-ui, sans-serif" font-size="18" font-weight="700" fill="#15181b" text-anchor="start">Binder 系统全景：一次调用经过的对象与线程</text>
+<rect x="20" y="50" width="220" height="290" rx="10" fill="#fffdf8" stroke="#d8d1c2" stroke-width="1.2"/>
+<text x="34" y="78" font-family="Noto Sans SC, Noto Sans CJK SC, system-ui, sans-serif" font-size="15" font-weight="700" fill="#2d55ff" text-anchor="start">客户端进程</text>
+<rect x="40" y="96" width="180" height="52" rx="10" fill="#fffdf8" stroke="#d8d1c2" stroke-width="1.2"/>
+<text x="54" y="122" font-family="Noto Sans SC, Noto Sans CJK SC, system-ui, sans-serif" font-size="15" font-weight="700" fill="#15181b" text-anchor="start">service / 调用方</text>
+<text x="54" y="143" font-family="Noto Sans SC, Noto Sans CJK SC, system-ui, sans-serif" font-size="12" font-weight="400" fill="#6f746f" text-anchor="start">发起 checkService</text>
+<rect x="40" y="170" width="180" height="52" rx="10" fill="#eef3ff" stroke="#d8d1c2" stroke-width="1.2"/>
+<text x="54" y="196" font-family="Noto Sans SC, Noto Sans CJK SC, system-ui, sans-serif" font-size="15" font-weight="700" fill="#15181b" text-anchor="start">BpBinder</text>
+<text x="54" y="217" font-family="Noto Sans SC, Noto Sans CJK SC, system-ui, sans-serif" font-size="12" font-weight="400" fill="#6f746f" text-anchor="start">handle / transact</text>
+<rect x="40" y="244" width="180" height="52" rx="10" fill="#eef3ff" stroke="#d8d1c2" stroke-width="1.2"/>
+<text x="54" y="270" font-family="Noto Sans SC, Noto Sans CJK SC, system-ui, sans-serif" font-size="15" font-weight="700" fill="#15181b" text-anchor="start">IPCThreadState</text>
+<text x="54" y="291" font-family="Noto Sans SC, Noto Sans CJK SC, system-ui, sans-serif" font-size="12" font-weight="400" fill="#6f746f" text-anchor="start">BC_* / BR_*</text>
+<rect x="270" y="50" width="200" height="290" rx="10" fill="#fffdf8" stroke="#d8d1c2" stroke-width="1.2"/>
+<text x="284" y="78" font-family="Noto Sans SC, Noto Sans CJK SC, system-ui, sans-serif" font-size="15" font-weight="700" fill="#2d55ff" text-anchor="start">内核 / Binder 驱动</text>
+<rect x="290" y="96" width="160" height="52" rx="10" fill="#eef3ff" stroke="#d8d1c2" stroke-width="1.2"/>
+<text x="304" y="122" font-family="Noto Sans SC, Noto Sans CJK SC, system-ui, sans-serif" font-size="15" font-weight="700" fill="#15181b" text-anchor="start">binder_proc</text>
+<text x="304" y="143" font-family="Noto Sans SC, Noto Sans CJK SC, system-ui, sans-serif" font-size="12" font-weight="400" fill="#6f746f" text-anchor="start">open / mmap</text>
+<rect x="290" y="170" width="160" height="52" rx="10" fill="#eef3ff" stroke="#d8d1c2" stroke-width="1.2"/>
+<text x="304" y="196" font-family="Noto Sans SC, Noto Sans CJK SC, system-ui, sans-serif" font-size="15" font-weight="700" fill="#15181b" text-anchor="start">ref ↔ node</text>
+<text x="304" y="217" font-family="Noto Sans SC, Noto Sans CJK SC, system-ui, sans-serif" font-size="12" font-weight="400" fill="#6f746f" text-anchor="start">handle → 目标对象</text>
+<rect x="290" y="244" width="160" height="52" rx="10" fill="#eef3ff" stroke="#d8d1c2" stroke-width="1.2"/>
+<text x="304" y="270" font-family="Noto Sans SC, Noto Sans CJK SC, system-ui, sans-serif" font-size="15" font-weight="700" fill="#15181b" text-anchor="start">transaction</text>
+<text x="304" y="291" font-family="Noto Sans SC, Noto Sans CJK SC, system-ui, sans-serif" font-size="12" font-weight="400" fill="#6f746f" text-anchor="start">buffer / work</text>
+<rect x="500" y="50" width="260" height="290" rx="10" fill="#fffdf8" stroke="#d8d1c2" stroke-width="1.2"/>
+<text x="514" y="78" font-family="Noto Sans SC, Noto Sans CJK SC, system-ui, sans-serif" font-size="15" font-weight="700" fill="#2d55ff" text-anchor="start">服务进程</text>
+<rect x="520" y="96" width="220" height="52" rx="10" fill="#eef3ff" stroke="#d8d1c2" stroke-width="1.2"/>
+<text x="534" y="122" font-family="Noto Sans SC, Noto Sans CJK SC, system-ui, sans-serif" font-size="15" font-weight="700" fill="#15181b" text-anchor="start">Binder 线程</text>
+<text x="534" y="143" font-family="Noto Sans SC, Noto Sans CJK SC, system-ui, sans-serif" font-size="12" font-weight="400" fill="#6f746f" text-anchor="start">BR_TRANSACTION</text>
+<rect x="520" y="170" width="220" height="52" rx="10" fill="#eef3ff" stroke="#d8d1c2" stroke-width="1.2"/>
+<text x="534" y="196" font-family="Noto Sans SC, Noto Sans CJK SC, system-ui, sans-serif" font-size="15" font-weight="700" fill="#15181b" text-anchor="start">Stub / BBinder</text>
+<text x="534" y="217" font-family="Noto Sans SC, Noto Sans CJK SC, system-ui, sans-serif" font-size="12" font-weight="400" fill="#6f746f" text-anchor="start">onTransact</text>
+<rect x="520" y="244" width="220" height="52" rx="10" fill="#fffdf8" stroke="#d8d1c2" stroke-width="1.2"/>
+<text x="534" y="270" font-family="Noto Sans SC, Noto Sans CJK SC, system-ui, sans-serif" font-size="15" font-weight="700" fill="#15181b" text-anchor="start">服务对象</text>
+<text x="534" y="291" font-family="Noto Sans SC, Noto Sans CJK SC, system-ui, sans-serif" font-size="12" font-weight="400" fill="#6f746f" text-anchor="start">实际方法实现</text>
+<line x1="220" y1="196" x2="288" y2="196" stroke="#2d55ff" stroke-width="2" marker-end="url(#arrowB)"/>
+<text x="224" y="186" font-family="Noto Sans SC, Noto Sans CJK SC, system-ui, sans-serif" font-size="11" font-weight="400" fill="#2d55ff" text-anchor="start">transact / ioctl</text>
+<line x1="452" y1="122" x2="518" y2="122" stroke="#2d55ff" stroke-width="2" marker-end="url(#arrowB)"/>
+<text x="456" y="160" font-family="Noto Sans SC, Noto Sans CJK SC, system-ui, sans-serif" font-size="11" font-weight="400" fill="#2d55ff" text-anchor="start">BR_TRANSACTION</text>
+<line x1="518" y1="196" x2="452" y2="196" stroke="#d8532e" stroke-width="2" marker-end="url(#arrowO)"/>
+<text x="456" y="212" font-family="Noto Sans SC, Noto Sans CJK SC, system-ui, sans-serif" font-size="11" font-weight="400" fill="#d8532e" text-anchor="start">BC_REPLY</text>
+<line x1="288" y1="270" x2="222" y2="270" stroke="#d8532e" stroke-width="2" marker-end="url(#arrowO)"/>
+<text x="228" y="260" font-family="Noto Sans SC, Noto Sans CJK SC, system-ui, sans-serif" font-size="11" font-weight="400" fill="#d8532e" text-anchor="start">BR_REPLY</text>
+<text x="30" y="364" font-family="Noto Sans SC, Noto Sans CJK SC, system-ui, sans-serif" font-size="12" font-weight="400" fill="#6f746f" text-anchor="start">servicemanager 维护“名字 → IBinder”；system_server 和其他服务进程提供实际实现。</text>
+</svg>
