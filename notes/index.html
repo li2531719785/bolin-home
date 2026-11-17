@@ -22,7 +22,7 @@
 <meta name="twitter:image" content="https://home.bolinlab.top/assets/og-image.png">
 <meta name="theme-color" content="#f4f1e9">
 <link rel="icon" href="../avatar.png" type="image/png">
-<link rel="stylesheet" href="../assets/css/site.css?v=20261116">
+<link rel="stylesheet" href="../assets/css/site.css?v=20261116c">
 <script>
 (function () {
   try {
@@ -73,7 +73,7 @@
       <h1>笔记库</h1>
       <p>公开的学习工作台。这里放已经整理好的图解、路线和源码笔记；还没想清楚的内容，会先留在“在整理”里。</p>
       <div class="hero-stats">
-        <div class="hero-stat"><b>08</b><span>篇已发布</span></div>
+        <div class="hero-stat"><b>07</b><span>篇已发布</span></div>
         <div class="hero-stat"><b>03</b><span>个主题方向</span></div>
         <div class="hero-stat"><b>UPDATING</b><span>持续修订</span></div>
       </div>
@@ -91,7 +91,7 @@
         <button class="filter-chip" type="button" data-filter="kernel" aria-pressed="false">Kernel</button>
         <button class="filter-chip" type="button" data-filter="roadmap" aria-pressed="false">学习路线</button>
       </div>
-      <span class="mono muted" id="noteCount" aria-live="polite">08 篇笔记</span>
+      <span class="mono muted" id="noteCount" aria-live="polite">07 篇笔记</span>
     </div>
 
     <div class="note-grid" id="noteGrid">
@@ -185,20 +185,20 @@
         <span class="card-arrow" aria-hidden="true">↗</span>
       </a>
 
-      <a class="note-card reveal" href="binder-chapter-3.html" data-note-card data-tags="android binder roadmap" data-search="android binder 第3章 第一个 aidl 服务 service 跨进程 两个进程 两个 pid binder线程 proxy stub parcel 实战">
+      <a class="note-card reveal" href="binder-chapter-3.html" data-note-card data-tags="android binder roadmap" data-search="android binder 第3章 第一个 aidl 服务 service call servicemanager iservicemanager parcel proxy stub binder线程 dev/binder 真机 系统源码">
         <div class="card-meta">
           <span class="card-type">Chapter 3 / Hands-on</span>
-          <span class="card-date">2026.11.15</span>
+          <span class="card-date">2026.11.16</span>
         </div>
         <h2><span class="title-line">第 3 章：第一个</span><span class="title-line">AIDL</span></h2>
-        <p>从零写一个运行在 :remote 进程的 AIDL 服务，观察两个 PID、Binder 线程和生成的 Proxy / Stub。</p>
+        <p>不写 App，用系统 service 命令调用 IServiceManager，跟着真实 Parcel、Proxy / Stub、Binder 线程和 /dev/binder 映射走完一次调用。</p>
         <div class="card-bottom">
           <div class="card-tags">
             <span class="tag">Android</span>
             <span class="tag">Binder</span>
-            <span class="tag">实战</span>
+            <span class="tag">系统源码</span>
           </div>
-          <span class="card-read">约 22 min</span>
+          <span class="card-read">约 30 min</span>
         </div>
         <span class="card-arrow" aria-hidden="true">↗</span>
       </a>
@@ -221,23 +221,6 @@
         <span class="card-arrow" aria-hidden="true">↗</span>
       </a>
 
-      <a class="note-card reveal" href="binder-chapter-5.html" data-note-card data-tags="android binder roadmap framework" data-search="android binder 第5章 servicemanager 服务注册 handle 0 context manager addservice getservice systemserver hwservicemanager vndservicemanager framework">
-        <div class="card-meta">
-          <span class="card-type">Chapter 5 / Framework</span>
-          <span class="card-date">2026.11.16</span>
-        </div>
-        <h2><span class="title-line">第 5 章：ServiceManager</span><span class="title-line">与服务注册</span></h2>
-        <p>handle 0、addService / getService、context manager 与系统服务注册；解释为什么 handle 不是全局编号。</p>
-        <div class="card-bottom">
-          <div class="card-tags">
-            <span class="tag">Android</span>
-            <span class="tag">Binder</span>
-            <span class="tag">Framework</span>
-          </div>
-          <span class="card-read">约 26 min</span>
-        </div>
-        <span class="card-arrow" aria-hidden="true">↗</span>
-      </a>
     </div>
 
     <div class="empty-state" id="notesEmpty">没有匹配的笔记。试试搜索“Binder”，或者切换到“全部”。</div>
@@ -296,6 +279,6 @@
   </div>
 </footer>
 
-<script src="../assets/js/site.js?v=20261116" defer></script>
+<script src="../assets/js/site.js?v=20261116c" defer></script>
 </body>
 </html>

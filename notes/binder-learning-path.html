@@ -23,7 +23,7 @@
 <meta name="twitter:image" content="https://home.bolinlab.top/assets/og-image.png">
 <meta name="theme-color" content="#f4f1e9">
 <link rel="icon" href="../avatar.png" type="image/png">
-<link rel="stylesheet" href="../assets/css/site.css?v=20261116">
+<link rel="stylesheet" href="../assets/css/site.css?v=20261116c">
 <script>
 (function () {
   try {
@@ -116,8 +116,8 @@
         <h2>模块 2 · 先会用 Binder</h2>
 
         <h3>第 3 章：第一个 AIDL</h3>
-        <p>写接口、Service、绑定和客户端调用，看 AIDL 自动生成的 Proxy / Stub，确认调用发生在哪个进程。先让新手跑通一次真实的跨进程调用，比背概念有效得多。</p>
-        <p><strong>完整展开：</strong> <a href="binder-chapter-3.html">第 3 章：第一个 AIDL</a>。包含完整的 AIDL、Service、Manifest、客户端代码，以及两个 PID 和 Binder 线程的观察方法。</p>
+        <p>不写 App，直接用系统自带的 <code>service</code> 命令调用 <code>IServiceManager</code>，看 AIDL 生成的 Proxy / Stub、Parcel 读写顺序、事务码，以及真机上的 Binder 线程和 <code>/dev/binder</code> 映射。</p>
+        <p><strong>完整展开：</strong> <a href="binder-chapter-3.html">第 3 章：第一个 AIDL</a>。包含 AOSP 源码锚点、真实 <code>service call</code> 输出、进程 / 线程 / 映射证据和练习。</p>
 
         <h3>第 4 章：AIDL 进阶</h3>
         <p>基本类型、Parcelable、<code>in/out/inout</code>、<code>oneway</code>、callback、DeathRecipient、线程规则，以及常见坑：oneway 不能有返回值、回调可能不在主线程、跨进程对象需要正确 parcel。</p>
@@ -125,7 +125,7 @@
 
         <h3>第 5 章：ServiceManager 与服务注册</h3>
         <p>讲 <code>addService</code> / <code>getService</code>、为什么 handle 0 是特殊的、system_server 如何暴露系统服务，以及 servicemanager 和 hwservicemanager 的分工。</p>
-        <p><strong>完整展开：</strong> <a href="binder-chapter-5.html">第 5 章：ServiceManager 与服务注册</a>。从 context manager 的建立讲到注册 / 查找的两次事务、handle 的进程内语义，以及 SELinux 安全边界。</p>
+        <p><strong>整理中：</strong>本章正文暂时下线，后续按“源码 + 真机实验 + 时序图”的标准重写。</p>
 
         <h3>第 6 章：用户态 Binder 对象模型</h3>
         <p>把 <code>IBinder</code>、<code>BpBinder</code>、<code>BBinder</code>、Java 的 <code>Binder</code> 和 <code>BinderProxy</code> 放在一起讲。重点解释本地对象和远程代理的区别，以及为什么同一个服务在不同进程里 handle 可以不同。</p>
@@ -246,6 +246,6 @@
   </div>
 </footer>
 
-<script src="../assets/js/site.js?v=20261116" defer></script>
+<script src="../assets/js/site.js?v=20261116c" defer></script>
 </body>
 </html>

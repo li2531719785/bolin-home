@@ -178,14 +178,14 @@
 
   /* ---------- code blocks ---------- */
   const CODE_LABELS = {
-    c: "C", cpp: "C++", "c++": "C++", java: "Java", kotlin: "Kotlin",
+    c: "C", cpp: "C++", "c++": "C++", java: "Java", kotlin: "Kotlin", aidl: "AIDL",
     bash: "Shell", sh: "Shell", shell: "Shell",
     json: "JSON", javascript: "JavaScript", js: "JavaScript",
     markup: "HTML", html: "HTML", xml: "HTML", css: "CSS",
     text: "TEXT", plaintext: "TEXT", plain: "TEXT"
   };
   const PRISM_LANGS = ["c", "cpp", "java", "kotlin", "bash", "json", "javascript", "markup", "css"];
-  const PRISM_ALIASES = { "c++": "cpp", sh: "bash", shell: "bash", js: "javascript", html: "markup", xml: "markup" };
+  const PRISM_ALIASES = { "c++": "cpp", sh: "bash", shell: "bash", js: "javascript", html: "markup", xml: "markup", aidl: "java" };
   let prismPromise = null;
 
   function ensurePrism() {
@@ -281,7 +281,7 @@
       if (lang) {
         const langName = document.createElement("span");
         langName.className = "code-lang";
-        langName.textContent = CODE_LABELS[lang.toLowerCase()] || lang.toUpperCase();
+        langName.textContent = pre.dataset.label || CODE_LABELS[rawLang] || CODE_LABELS[lang.toLowerCase()] || lang.toUpperCase();
         head.appendChild(langName);
       }
 

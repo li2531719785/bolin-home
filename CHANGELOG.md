@@ -15,6 +15,62 @@ Bolin Lab 的开发记录。每次完成一轮开发后追加一条，至少包�
 
 ## 2026-11-16
 
+### 按真机重写第 3 章，下线第 5 章与草稿流程
+
+**目标：** 解决旧文章“没有真代码、没有真实验、没有时序图、AI 一次性成稿”的问题，先把第 3 章做成系统层样板。
+
+**改动：**
+
+- 删除 `drafts/` 目录（README、模板、5.1 草稿）和 `_headers` 的 `/drafts/*` noindex 规则。
+- 下线 `notes/binder-chapter-5.html`，同步移除首页、笔记库、学习路线、sitemap、AGENTS、README 中的入口与统计。
+- 第 3 章改为“不写 App”的系统层路线：以 `IServiceManager.aidl`、`service` 命令、
+  `servicemanager` 和 v610 Android 15 源码为主线。
+- 新增真实设备证据：VST610 / Android 15 / 240 个服务 / servicemanager 与 system_server PID /
+  `binder:3139_N` 线程 / `/dev/binder` 与 `/dev/hwbinder` 映射 / `binder/stats` /
+  `service call` 原始 Parcel。
+- 新增 `.seq-diagram` 时序 / 泳道组件（CSS grid，移动端折叠）、`.article-env` 环境卡；
+  `site.js` 代码头支持 `data-label`，AIDL 高亮映射到 Java 但显示 AIDL。
+- 所有 HTML 资源版本号更新为 `?v=20261116c`。
+- 笔记库第 3 章卡片、首页最新笔记、学习路线第 3 章描述同步。
+
+**涉及文件：**
+
+- `notes/binder-chapter-3.html`
+- `notes/binder-chapter-5.html`（删除）
+- `notes/index.html`
+- `notes/binder-learning-path.html`
+- `index.html`
+- `sitemap.xml`
+- `_headers`
+- `assets/css/site.css`
+- `assets/js/site.js`
+- `README.md`
+- `AGENTS.md`
+- `CHANGELOG.md`
+
+**验证：**
+
+- 设备 `192.168.51.6:5555` 真机实测：`service check activity` → found；
+  `service list` → 240 个服务；`service call manager 2 s16 activity` → Parcel handle 2。
+- `ps -T -p 3139` 能看到 `binder:3139_1` 等线程；`/proc/2567/maps` 能看到 `/dev/binder`。
+- 第 3 章 HTML 中所有代码块都有 `data-file` / `data-title` 与 `data-lang`。
+- 首页 / 笔记库统计更新为 07；sitemap 为 10 个 URL。
+- 本地 Chrome headless 检查：1440px / 390px / 360px 文档 `scrollWidth` 均等于 `clientWidth`，无页面级横向溢出；代码块和表格保留内部横向滚动。第 3 章 36 个代码块全部生成代码头，16 个 TOC 项，复制按钮 36 个，主题切换正常。
+- 全站 HTML 内部链接 156 条，缺失 0 条；`sitemap.xml` 通过 `xmllint`。
+- `node --check assets/js/site.js` 与 `prism-bundle.js` 通过。
+- 复核：在 `192.168.51.6` 重跑 `service check/list/call`、`ps -A/-T`、`maps`、`binder/stats`，关键输出与文章一致；统计计数按快照说明。
+- 修复移动端页面级横向溢出：`.article-body` 使用 `overflow-x: clip`，代码块 / 表格保留内部横向滚动；资源版本升至 `?v=20261116c`。
+
+**Commit：** 本次提交（见 GitHub history）。
+
+**部署：** 推送 `main` 后由 Cloudflare Pages 自动部署。
+
+**下一步：** 按第 3 章标准重写第 2 章；第 5 章按 5.1 / 5.2 / 5.3 重新拆分。
+
+---
+
+## 2026-11-16
+
 ### 搭建代码优先的写作框架
 
 **目标：** 解决文章“偏语言描述、代码少”的问题，先把代码展示和 Markdown 写作流程搭好，再一起写 5.1 正文。
@@ -420,27 +476,32 @@ Bolin Lab 的开发记录。每次完成一轮开发后追加一条，至少包�
 
 - 线上地址：<https://home.bolinlab.top/>
 - 最近部署：Cloudflare Pages，`main` 分支自动部署
-- 已发布页面：首页、笔记库、关于、404、Binder 图解、Binder 学习路线、第 0/1/2/3/4/5 章
-- GSC：所有权验证成功；sitemap 成功。新增第 5 章后 sitemap 有 11 个 URL，
+- 已发布页面：首页、笔记库、关于、404、Binder 图解、Binder 学习路线、第 0/1/2/3/4 章
+- 第 5 章正文已下线，学习路线中标记“整理中”
+- GSC：所有权验证成功；sitemap 成功。当前 sitemap 有 10 个 URL，
   等待 Google 重新抓取；上次读取为 5 个页面
-- 第 1/2/4/5 章使用 `.flow-diagram` 流程图组件，后续结构说明优先使用 CSS 布局或
-  Mermaid / D2，不再继续手写复杂 SVG 坐标；第 3/4 章为 AIDL 实战，第 5 章进入
-  Framework 的服务注册与查找
+- 第 1/2/4 章使用 `.flow-diagram`；第 3 章使用 `.seq-diagram` 时序图和真机证据；
+  第 3/4 章为 AIDL 实战，第 5 章待重写
 - 代码展示：本地 Prism 1.30.0 按需加载；代码块自动生成代码头、语言标签和复制
-  按钮；新文章先写 `drafts/*.md`，再转 `notes/*.html`
-- 工作区：干净，`main` 与 `origin/main` 同步
+  按钮；AIDL 通过 `data-lang="aidl"` 映射到 Java 高亮
+- 写作流程：不再使用 `drafts/`；文章直接写 `notes/*.html`，但必须有源码锚点和
+  真实输出，未实测内容明确标注
+- 工作区：本轮改动已提交（第 3 章返工、第 5 章下线、drafts 删除）
 - 已知注意点：
   - 不要删除 Google 验证文件与 `_redirects` 规则。
   - Cloudflare 会把 `*.html` 308 到无扩展名地址；canonical / sitemap 使用最终地址。
   - 新增页面后同步更新首页 / 笔记库 / sitemap。
+  - 设备真机地址：`192.168.51.6:5555`（VST610 / Android 15）。
 
 ## 后续计划
 
 - [ ] 等待 Google 索引，观察 GSC “网页”报告
-- [x] 写 Binder 学习路线第 5 章：ServiceManager 与服务注册
-- [x] 搭建 Markdown 草稿 + 代码展示框架（Prism / 代码头 / 复制）
-- [ ] 完成第 5 章 5.1：ServiceManager 启动与 handle 0（源码实战）
-- [ ] 完成第 5 章 5.2 / 5.3：addService、getService
+- [x] 按真机重写第 3 章（系统源码 + `service call` + 时序图）
+- [x] 下线第 5 章，删除 `drafts/` 流程
+- [ ] 按第 3 章标准重写第 2 章
+- [ ] 第 5 章拆成 5.1 ServiceManager 启动、5.2 addService、5.3 getService 后重写
+- [ ] 重写第 4 章：oneway / callback / DeathRecipient 真机验证
+- [ ] 重写第 0、1 章：补真实 `ps` / `fd` / `maps` / `ioctl` 输出
 - [ ] 写 Binder 学习路线第 6 章：用户态 Binder 对象模型
 - [ ] 评估把旧 Binder 长图中的静态关系图迁移到 D2
 - [ ] 增加 RSS / Atom

@@ -26,14 +26,9 @@ Bolin 的个人学习资料站，公开记录 Android、Linux、Binder、Framewo
 │   ├── binder-chapter-0.html        # 第 0 章：Binder 预备知识
 │   ├── binder-chapter-1.html        # 第 1 章：为什么需要 Binder
 │   ├── binder-chapter-2.html        # 第 2 章：Binder 的心智模型
-│   ├── binder-chapter-3.html        # 第 3 章：第一个 AIDL
+│   ├── binder-chapter-3.html        # 第 3 章：第一个 AIDL（系统源码 + 真机）
 │   ├── binder-chapter-4.html        # 第 4 章：AIDL 进阶
-│   ├── binder-chapter-5.html        # 第 5 章：ServiceManager 与服务注册
 │   └── binder-driver.html           # Binder 驱动数据结构交互图解
-├── drafts/
-│   ├── README.md                    # Markdown 写作流程与代码块约定
-│   ├── _template.md                 # 通用文章骨架
-│   └── binder-5-1-service-manager-startup.md
 ├── assets/
 │   ├── css/site.css                 # 站点样式
 │   ├── js/site.js                   # 主题、筛选、目录、进度条、代码块
@@ -89,19 +84,18 @@ Cloudflare Pages 配置建议：
 6. 在 `CHANGELOG.md` 追加本次记录。
 7. 提交并推送到 `main`。
 
-## 写作流程（Markdown 草稿）
+## 写作与验证约定
 
-新文章先写在 `drafts/`，不要直接改 `notes/*.html`：
+新文章必须有源码或真机证据，不写“你应该看到类似日志”：
 
-1. 复制 `drafts/_template.md`，按骨架填现象、环境、代码、真实输出和结论。
-2. 代码块前写 `源码：路径`，代码围栏标语言（`cpp` / `java` / `bash` / `text` 等）。
-3. AI 把草稿转成 `notes/*.html`，自动生成代码头、语法高亮和复制按钮。
-4. 本地预览并校对后，再更新索引、sitemap 和 `CHANGELOG.md`。
-
-完整约定见 [`drafts/README.md`](drafts/README.md)。作者只写 Markdown，不需要改 HTML / CSS。
+1. 源码引用写清楚文件、函数和行号；代码块使用 `data-file` / `data-lang`。
+2. 终端输出必须是真机原始记录，保留命令和输出；不能确认的内容标“未实测”。
+3. 调用链 / 时序图优先使用 `.flow-diagram`、`.seq-diagram` 等 CSS 组件。
+4. 文章开头放验证环境（设备、Android 版本、build fingerprint、AOSP 树、日期）。
+5. 完成后同步更新笔记库、学习路线、sitemap 和 `CHANGELOG.md`。
 
 修改 `assets/css/site.css` 或 `assets/js/site.js` 后，记得同步更新所有页面引用里的
-`?v=YYYYMMDD` 版本号，避免 Cloudflare 缓存旧资源。
+`?v=...` 版本号，避免 Cloudflare 缓存旧资源。
 
 ## AI 开发交接
 
