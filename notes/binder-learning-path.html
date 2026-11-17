@@ -95,7 +95,7 @@
             <thead><tr><th>章节</th><th>入口</th><th>本章链路</th></tr></thead>
             <tbody>
               <tr><td><a href="binder-code-1-overview.html">第 1 章</a></td><td>调用链总览</td><td>地图 + 名词速查</td></tr>
-              <tr><td>第 2 章</td><td><code>BpBinder::transact</code></td><td><code>IPCThreadState</code> → <code>writeTransactionData</code> → <code>talkWithDriver</code> → <code>waitForResponse</code></td></tr>
+              <tr><td><a href="binder-code-2-native.html">第 2 章</a></td><td><code>BpBinder::transact</code></td><td><code>IPCThreadState</code> → <code>writeTransactionData</code> → <code>talkWithDriver</code> → <code>waitForResponse</code></td></tr>
               <tr><td>第 3 章</td><td><code>binder_ioctl</code></td><td><code>binder_ioctl_write_read</code> → <code>binder_thread_write</code> → <code>binder_transaction</code> → <code>binder_thread_read</code></td></tr>
               <tr><td>第 4 章</td><td><code>IPCThreadState::executeCommand</code></td><td><code>BBinder::onTransact</code> → Java <code>Binder.execTransact</code></td></tr>
               <tr><td>第 5 章</td><td><code>servicemanager/main.cpp</code></td><td><code>ServiceManager::addService</code> / <code>checkService</code></td></tr>
@@ -109,8 +109,12 @@
         <p>先看地图和名词，再决定从哪一层开始。本章只做导航：一次调用经过哪些层、每层对应哪一章、常见名词怎么理解。</p>
         <p><a href="binder-code-1-overview.html">开始读第 1 章 →</a></p>
 
-        <h2>第 2–6 章</h2>
-        <p>第 2–6 章按上表继续写，写完一章放一个链接。</p>
+        <h2>第 2 章：BpBinder → IPCThreadState</h2>
+        <p>从第 1 章地图的最后一行接着读，四个完整函数：<code>IPCThreadState::transact</code>、<code>writeTransactionData</code>、<code>talkWithDriver</code>、<code>waitForResponse</code>。</p>
+        <p><a href="binder-code-2-native.html">开始读第 2 章 →</a></p>
+
+        <h2>第 3–6 章</h2>
+        <p>第 3–6 章按上表继续写，写完一章放一个链接。</p>
 
         <div class="article-end">
           <a class="text-link" href="./">← 返回笔记库</a>

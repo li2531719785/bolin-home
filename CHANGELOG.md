@@ -15,6 +15,43 @@ Bolin Lab 的开发记录。每次完成一轮开发后追加一条，至少包�
 
 ## 2026-11-17
 
+### 新增第 2 章：BpBinder → IPCThreadState
+
+**目标：** 按“本体先行、入口收尾”的路线，从第 1 章地图停在的 `IPCThreadState::self()->transact(...)` 接着读 C++ 客户端。
+
+**改动：**
+
+- 新增 `notes/binder-code-2-native.html`：五节，分别是 `BpBinder::transact`、`IPCThreadState::transact`、`writeTransactionData`、`talkWithDriver`、`waitForResponse`；每节先贴完整函数，再解释和过渡。
+- `BpBinder` 小节从 git 历史 `c69c562` 的旧第 1 章取回，解释改为本章上下文。
+- 路线页第 2 章行加链接，新增第 2 章简介，占位段改为第 3–6 章。
+- 总览页 article-end 的“第 2 章（待写）”改为可点击链接。
+- 笔记库新增第 2 章卡片（不加 `is-featured`），统计 04 篇；首页统计 `04`、latest-note `NOTE 004` 同步。
+- sitemap 增加第 2 章 URL；README / AGENTS 更新目录、正式笔记列表、当前状态和下一步。
+
+**涉及文件：**
+
+- `notes/binder-code-2-native.html`（新增）
+- `notes/binder-learning-path.html`
+- `notes/binder-code-1-overview.html`
+- `notes/index.html`
+- `index.html`
+- `sitemap.xml`
+- `README.md`
+- `AGENTS.md`
+- `CHANGELOG.md`
+
+**验证：**
+
+- `python -m http.server 8123` 本地预览：第 2 章 200；TOC 生成 6 个标题；5 个代码块均带 `data-file` / `data-lang="cpp"`。
+- 五个代码块与 `/home/libolin/v610` 源码逐字符比对通过；BpBinder 362–412、transact 808–883、writeTransactionData 1215–1249、talkWithDriver 1092–1213、waitForResponse 987–1090。
+- 站内链接检查通过；笔记库搜索 `waitForResponse` 可命中新卡片，`roadmap` 标签包含第 2 章；`noteCount` 初始为 04。
+- sitemap XML 解析通过，新 URL 本地可访问；未改 `site.css` / `site.js`，版本保持 `?v=20261116e`。
+- 收尾段引用本树 `binder_ioctl` 实际行号 5673（提供的资料写 5454，与本地树不一致）。
+
+**下一步：** 第 3 章驱动：`binder_ioctl` / `binder_ioctl_write_read` / `binder_thread_write` / `binder_transaction` / `binder_thread_read`，并入驱动数据结构。
+
+**Commit：** 本次提交（见 GitHub history）。
+
 ### 路线重排：本体先行，入口收尾
 
 **目标：** 按作者决定重排 Binder 源码阅读路线：不再从 Java 层开始，改为总览 → C++ 客户端 → 驱动 → 服务端 → servicemanager → Java/JNI 收尾。本次只做导航层，不写第 2–6 章正文。
