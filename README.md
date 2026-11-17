@@ -2,7 +2,7 @@
 
 Bolin 的个人学习资料站，公开记录 Android、Linux、Binder、Framework 与 Native 开发的学习过程。
 
-面向 Android 系统开发、Framework / Native / Kernel 方向，不教 App 开发；AIDL 只作为进入 Binder 协议的入口。
+面向 Android 系统开发、Framework / Native / Kernel 方向；AIDL 只作为进入 Binder 协议的入口。
 
 **线上地址：** <https://home.bolinlab.top/>
 

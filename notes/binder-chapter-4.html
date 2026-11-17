@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>第 4 章：系统服务里的 AIDL · Bolin Lab</title>
-<meta name="description" content="不写 App，用 servicemanager、ActivityManagerService、PackageManagerService 的真实 AIDL 源码，讲清 Parcelable、in/out/inout、oneway、callback 和 DeathRecipient。">
+<meta name="description" content="用 servicemanager、ActivityManagerService、PackageManagerService 的真实 AIDL 源码，讲清 Parcelable、in/out/inout、oneway、callback 和 DeathRecipient。">
 <meta name="author" content="Bolin">
 <link rel="canonical" href="https://home.bolinlab.top/notes/binder-chapter-4">
 <meta property="og:site_name" content="Bolin Lab">
@@ -75,7 +75,7 @@
         <a href="../index.html">Bolin Lab</a><span>/</span><a href="./">笔记</a><span>/</span><a href="binder-learning-path.html">Binder 学习路线</a><span>/</span><span>第 4 章</span>
       </div>
       <h1>第 4 章：系统服务里的<br>AIDL</h1>
-      <p class="article-lead">这一章不写 App。用 servicemanager、ActivityManagerService、PackageManagerService 的真实 AIDL，看 Parcelable、in/out/inout、oneway、callback 和 DeathRecipient 在系统层怎么用。</p>
+      <p class="article-lead">这一章继续用 servicemanager、ActivityManagerService、PackageManagerService 的真实 AIDL，看 Parcelable、in/out/inout、oneway、callback 和 DeathRecipient 在系统层怎么用。</p>
       <div class="article-meta">
         <span>2026.11.17</span><span class="dot"></span><span>Binder 学习路线 · 第 4 章</span><span class="dot"></span><span>约 30 分钟</span><span class="dot"></span><span class="meta-badge">源码 + 真机</span>
       </div>
@@ -97,7 +97,7 @@
           </dl>
         </div>
 
-        <p>上一章已经用 <code>service</code> 命令走通了一次 <code>IServiceManager.checkService</code>。这一章继续用系统服务，不再写 App：App 层的 AIDL 只是系统 AIDL 的一个子集，真正复杂的地方在系统服务里——大量进程、生命周期、回调、死亡通知和跨语言对象。</p>
+        <p>上一章已经用 <code>service</code> 命令走通了一次 <code>IServiceManager.checkService</code>。这一章继续用系统服务：AIDL 只是接口描述，真正复杂的地方在系统服务里——大量进程、生命周期、回调、死亡通知和跨语言对象。</p>
         <p>样本选 <strong>servicemanager</strong>。它同时用到本章要讲的五种能力：</p>
         <ul>
           <li><strong>Parcelable</strong>：<code>ServiceDebugInfo</code> 数组；</li>
@@ -106,8 +106,8 @@
           <li><strong>callback</strong>：<code>registerForNotifications</code>；</li>
           <li><strong>DeathRecipient</strong>：servicemanager 自己就继承 <code>IBinder::DeathRecipient</code>。</li>
         </ul>
-        <p>先把结论放在前面：这些能力不是“App 层 API”，而是系统服务维持对象图、处理进程死亡的基础设施。读完后你应该能回答：为什么 servicemanager 能自动删掉死掉的服务？为什么 callback 接口必须是 <code>oneway</code>？为什么 <code>service call</code> 不能用来验证 <code>oneway</code>？</p>
-        <p>系统 AIDL 和 App AIDL 的生成代码一样，但约束更多：HAL 和 vendor 服务通常要求 stable AIDL / VINTF 声明，接口一旦冻结就不能随意改字段；跨 system / vendor 分区时，Parcelable 的类版本、SELinux 和 binder context 都会参与校验。这也是本章坚持读 AOSP 源码的原因：这些约束在 App 层看不到。</p>
+        <p>先把结论放在前面：这些能力不是语法糖，而是系统服务维持对象图、处理进程死亡的基础设施。读完后你应该能回答：为什么 servicemanager 能自动删掉死掉的服务？为什么 callback 接口必须是 <code>oneway</code>？为什么 <code>service call</code> 不能用来验证 <code>oneway</code>？</p>
+        <p>系统 AIDL 的生成代码一样，但约束更多：HAL 和 vendor 服务通常要求 stable AIDL / VINTF 声明，接口一旦冻结就不能随意改字段；跨 system / vendor 分区时，Parcelable 的类版本、SELinux 和 binder context 都会参与校验。这也是本章坚持读 AOSP 源码的原因：只看接口定义看不到这些约束。</p>
 
         <h2>一、Parcelable：ServiceDebugInfo 数组</h2>
         <p>先看一个能直接在真机上验证的 Parcelable 接口。<code>IServiceManager</code> 里有一个只读方法：</p>
@@ -166,7 +166,7 @@
         <p>再看一眼原始 Parcel：<code>000000f1</code> 是数组长度，后面的 <code>0000000c</code> 是 <code>DockObserver</code> 的 UTF-16 长度，再往后是字符串内容和 <code>debugPid</code>。Parcel 是紧凑的二进制格式，没有字段名，也没有自描述类型；解析方必须知道 <code>ServiceDebugInfo</code> 的字段顺序，才能把这段字节还原成对象。</p>
         <p>生成代码里的 <code>PARCELABLE_WRITE_RETURN_VALUE</code> 是一个返回标记，用于告诉 Parcel 这个对象是“从服务端返回的”，某些实现可以据此复用对象或跳过重复分配。它不改变字段顺序，也不是序列化协议的一部分；真正稳定的契约仍然是 AIDL 和类定义。</p>
         <p><code>debugPid</code> 来自 <code>ServiceManager.cpp</code> 里的 <code>service.ctx.debugPid</code>，这个值在 <code>addService</code> 时从调用方进程上下文里记录下来。服务后来重启、fork 或换进程，注册表里的旧 PID 不会自动更新；因此它只适合调试和归属判断，不适合做实时进程查询。</p>
-        <p>系统层还会把 Parcelable 和 stable AIDL 绑在一起：HAL 接口通常带 <code>@VintfStability</code>，字段顺序和类型被视为 ABI。给已发布接口加字段、改顺序或换类型，可能让旧 vendor 镜像和新 framework 之间读错位。App 层可以靠同一次编译保证两端一致，系统层不行，必须靠版本和兼容性规则。</p>
+        <p>系统层还会把 Parcelable 和 stable AIDL 绑在一起：HAL 接口通常带 <code>@VintfStability</code>，字段顺序和类型被视为 ABI。给已发布接口加字段、改顺序或换类型，可能让旧 vendor 镜像和新 framework 之间读错位。同一次编译的客户端和服务端可以保证类版本一致；跨 system / vendor 分区时不行，必须靠版本和兼容性规则。</p>
         <div class="callout">
           <span class="callout-mark">!</span>
           <div><strong>系统层注意：</strong><code>Parcelable</code> 的字段顺序就是协议。客户端和服务端必须使用同一份 AIDL / 同一个类版本；字段增删、顺序变化或 classloader 不一致，都会让 Parcel 读错位。</div>

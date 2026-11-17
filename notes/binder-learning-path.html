@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Android 系统开发的 Binder 学习路线 · Bolin Lab</title>
-<meta name="description" content="面向 Android 系统开发的 Binder 学习路线：先走新手主线，再进 Framework / Native / Kernel；不教 App 开发。">
+<meta name="description" content="面向 Android 系统开发的 Binder 学习路线：先走新手主线，再进 Framework / Native / Kernel。">
 <meta name="author" content="Bolin">
 <link rel="canonical" href="https://home.bolinlab.top/notes/binder-learning-path">
 <meta property="og:site_name" content="Bolin Lab">
@@ -75,7 +75,7 @@
         <a href="../index.html">Bolin Lab</a><span>/</span><a href="./">笔记</a><span>/</span><span>Binder 学习路线</span>
       </div>
       <h1>Android 系统开发的<br>Binder 学习路线</h1>
-      <p class="article-lead">这条路线面向 Android 系统开发、Framework / Native / Kernel 方向，不教 App 开发。AIDL 只作为进入 Binder 协议的入口；主线是系统服务、libbinder、驱动和排障。</p>
+      <p class="article-lead">这条路线面向 Android 系统开发、Framework / Native / Kernel 方向。AIDL 只作为进入 Binder 协议的入口；主线是系统服务、libbinder、驱动和排障。</p>
       <div class="article-meta">
         <span>2026.11.17</span><span class="dot"></span><span>学习路线</span><span class="dot"></span><span>约 14 分钟</span><span class="dot"></span><span>系统开发 / 主线 + 进阶</span>
       </div>
@@ -88,7 +88,7 @@
 
         <div class="callout">
           <span class="callout-mark">!</span>
-          <div><strong>读者定位：</strong>面向系统开发，不教 App 开发。AIDL 只用来进入协议层；重点放在系统服务、libbinder、Binder 驱动、SELinux 和排障。</div>
+          <div><strong>读者定位：</strong>Android 系统开发、Framework / Native / Kernel。AIDL 只用来进入协议层；重点放在系统服务、libbinder、Binder 驱动、SELinux 和排障。</div>
         </div>
 
         <div class="callout">
@@ -144,15 +144,15 @@
         <p><strong>完整展开：</strong> <a href="binder-chapter-1.html">第 1 章：Android 为什么需要 Binder</a>。包含 RPC 四步、一次拷贝路径、Linux IPC 对比、对象引用和适用边界。</p>
 
         <h3>第 2 章：Binder 的心智模型</h3>
-        <p>用一张图讲清 Client / Server、Proxy / Stub、handle、Parcel、同步调用和 Binder 线程。示例用 <code>IServiceManager.checkService("activity")</code>，不写 App。</p>
+        <p>用一张图讲清 Client / Server、Proxy / Stub、handle、Parcel、同步调用和 Binder 线程。示例用 <code>IServiceManager.checkService("activity")</code>。</p>
         <p><strong>实验：</strong>不写代码，手画一次 shell <code>service</code> 命令调用 servicemanager 的完整链路。</p>
         <p><strong>完整展开：</strong> <a href="binder-chapter-2.html">第 2 章：Binder 的心智模型</a>。从一次系统服务查找出发，讲清 Proxy / Stub、handle / node、Parcel、同步调用、Binder 线程和 4 个常见误解。</p>
 
         <h2>模块 2 · 系统服务与 AIDL</h2>
-        <p>这一模块不写 App：先用系统命令和服务源码跑通一次真实调用，再看 servicemanager 的注册与用户态对象模型。</p>
+        <p>这一模块先用系统命令和服务源码跑通一次真实调用，再看 servicemanager 的注册与用户态对象模型。</p>
 
         <h3>第 3 章：第一个 AIDL</h3>
-        <p>不写 App，直接用系统自带的 <code>service</code> 命令调用 <code>IServiceManager</code>，看 AIDL 生成的 Proxy / Stub、Parcel 读写顺序、事务码，以及真机上的 Binder 线程和 <code>/dev/binder</code> 映射。</p>
+        <p>直接用系统自带的 <code>service</code> 命令调用 <code>IServiceManager</code>，看 AIDL 生成的 Proxy / Stub、Parcel 读写顺序、事务码，以及真机上的 Binder 线程和 <code>/dev/binder</code> 映射。</p>
         <p><strong>完整展开：</strong> <a href="binder-chapter-3.html">第 3 章：第一个 AIDL</a>。包含 AOSP 源码锚点、真实 <code>service call</code> 输出、进程 / 线程 / 映射证据和练习。</p>
 
         <div class="callout">
@@ -215,7 +215,7 @@
         <p>UID / PID、SELinux、binder context、AIDL HAL、stable AIDL、system / vendor 分区与权限检查。知道 Binder 不只是 IPC，也是 Android 安全边界的一部分。</p>
 
         <h3>第 17 章：Capstone 实战</h3>
-        <p>选一个真实系统服务（servicemanager 或 ActivityManagerService），追踪它的注册、调用和死亡清理；补 oneway / callback 的原生观察，最后画出客户端 → libbinder → 驱动 → 服务端 Binder 线程的全链路图。不写 App。</p>
+        <p>选一个真实系统服务（servicemanager 或 ActivityManagerService），追踪它的注册、调用和死亡清理；补 oneway / callback 的原生观察，最后画出客户端 → libbinder → 驱动 → 服务端 Binder 线程的全链路图。</p>
 
         <h3>第 18 章：知识串联与高频问题</h3>
         <p>用高频问题检查理解：handle 是全局的吗？node 存在哪？为什么同步调用会阻塞？buffer 属于谁？一次调用为什么会有两笔 transaction？</p>

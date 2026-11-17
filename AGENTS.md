@@ -14,8 +14,7 @@
 - **语言**：页面正文以中文为主，技术术语保留英文
 
 站点用于记录 Android、Linux、Binder、Framework 和 Native 开发的学习笔记。
-读者定位是 Android 系统开发、Framework / Native / Kernel 方向，不以 App 开发为主线；
-AIDL 只作为进入 Binder 协议的入口。内容应真实、清楚，不写虚构经历或无法验证的结论。
+读者定位是 Android 系统开发、Framework / Native / Kernel 方向；AIDL 只作为进入 Binder 协议的入口。内容应真实、清楚，不写虚构经历或无法验证的结论。
 
 ## 2. 开始工作前
 
@@ -214,7 +213,7 @@ AIDL 只作为进入 Binder 协议的入口。内容应真实、清楚，不写�
 - 第 4 章以 servicemanager 为样本，讲 Parcelable、in/out/inout、oneway、callback、DeathRecipient；
   其中 Parcelable 有 `service call manager 14` 真机实验，其余为源码走读。
 - 学习路线改为“新手主线 + 第二阶段”：主线 `0-1→2→3→5-6→9`，
-  第二阶段 `7→8→10-14`；第 4 章标为选读，不再挡主线。
+  第二阶段 `7→8→10-14`；第 4 章标为选读，不再挡主线。教程默认读者是系统开发者，不再反复做 App 对比。
 - 第 3 章使用 Android 15 真机采集：
   `service list` 240 个服务、servicemanager / system_server PID、`binder:3139_N` 线程、
   `/dev/binder` / `/dev/hwbinder` 映射、`binder/stats`、`service call` 原始 Parcel。
@@ -224,7 +223,7 @@ AIDL 只作为进入 Binder 协议的入口。内容应真实、清楚，不写�
   但必须先有源码锚点和真实输出。
 - 本地 Prism 1.30.0 仍按需加载；CSS / JS 版本号为 `?v=20261116d`。
 - sitemap 现有 10 个 URL（第 5 章已移除），等待 Google 重新抓取。
-- 工作区：学习路线重构已提交，等待评审；Cloudflare Pages 自动部署 `main`。
+- 工作区：App 表述清理已提交，等待评审；Cloudflare Pages 自动部署 `main`。
 - 最近关键提交（返工前）：
   - `486010c` 记录代码框架交接
   - `f2f878c` 为代码框架加资源缓存版本号

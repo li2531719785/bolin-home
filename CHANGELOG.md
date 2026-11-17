@@ -15,6 +15,43 @@ Bolin Lab 的开发记录。每次完成一轮开发后追加一条，至少包�
 
 ## 2026-11-17
 
+### 去掉教程里的 App 对比表述
+
+**目标：** 教程默认读者是系统开发者，不再反复做 App 对比。
+
+**改动：**
+
+- 学习路线、第 3 章、第 4 章、首页卡片删除 App 对比铺垫。
+- 第 3 章删除一段应用层对比整节，以及一条 AIDL 归属误解。
+- 第 4 章把 AIDL 对比、类版本等句子改为系统服务 / 分区的中性表述。
+- README、AGENTS、历史 CHANGELOG 中的同类表述同步清理。
+
+**涉及文件：**
+
+- `notes/binder-learning-path.html`
+- `notes/binder-chapter-3.html`
+- `notes/binder-chapter-4.html`
+- `notes/index.html`
+- `README.md`
+- `AGENTS.md`
+- `CHANGELOG.md`
+
+**验证：**
+
+- 公开 HTML 中不再出现 App 对比表述。
+- 第 3 章删除整节后 TOC 和代码块正常；第 4 章无残留 App 对比。
+- 1440 / 390 无横向溢出，控制台无错误；全站链接 164 条，缺失 0。
+
+**Commit：** 本次提交（见 GitHub history）。
+
+**部署：** 推送 `main` 后由 Cloudflare Pages 自动部署。
+
+**下一步：** 等作者评审学习路线与第 2 章；通过后精简第 3 章。
+
+---
+
+## 2026-11-17
+
 ### 重构学习路线：新手主线 + 第二阶段
 
 **目标：** 先给新手一条能跑通的主线，再把 Framework / Native / 驱动作为第二阶段；避免 18 章平铺和选读内容挡主线。
@@ -98,8 +135,8 @@ Bolin Lab 的开发记录。每次完成一轮开发后追加一条，至少包�
 **改动：**
 
 - 第 1 章新增“先把 Binder 放回 RPC”四步流程图和“一次拷贝”路径图；明确 Binder 是本机 RPC 框架。
-- 第 2 章把“查天气”示例换成 `IServiceManager.checkService("activity")`，不再用 App 业务举例。
-- 第 0、1 章把“App / 应用层”主语改为“客户端进程 / 普通进程”。
+- 第 2 章把“查天气”示例换成 `IServiceManager.checkService("activity")`，改用系统服务示例。
+- 第 0、1 章把上层业务主语改为“客户端进程 / 普通进程”。
 - 第 3、4 章环境卡移除设备型号、build fingerprint、内核字符串和 AOSP 树名，只保留 Android 15。
 - 终端输出过滤厂商服务名：`service list`、`dumpsys binder_calls_stats`、`dumpsys activity processes` 改用 AOSP framework / systemui 样本。
 - 学习路线第 1、2、5、7、8 章描述同步 RPC/场景化讲法，明确系统服务视角。
@@ -139,7 +176,7 @@ Bolin Lab 的开发记录。每次完成一轮开发后追加一条，至少包�
 
 ### 教程改为系统开发视角：重写第 4 章并调整学习路线
 
-**目标：** 读者是 Android 系统开发，不写 App；教程主线改为系统服务、AOSP 源码、Framework / Native / Kernel。
+**目标：** 读者是 Android 系统开发；教程主线改为系统服务、AOSP 源码、Framework / Native / Kernel。
 
 **改动：**
 
@@ -150,7 +187,7 @@ Bolin Lab 的开发记录。每次完成一轮开发后追加一条，至少包�
 - 新增第 4 章时序图：服务注册、callback 注册、`onRegistration`、进程死亡、`binderDied` 清理。
 - 学习路线改为“Android 系统开发的 Binder 学习路线”，模块 2 改为“系统服务与 AIDL”，
   第 7 章改为 Framework / SystemServer 视角，Capstone 改为真实系统服务追踪。
-- 第 3 章把“把这条链路用到 App 层”改为“App 层只是这套协议的使用者”，不再展开 App 工程。
+- 第 3 章改为系统层协议视角，不再展开上层业务代码。
 - 第 1 章补充 RPC 四步流程和“一次拷贝”路径的 CSS 流程图，参考 ahaoframework 的通俗讲法。
 - 第 2 章把“查天气”示例换成 `IServiceManager.checkService("activity")`，补真实 `service check`、handle、`ps -T` 实验，
   新增 4 张明/暗两套 SVG 示意图（系统全景、handle/ref/node、同步调用、线程池）。
@@ -198,7 +235,7 @@ Bolin Lab 的开发记录。每次完成一轮开发后追加一条，至少包�
 - 删除 `drafts/` 目录（README、模板、5.1 草稿）和 `_headers` 的 `/drafts/*` noindex 规则。
 - 下线 `notes/binder-chapter-5.html`，同步移除首页、笔记库、学习路线、sitemap、AGENTS、README 中的入口与统计。
 - `_redirects` 增加第 5 章旧链接到学习路线的 308，避免边缘缓存继续返回旧页面。
-- 第 3 章改为“不写 App”的系统层路线：以 `IServiceManager.aidl`、`service` 命令、
+- 第 3 章改为系统层路线：以 `IServiceManager.aidl`、`service` 命令、
   `servicemanager` 和 Android 15 AOSP 源码为主线。
 - 新增真实设备证据：Android 15 / 240 个服务 / servicemanager 与 system_server PID /
   `binder:3139_N` 线程 / `/dev/binder` 与 `/dev/hwbinder` 映射 / `binder/stats` /
@@ -655,7 +692,7 @@ Bolin Lab 的开发记录。每次完成一轮开发后追加一条，至少包�
 - 最近部署：Cloudflare Pages，`main` 分支自动部署
 - 已发布页面：首页、笔记库、关于、404、Binder 图解、Binder 学习路线、第 0/1/2/3/4 章
 - 第 5 章正文已下线，学习路线中标记“整理中”
-- 教程定位：Android 系统开发 / Framework / Native / Kernel，不写 App；AIDL 只作为协议入口
+- 教程定位：Android 系统开发 / Framework / Native / Kernel；默认读者是系统开发者，不再反复做 App 对比
 - GSC：所有权验证成功；sitemap 成功。当前 sitemap 有 10 个 URL，
   等待 Google 重新抓取；上次读取为 5 个页面
 - 学习路线已重构为“新手主线 `0-1→2→3→5-6→9` + 第二阶段 `7→8→10-14`”，
@@ -665,7 +702,7 @@ Bolin Lab 的开发记录。每次完成一轮开发后追加一条，至少包�
   按钮；AIDL 通过 `data-lang="aidl"` 映射到 Java 高亮
 - 写作流程：不再使用 `drafts/`；文章直接写 `notes/*.html`，但必须有源码锚点和
   真实输出，未实测内容明确标注
-- 工作区：学习路线重构已提交，等待评审
+- 工作区：App 表述清理已提交，等待评审
 - 已知注意点：
   - 不要删除 Google 验证文件与 `_redirects` 规则。
   - Cloudflare 会把 `*.html` 308 到无扩展名地址；canonical / sitemap 使用最终地址。
