@@ -209,7 +209,7 @@
 - 首页 / 笔记库 / 关于 / 404 / 七篇笔记可访问；第 5 章正文已下线，学习路线中标记“整理中”。
 - 浅色 + 深色主题、移动端适配、搜索筛选、文章 TOC、阅读进度均已实现。
 - 第 1 章已重写：RPC 四步、一次拷贝、3 张 SVG 和真机输出；第 2 章为新手主线；
-  第 3 章已精简为一次 AIDL 调用主线；第 4 章待精简（选读）。
+  第 3 章已按 `service check activity` 连续叙事重写；第 4 章待精简（选读）。
 - 第 4 章以 servicemanager 为样本，讲 Parcelable、in/out/inout、oneway、callback、DeathRecipient；
   其中 Parcelable 有 `service call manager 14` 真机实验，其余为源码走读。
 - 学习路线改为“新手主线 + 第二阶段”：主线 `0-1→2→3→5-6→9`，
@@ -223,7 +223,7 @@
   但必须先有源码锚点和真实输出。
 - 本地 Prism 1.30.0 仍按需加载；CSS / JS 版本号为 `?v=20261116d`。
 - sitemap 现有 10 个 URL（第 5 章已移除），等待 Google 重新抓取。
-- 工作区：第 3 章精简已提交，等待评审；Cloudflare Pages 自动部署 `main`。
+- 工作区：第 3 章叙事重写已提交，等待评审；Cloudflare Pages 自动部署 `main`。
 - 最近关键提交（返工前）：
   - `486010c` 记录代码框架交接
   - `f2f878c` 为代码框架加资源缓存版本号

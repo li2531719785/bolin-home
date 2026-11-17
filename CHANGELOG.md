@@ -15,6 +15,42 @@ Bolin Lab 的开发记录。每次完成一轮开发后追加一条，至少包�
 
 ## 2026-11-17
 
+### 重写第 3 章叙事：跟着 service check activity 走
+
+**目标：** 解决“知识点堆叠、读起来跳来跳去”的问题，把第 3 章改成一条连续调用线。
+
+**改动：**
+
+- 全章按 `service check activity` 串讲：命令 → AIDL → Proxy/Stub → service 命令手写 Proxy → Parcel/驱动 → servicemanager → 失败场景。
+- 每节末尾加过渡，下一节回答上一节留下的问题。
+- 补充 `ServiceManager::checkService` 源码；明确“本次服务端是 servicemanager，不是 system_server”。
+- 失败场景改用同一接口的 `service call manager 999`，避免跳到 activity 接口。
+- 保留 Stub 骨架 + `asInterface` / `onTransact` 上下文；正文约 1.4k 汉字、19 个代码块、2 张图。
+- 阅读时间 18 分钟；笔记库卡片不变。
+
+**涉及文件：**
+
+- `notes/binder-chapter-3.html`
+- `CHANGELOG.md`
+- `AGENTS.md`
+
+**验证：**
+
+- 第 3 章：19 个代码块全部有 `data-title`/`data-file` + `data-lang`；2 张图明/暗切换正常。
+- 1440 / 390 无页面级横向溢出，控制台无错误；图片全部加载。
+- 线上/本地无 `lazy`、`VINTF`、`dumpPriority`、`binder/stats`、`binder_calls_stats`。
+- 全站链接 174 条，缺失 0。
+
+**Commit：** 本次提交（见 GitHub history）。
+
+**部署：** 推送 `main` 后由 Cloudflare Pages 自动部署。
+
+**下一步：** 等作者评审第 3 章；通过后再精简第 4 章（选读）。
+
+---
+
+## 2026-11-17
+
 ### 精简第 3 章：只保留一次 AIDL 调用主线
 
 **目标：** 把第 3 章从 36 个代码块压到核心调用链，删掉 lazy、VINTF、dumpPriority、binder stats 等分支。
@@ -780,7 +816,7 @@ Bolin Lab 的开发记录。每次完成一轮开发后追加一条，至少包�
   按钮；AIDL 通过 `data-lang="aidl"` 映射到 Java 高亮
 - 写作流程：不再使用 `drafts/`；文章直接写 `notes/*.html`，但必须有源码锚点和
   真实输出，未实测内容明确标注
-- 工作区：第 3 章精简已提交，等待评审
+- 工作区：第 3 章叙事重写已提交，等待评审
 - 已知注意点：
   - 不要删除 Google 验证文件与 `_redirects` 规则。
   - Cloudflare 会把 `*.html` 308 到无扩展名地址；canonical / sitemap 使用最终地址。
