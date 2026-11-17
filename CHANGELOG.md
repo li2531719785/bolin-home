@@ -15,6 +15,45 @@ Bolin Lab 的开发记录。每次完成一轮开发后追加一条，至少包�
 
 ## 2026-11-17
 
+### 重写第 1 章：只回答“为什么需要 Binder”
+
+**目标：** 按新手主线重写第 1 章：只讲 RPC 四步、通用 IPC 的缺口和一次拷贝，去掉 oneway、死锁、安全长表等分支。
+
+**改动：**
+
+- 重写第 1 章正文，压成 8 个 h2：RPC 四步、Linux IPC 对比、Binder 补了什么、一次调用、一次拷贝、代价、自测题、小结。
+- 新增 2 张 SVG：`binder-rpc-steps-*`、`binder-one-copy-*`；复用 `binder-architecture-*`，共 3 张图。
+- 真机输出：`service check activity`、`service list | wc -l`、`/proc/$(pidof system_server)/maps`。
+- 源码：`service.cpp` 的 check 分支、`ProcessState::ProcessState` 的 open/mmap。
+- 删除 oneway、死锁、DeathRecipient、长安全表、Android 角色长表；自测题 6→4。
+- 阅读时间 16→13 分钟；笔记库卡片和 metadata 同步。
+
+**涉及文件：**
+
+- `notes/binder-chapter-1.html`
+- `assets/img/binder-rpc-steps-*.svg`
+- `assets/img/binder-one-copy-*.svg`
+- `notes/index.html`
+- `CHANGELOG.md`
+- `AGENTS.md`
+
+**验证：**
+
+- 第 1 章：8 个代码块全部有 `data-title`/`data-file` + `data-lang`；3 张图明/暗切换正常。
+- 1440 / 390 无页面级横向溢出，控制台无错误；图片全部加载。
+- 线上/本地均无 `App`、`oneway`、`lazy`、`VINTF`、`dumpPriority` 等残留。
+- 全站链接 170 条，缺失 0；SVG 通过 `xmllint`。
+
+**Commit：** 本次提交（见 GitHub history）。
+
+**部署：** 推送 `main` 后由 Cloudflare Pages 自动部署。
+
+**下一步：** 等作者评审第 1 章；通过后按新手主线精简第 3 章。
+
+---
+
+## 2026-11-17
+
 ### 去掉教程里的 App 对比表述
 
 **目标：** 教程默认读者是系统开发者，不再反复做 App 对比。
@@ -702,7 +741,7 @@ Bolin Lab 的开发记录。每次完成一轮开发后追加一条，至少包�
   按钮；AIDL 通过 `data-lang="aidl"` 映射到 Java 高亮
 - 写作流程：不再使用 `drafts/`；文章直接写 `notes/*.html`，但必须有源码锚点和
   真实输出，未实测内容明确标注
-- 工作区：App 表述清理已提交，等待评审
+- 工作区：第 1 章重写已提交，等待评审
 - 已知注意点：
   - 不要删除 Google 验证文件与 `_redirects` 规则。
   - Cloudflare 会把 `*.html` 308 到无扩展名地址；canonical / sitemap 使用最终地址。
@@ -719,7 +758,7 @@ Bolin Lab 的开发记录。每次完成一轮开发后追加一条，至少包�
 - [x] 学习路线重构为“新手主线 + 第二阶段”，第 4 章改为选读
 - [ ] 第 5 章拆成 5.1 ServiceManager 启动、5.2 addService、5.3 getService 后重写
 - [ ] 第 4 章补 oneway / callback / DeathRecipient 的原生客户端实验（当前为源码走读）
-- [x] 第 1 章补 RPC 四步和“一次拷贝”路径
+- [x] 第 1 章重写：RPC 四步、一次拷贝、3 张 SVG 和真机输出
 - [ ] 重写第 0 章：补真实 `ps` / `fd` / `maps` / `ioctl` 输出
 - [ ] 写 Binder 学习路线第 6 章：用户态 Binder 对象模型
 - [ ] 评估把旧 Binder 长图中的静态关系图迁移到 D2

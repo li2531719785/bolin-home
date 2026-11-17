@@ -139,9 +139,9 @@
         <h2>模块 1 · 建立直觉</h2>
 
         <h3>第 1 章：Android 为什么需要 Binder</h3>
-        <p>先从 RPC 的四步流程出发：定义服务、注册、获取代理、transact 调用；再解释“一次拷贝”是怎么来的。然后对比 pipe、socket、共享内存、信号，讲 Binder 的性能、安全、对象语义、引用计数和死亡通知。</p>
+        <p>先从 RPC 的四步流程出发：定义服务、注册、获取代理、transact 调用；再解释“一次拷贝”是怎么来的。然后对比 pipe、socket、共享内存，说明 Binder 补上的对象引用、方法调用和 Binder 线程。</p>
         <p>这一章要解释“一次拷贝”说法的边界，但不要陷入内核细节。读者只需要先建立：Binder 是为 Android 的进程模型和对象模型量身定制的 IPC。</p>
-        <p><strong>完整展开：</strong> <a href="binder-chapter-1.html">第 1 章：Android 为什么需要 Binder</a>。包含 RPC 四步、一次拷贝路径、Linux IPC 对比、对象引用和适用边界。</p>
+        <p><strong>完整展开：</strong> <a href="binder-chapter-1.html">第 1 章：Android 为什么需要 Binder</a>。包含 RPC 四步、一次拷贝、3 张示意图和真机 <code>service</code> / <code>maps</code> 输出。</p>
 
         <h3>第 2 章：Binder 的心智模型</h3>
         <p>用一张图讲清 Client / Server、Proxy / Stub、handle、Parcel、同步调用和 Binder 线程。示例用 <code>IServiceManager.checkService("activity")</code>。</p>

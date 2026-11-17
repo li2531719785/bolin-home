@@ -208,8 +208,8 @@
 
 - 首页 / 笔记库 / 关于 / 404 / 七篇笔记可访问；第 5 章正文已下线，学习路线中标记“整理中”。
 - 浅色 + 深色主题、移动端适配、搜索筛选、文章 TOC、阅读进度均已实现。
-- 第 1 章新增 RPC 四步和“一次拷贝”流程图；第 2 章改用 `IServiceManager.checkService` 示例，
-  补真实 `service` / `ps -T` 实验和 4 张明/暗 SVG 示意图；第 3、4 章为系统源码 + 真机实测版。
+- 第 1 章已重写：RPC 四步、一次拷贝、3 张 SVG 和真机输出；第 2 章为新手主线，
+  保留真实 `service` / `ps -T` 实验和 4 张 SVG；第 3、4 章待精简。
 - 第 4 章以 servicemanager 为样本，讲 Parcelable、in/out/inout、oneway、callback、DeathRecipient；
   其中 Parcelable 有 `service call manager 14` 真机实验，其余为源码走读。
 - 学习路线改为“新手主线 + 第二阶段”：主线 `0-1→2→3→5-6→9`，
@@ -223,7 +223,7 @@
   但必须先有源码锚点和真实输出。
 - 本地 Prism 1.30.0 仍按需加载；CSS / JS 版本号为 `?v=20261116d`。
 - sitemap 现有 10 个 URL（第 5 章已移除），等待 Google 重新抓取。
-- 工作区：App 表述清理已提交，等待评审；Cloudflare Pages 自动部署 `main`。
+- 工作区：第 1 章重写已提交，等待评审；Cloudflare Pages 自动部署 `main`。
 - 最近关键提交（返工前）：
   - `486010c` 记录代码框架交接
   - `f2f878c` 为代码框架加资源缓存版本号
@@ -233,7 +233,7 @@
 
 ## 10. 下一步建议
 
-1. 学习路线已重构，等待作者评审；通过后再按主线精简第 3 章。
+1. 第 1 章已重写，等待作者评审；通过后再按主线精简第 3 章。
 2. 重写第 5 章：先拆 5.1 ServiceManager 启动、5.2 addService、5.3 getService，再恢复入口。
 3. 第 4 章已改为系统服务 AIDL；后续补 oneway / callback 的原生客户端实验（当前为源码走读）。
 4. 重写第 0 章：补真实 `ps` / `fd` / `maps` / `ioctl` 输出和对比实验；第 1 章已补 RPC / 一次拷贝。
