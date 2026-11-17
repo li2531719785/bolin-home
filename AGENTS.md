@@ -35,6 +35,7 @@
 ├── notes/binder-learning-path.html  # Binder 源码阅读路线
 ├── notes/binder-code-1-overview.html  # 第 1 章：调用链总览
 ├── notes/binder-code-2-native.html    # 第 2 章：BpBinder → IPCThreadState
+├── notes/binder-code-3-driver.html    # 第 3 章：binder_ioctl → binder_thread_read
 ├── assets/
 │   ├── css/site.css                 # 全站样式（含深色主题、代码块）
 │   ├── js/site.js                   # 主题、筛选、TOC、阅读进度、代码块
@@ -110,14 +111,15 @@
 - 代码块可节选：与主线无关的噪声段（调试日志、进程限制检查、`#if 0` 遗留代码）用一行注释 `// ……（省略：原因）` 标记省略，省略内容在标记里说清；主线语句原样保留。若读者要看全文，按 `data-file` 路径查源码。
 - 不再新增概念示意图；`notes/binder-driver.html` 保留为数据结构交互图，不要重写其内部逻辑。
 - 旧第 0–4 章已删除，旧 URL 由 `_redirects` 308 到 `notes/binder-learning-path`；第 5 章旧链接同样处理；旧第 1 章 `binder-code-1-client` 308 到总览章。
-- 目前正式笔记有四篇：
+- 目前正式笔记有五篇：
   1. `notes/binder-driver.html` — Binder 驱动数据结构图解
   2. `notes/binder-learning-path.html` — Binder 源码阅读路线（6 章目录）
   3. `notes/binder-code-1-overview.html` — 第 1 章：调用链总览（地图 + 名词速查 + 阅读约定）
-  4. `notes/binder-code-2-native.html` — 第 2 章：BpBinder → IPCThreadState（BpBinder 段 + 四个完整函数）
-- 新源码章节命名：`notes/binder-code-<n>-<slug>.html`；第 3–6 章按路线继续写（第 3 章驱动、第 4 章服务端、第 5 章 servicemanager、第 6 章 Java/JNI）。
+  4. `notes/binder-code-2-native.html` — 第 2 章：BpBinder → IPCThreadState（BpBinder 段 + 四个函数，噪声段节选）
+  5. `notes/binder-code-3-driver.html` — 第 3 章：binder_ioctl → binder_thread_read（五个函数 + 驱动数据结构）
+- 新源码章节命名：`notes/binder-code-<n>-<slug>.html`；第 4–6 章按路线继续写（第 4 章服务端、第 5 章 servicemanager、第 6 章 Java/JNI）。
 - 旧第 1 章的 BinderProxy / JNI / BpBinder 正文没有丢，需要时从 git 历史取回，分别补进第 2、6 章。
-- 首页和笔记库统计数字（04 篇）必须与真实内容一致。
+- 首页和笔记库统计数字（05 篇）必须与真实内容一致。
 - 读者默认是系统开发者，不要反复做 App 对比。
 - 作者信息以仓库现有内容为准：Bolin、GitHub `li2531719785`、
   `2531719785@qq.com`。不要编造公司、学历或项目经历。
@@ -135,6 +137,7 @@
   - Binder 路线：`https://home.bolinlab.top/notes/binder-learning-path`
   - Binder 源码第 1 章：`https://home.bolinlab.top/notes/binder-code-1-overview`
   - Binder 源码第 2 章：`https://home.bolinlab.top/notes/binder-code-2-native`
+  - Binder 源码第 3 章：`https://home.bolinlab.top/notes/binder-code-3-driver`
 - 页面内部链接仍可保留 `.html`，方便 `python -m http.server` 本地预览；
   线上会 308 跳转，功能正常。
 - 新增页面后必须：
@@ -170,7 +173,7 @@
    打开 <http://127.0.0.1:8123/>。
 
 2. 修改后检查：
-   - 首页、笔记库、关于页、四篇笔记、404
+   - 首页、笔记库、关于页、五篇笔记、404
    - 桌面宽度（1440）和手机宽度（390）无横向溢出
    - 控制台无 JS 错误
    - 主题切换、搜索、筛选、TOC 正常
@@ -189,31 +192,32 @@
 
 ## 9. 当前状态（2026-11-17，路线重排为“本体先行、入口收尾”）
 
-- 首页 / 笔记库 / 关于 / 404 / 四篇笔记可访问：Binder 驱动图、源码阅读路线、源码第 1、2 章。
+- 首页 / 笔记库 / 关于 / 404 / 五篇笔记可访问：Binder 驱动图、源码阅读路线、源码第 1–3 章。
 - 旧第 0–4 章已删除，旧 URL 308 到源码阅读路线；第 5 章旧链接同样 308；旧第 1 章 `binder-code-1-client` 308 到总览章。
 - 源码阅读路线固定 6 章：总览 → C++ 客户端 → 驱动 → 服务端 → servicemanager → Java/JNI 收尾。
 - 第 1 章已写：`notes/binder-code-1-overview.html`，只做导航（调用链地图、名词速查、阅读约定）。
-- 第 2 章已写：`notes/binder-code-2-native.html`，BpBinder 段加 IPCThreadState 的四个函数（噪声段节选）：`transact`、`writeTransactionData`、`talkWithDriver`、`waitForResponse`；第 3–6 章待写。
+- 第 2 章已写：`notes/binder-code-2-native.html`，BpBinder 段加 IPCThreadState 的四个函数（噪声段节选）：`transact`、`writeTransactionData`、`talkWithDriver`、`waitForResponse`。
+- 第 3 章已写：`notes/binder-code-3-driver.html`，五个函数（重度节选）+ 五个内核对象与 `binder_buffer`；第 4–6 章待写。
 - 旧第 1 章的 BinderProxy / JNI 正文已从导航层移除，写第 6 章时从 git 历史取回；BpBinder 正文已并入第 2 章。
 - 内核源码：`/home/libolin/v610/vendor/open_source/common-kernel-6.6`（6.6.47）。
-- 学习路线不再讲知识点；首页 / 笔记库统计为 04 篇，sitemap 7 个 URL。
+- 学习路线不再讲知识点；首页 / 笔记库统计为 05 篇，sitemap 8 个 URL。
 - 本地 Prism 1.30.0 按需加载；CSS / JS 版本号 `?v=20261116e`。
-- 工作区：第 2 章正文已写，等待评审；Cloudflare Pages 自动部署 `main`。
+- 工作区：第 3 章正文已写，等待评审；Cloudflare Pages 自动部署 `main`。
 - 最近关键提交：
   - `9b93b8e` 总览章地图补返回路径、handle 词条改写
   - `c69c562` 第 1 章场景、地图、名词速查
   - `10dc659` 删除旧章节，重建源码阅读路线
   - `a40b303` 第 3 章连续叙事
   - 本次：新增第 2 章 BpBinder → IPCThreadState（见 GitHub history）
+  - 本次：新增第 3 章 binder_ioctl → binder_thread_read（见 GitHub history）
   - 本次：路线重排为“本体先行、入口收尾”（见 GitHub history）
 
 ## 10. 下一步建议
 
-1. 第 3 章驱动：`binder_ioctl` / `binder_ioctl_write_read` / `binder_thread_write` / `binder_transaction` / `binder_thread_read`，并入驱动数据结构。
-2. 第 4 章服务端：`executeCommand` → `BBinder::transact` / `onTransact` → `Binder.execTransact`。
-3. 第 5 章 servicemanager：main / `ServiceManager::addService` / `checkService`。
-4. 第 6 章 Java + JNI：AIDL `Stub.Proxy` → `BinderProxy.transact` → JNI → 接回 `BpBinder`；取回旧第 1 章的 Java/JNI 正文。
-5. 继续保证：代码完整上下文 > 解释 > 运行证据；不写概念章节，不用 `service check` 示例。
+1. 第 4 章服务端：`executeCommand` → `BBinder::transact` / `onTransact` → `Binder.execTransact`。
+2. 第 5 章 servicemanager：main / `ServiceManager::addService` / `checkService`。
+3. 第 6 章 Java + JNI：AIDL `Stub.Proxy` → `BinderProxy.transact` → JNI → 接回 `BpBinder`；取回旧第 1 章的 Java/JNI 正文。
+4. 继续保证：代码完整上下文 > 解释 > 运行证据；不写概念章节，不用 `service check` 示例。
 
 ## 11. 给下一个 AI 的启动提示
 

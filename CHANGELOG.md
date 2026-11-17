@@ -15,6 +15,40 @@ Bolin Lab 的开发记录。每次完成一轮开发后追加一条，至少包�
 
 ## 2026-11-17
 
+### 新增第 3 章：binder_ioctl → binder_thread_read
+
+**目标：** 写驱动章：从第 2 章最后一次 ioctl 进入 `binder_ioctl`，跟一条 `BC_TRANSACTION` 看驱动找目标、切缓冲区、拷贝、入队，最后在 `binder_thread_read` 变成目标进程的 `BR_TRANSACTION`。
+
+**改动：**
+
+- 新增 `notes/binder-code-3-driver.html`：六节正文 + 下一章；`binder_ioctl`、`binder_ioctl_write_read`、`binder_thread_write`、`binder_transaction`、`binder_thread_read` 均按节选规则保留主线，噪声/旁支用省略标记。
+- 中场加入 `binder_proc`、`binder_node`、`binder_ref`、`binder_thread`、`binder_transaction`、`binder_buffer` 的关键字段，并链接 `binder-driver.html` 交互图。
+- 路线页第 3 章行加链接和简介；第 2 章 article-end 改为第 3 章；笔记库 / 首页统计改为 05 篇，新增第 3 章卡片和 latest-note；sitemap 增加第 3 章 URL。
+- README / AGENTS 更新目录、正式笔记列表、SEO 地址、当前状态和下一步。
+
+**涉及文件：**
+
+- `notes/binder-code-3-driver.html`（新增）
+- `notes/binder-learning-path.html`
+- `notes/binder-code-2-native.html`
+- `notes/index.html`
+- `index.html`
+- `sitemap.xml`
+- `README.md`
+- `AGENTS.md`
+- `CHANGELOG.md`
+
+**验证：**
+
+- `python -m http.server 8123` 本地预览：第 3 章 200；TOC 包含 7 个 h2；11 个代码块均带 `data-file` / `data-lang="c"`。
+- 代码块按行号从 `/home/libolin/v610` 的 `binder.c` / `binder_internal.h` / `binder_alloc.h` 取源码，主线语句保留，旁支用 `// ……（省略：…）` 标记。
+- 与第 2 章核对闭环：`write_consumed` / `read_consumed`、`BR_TRANSACTION_COMPLETE`、`BR_REPLY`、`buffer->user_data` 在正文中均有交代。
+- 站内链接、sitemap XML、HTML 标签检查通过；未改 `site.css` / `site.js`，版本保持 `?v=20261116e`。
+
+**下一步：** 第 4 章服务端：`IPCThreadState::executeCommand` → `BBinder::transact` / `onTransact` → Java `Binder.execTransact`。
+
+**Commit：** 本次提交（见 GitHub history）。
+
 ### 新增第 2 章：BpBinder → IPCThreadState
 
 **目标：** 按“本体先行、入口收尾”的路线，从第 1 章地图停在的 `IPCThreadState::self()->transact(...)` 接着读 C++ 客户端。

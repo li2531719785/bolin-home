@@ -73,7 +73,7 @@
       <h1>笔记库</h1>
       <p>公开的学习工作台。这里放已经整理好的图解、路线和源码笔记；还没想清楚的内容，会先留在“在整理”里。</p>
       <div class="hero-stats">
-        <div class="hero-stat"><b>04</b><span>篇已发布</span></div>
+        <div class="hero-stat"><b>05</b><span>篇已发布</span></div>
         <div class="hero-stat"><b>03</b><span>个主题方向</span></div>
         <div class="hero-stat"><b>UPDATING</b><span>持续修订</span></div>
       </div>
@@ -91,7 +91,7 @@
         <button class="filter-chip" type="button" data-filter="kernel" aria-pressed="false">Kernel</button>
         <button class="filter-chip" type="button" data-filter="roadmap" aria-pressed="false">学习路线</button>
       </div>
-      <span class="mono muted" id="noteCount" aria-live="polite">04 篇笔记</span>
+      <span class="mono muted" id="noteCount" aria-live="polite">05 篇笔记</span>
     </div>
 
     <div class="note-grid" id="noteGrid">
@@ -126,6 +126,23 @@
             <span class="tag">Native</span>
           </div>
           <span class="card-read">约 20 min</span>
+        </div>
+        <span class="card-arrow" aria-hidden="true">↗</span>
+      </a>
+      <a class="note-card reveal" href="binder-code-3-driver.html" data-note-card data-tags="android binder roadmap" data-search="android binder 源码阅读 第3章 驱动 binder_ioctl binder_transaction binder_thread_read binder_proc binder_node binder_ref 内核">
+        <div class="card-meta">
+          <span class="card-type">Source walk 03 / Kernel</span>
+          <span class="card-date">2026.11.17</span>
+        </div>
+        <h2><span class="title-line">第 3 章：binder_ioctl</span><span class="title-line">→ binder_thread_read</span></h2>
+        <p>跟着一条 BC_TRANSACTION 读驱动：找目标、切缓冲区、拷贝、入队唤醒，再认一遍五个数据结构。</p>
+        <div class="card-bottom">
+          <div class="card-tags">
+            <span class="tag">Android</span>
+            <span class="tag">Binder</span>
+            <span class="tag">Kernel</span>
+          </div>
+          <span class="card-read">约 25 min</span>
         </div>
         <span class="card-arrow" aria-hidden="true">↗</span>
       </a>

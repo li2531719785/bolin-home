@@ -27,6 +27,7 @@ Bolin 的个人学习资料站，公开记录 Android、Linux、Binder、Framewo
 │   ├── binder-learning-path.html    # Binder 源码阅读路线
 │   ├── binder-code-1-overview.html  # 第 1 章：调用链总览
 │   ├── binder-code-2-native.html    # 第 2 章：BpBinder → IPCThreadState
+│   ├── binder-code-3-driver.html    # 第 3 章：binder_ioctl → binder_thread_read
 │   └── binder-driver.html           # Binder 驱动数据结构交互图解
 ├── assets/
 │   ├── css/site.css                 # 站点样式
@@ -114,5 +115,5 @@ Cloudflare Pages 配置建议：
 ## 待补充
 
 - 增加 RSS / Atom 订阅。
-- 按源码阅读路线继续补第 3–6 章。
+- 按源码阅读路线继续补第 4–6 章。
 - 如需更完整的分享预览，可继续为每篇长文生成独立 OG 封面。
