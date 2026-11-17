@@ -187,10 +187,10 @@
 - 首页 / 笔记库 / 关于 / 404 / 三篇笔记可访问：Binder 驱动图、源码阅读路线、源码第 1 章。
 - 旧第 0–4 章已删除，旧 URL 308 到源码阅读路线；第 5 章旧链接同样 308。
 - 源码阅读路线固定 6 章：Java → libbinder → 驱动 → 服务端 → servicemanager → 数据结构/全链路。
-- 第 1 章已写：`BinderProxy.transact` → JNI `android_os_BinderProxy_transact` → `BpBinder::transact`，每段都是完整函数。
+- 第 1 章已写：`BinderProxy.transact` → JNI `android_os_BinderProxy_transact` → `BpBinder::transact`，每段都是完整函数；开头已补场景、链路地图和名词速查。
 - 内核源码：`/home/libolin/v610/vendor/open_source/common-kernel-6.6`（6.6.47）。
 - 学习路线不再讲知识点；首页 / 笔记库统计为 03 篇，sitemap 6 个 URL。
-- 本地 Prism 1.30.0 按需加载；CSS / JS 版本号 `?v=20261116d`。
+- 本地 Prism 1.30.0 按需加载；CSS / JS 版本号 `?v=20261116e`。
 - 工作区：源码阅读重构已提交，等待评审；Cloudflare Pages 自动部署 `main`。
 - 最近关键提交：
   - `a40b303` 第 3 章连续叙事

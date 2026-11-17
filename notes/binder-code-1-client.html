@@ -23,7 +23,7 @@
 <meta name="twitter:image" content="https://home.bolinlab.top/assets/og-image.png">
 <meta name="theme-color" content="#f4f1e9">
 <link rel="icon" href="../avatar.png" type="image/png">
-<link rel="stylesheet" href="../assets/css/site.css?v=20261116d">
+<link rel="stylesheet" href="../assets/css/site.css?v=20261116e">
 <script>
 (function () {
   try {
@@ -98,6 +98,26 @@
 
         <p>这一章只读一段客户端链路：<strong>BinderProxy.transact → JNI → BpBinder::transact</strong>。不解释 Binder 是什么，直接看这三个函数怎么把一次调用交给下一层。</p>
 
+        <h2>这次调用是怎么发起的</h2>
+        <p>客户端进程要调用 <code>ActivityManager</code> 的某个方法。AIDL 生成的 <code>Stub.Proxy</code> 先把参数写进 <code>Parcel</code>，填上方法编号 <code>code</code>，再调用 <code>BinderProxy.transact</code>。对调用方来说，这只是一次普通方法调用；对 Binder 来说，它刚把一次调用打包好，准备发出去。</p>
+
+        <h2>整条链的地图</h2>
+        <pre data-title="客户端调用链地图" data-lang="text"><code class="language-text">AIDL Stub.Proxy          // AIDL 生成，负责填 Parcel
+└─ BinderProxy.transact  // Java 框架入口          ← 本章 ①
+    └─ JNI transact      // Java→C++ 的桥          ← 本章 ②
+        └─ BpBinder::transact  // native 代理      ← 本章 ③
+            └─ IPCThreadState → 驱动 → 服务端     // 第 2、3、4 章</code></pre>
+        <p>本章只读前 3 层；读到 <code>BpBinder::transact</code> 的末尾，就把剩下的路交给第 2 章。</p>
+
+        <h3>名词一句话速查</h3>
+        <dl class="term-list">
+          <dt>code</dt><dd>接口方法的编号，AIDL 里每个方法一个 int。</dd>
+          <dt>data / reply</dt><dd>序列化的信封：<code>data</code> 装参数，<code>reply</code> 由对端填返回值。</dd>
+          <dt>flags</dt><dd>同步调用会阻塞等回复；<code>FLAG_ONEWAY</code> 表示不等待回复。</dd>
+          <dt>BpBinder</dt><dd>Bp = Binder Proxy，是 Java <code>BinderProxy</code> 在 native 侧的真实对象。</dd>
+          <dt>JNI</dt><dd>Java 调 C++ 的转换桥，负责把 Java 对象转成 native 指针。</dd>
+        </dl>
+
         <div class="table-wrap">
           <table>
             <thead><tr><th>文件</th><th>函数</th><th>作用</th></tr></thead>
@@ -110,7 +130,7 @@
         </div>
 
         <h2>一、BinderProxy.transact</h2>
-        <p>先看 Java 层。这个方法的任务不是“发请求”，而是把 Java 侧的检查、监听、tracing 和 flags 处理完，最后交给 <code>transactNative</code>。</p>
+        <p><strong>它唯一要做的事：</strong>把 Java 侧的检查、监听、tracing 和 flags 处理完，最后交给 <code>transactNative</code>。它不负责把数据送进驱动。</p>
         <pre data-file="frameworks/base/core/java/android/os/BinderProxy.java" data-lang="java"><code class="language-java">    public boolean transact(int code, Parcel data, Parcel reply, int flags) throws RemoteException {
         Binder.checkParcel(this, code, data, &quot;Unreasonably large binder buffer&quot;);
 
@@ -191,10 +211,10 @@
 
 </code></pre>
         <p>读这段代码时只看四件事：<code>checkParcel</code> 检查 Parcel 大小；<code>warnOnBlocking</code> 处理“从可能阻塞的对象发起同步调用”的警告；<code>transactListener</code> 允许框架在调用前后插入逻辑；最后调用 <code>transactNative(code, data, reply, flags)</code>。</p>
-        <p><code>transactNative</code> 是一个 native 方法，定义就在这个文件下面。所以 Java 层到这里结束，下一跳是 JNI。</p>
+        <p><code>transactNative</code> 是一个 native 方法，定义就在这个文件下面。<strong>为什么必须经过 JNI：</strong>Binder 代理的真实实现是 C++ 写的，Java 的 <code>BinderProxy</code> 只是壳；JNI 就是 Java 对象和 C++ 实现之间的桥。</p>
 
         <h2>二、JNI：android_os_BinderProxy_transact</h2>
-        <p>JNI 函数把 Java 的 <code>Parcel</code> 转成 native <code>Parcel*</code>，从 <code>BinderProxy</code> 取出真正的 <code>IBinder*</code>，然后调用它的 <code>transact</code>。</p>
+        <p><strong>它唯一要做的事：</strong>把 Java 的 <code>Parcel</code> 转成 native <code>Parcel*</code>，从 <code>BinderProxy</code> 取出真正的 <code>IBinder*</code>，然后调用它的 <code>transact</code>。</p>
         <pre data-file="frameworks/base/core/jni/android_util_Binder.cpp" data-lang="cpp"><code class="language-cpp">static jboolean android_os_BinderProxy_transact(JNIEnv* env, jobject obj,
         jint code, jobject dataObj, jobject replyObj, jint flags) // throws RemoteException
 {
@@ -241,10 +261,10 @@
 }
 </code></pre>
         <p>关键只有三行：<code>parcelForJavaObject</code> 拿到 native Parcel；<code>getBPNativeData(env, obj)-&gt;mObject.get()</code> 拿到目标 <code>IBinder*</code>；<code>target-&gt;transact(code, *data, reply, flags)</code> 进入 native Binder 实现。后面的 <code>signalExceptionForError</code> 只是把 native 错误码转成 Java 异常。</p>
-        <p>这个 <code>target</code> 通常就是 <code>BpBinder</code>。下一跳看它的 <code>transact</code>。</p>
+        <p><strong>为什么从这里跳到 BpBinder：</strong>JNI 拿到的 <code>target</code> 是 native <code>IBinder*</code>，对远程服务来说通常就是 <code>BpBinder</code>。JNI 不实现发送，只是把调用交给这个 native 代理。</p>
 
         <h2>三、BpBinder::transact</h2>
-        <p><code>BpBinder</code> 是客户端在 native 层的代理。它先检查对象是否还活着，再处理 flags 和 stability，最后选择 RPC 或内核 Binder 路径。</p>
+        <p><strong>它唯一要做的事：</strong>检查对象是否还活着、处理 flags 和 stability，然后选择 RPC 或内核 Binder 路径。</p>
         <pre data-file="frameworks/native/libs/binder/BpBinder.cpp" data-lang="cpp"><code class="language-cpp">status_t BpBinder::transact(
     uint32_t code, const Parcel&amp; data, Parcel* reply, uint32_t flags)
 {
@@ -298,7 +318,7 @@
 }
 </code></pre>
         <p>这段代码里和本章链路相关的是 <code>else</code> 分支：<code>IPCThreadState::self()-&gt;transact(binderHandle(), code, data, reply, flags)</code>。前面 <code>isRpcBinder()</code> 是另一条 RPC Binder 路径，本章不展开；stability 检查和 <code>mAlive</code> 是对象有效性保护。</p>
-        <p>到这里，客户端已经从 Java 层走到了 <code>IPCThreadState</code>。下一章从 <code>IPCThreadState::transact</code> 开始，看它怎么把 Parcel 写进驱动。</p>
+        <p><strong>为什么下一章看 IPCThreadState：</strong><code>BpBinder</code> 只做对象和路径判断；真正把 Parcel 写进驱动、等回复的是 <code>IPCThreadState::transact</code>。所以第 2 章从它开始。</p>
 
         <h2>四、下一章</h2>
         <p>第 2 章入口：<code>frameworks/native/libs/binder/IPCThreadState.cpp</code> 的 <code>IPCThreadState::transact</code>（808 行），接着读 <code>writeTransactionData</code>、<code>talkWithDriver</code>、<code>waitForResponse</code>。</p>
@@ -343,6 +363,6 @@
   </div>
 </footer>
 
-<script src="../assets/js/site.js?v=20261116d" defer></script>
+<script src="../assets/js/site.js?v=20261116e" defer></script>
 </body>
 </html>
