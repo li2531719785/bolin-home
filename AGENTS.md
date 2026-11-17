@@ -201,7 +201,7 @@
 - 旧第 1 章的 BinderProxy / JNI 正文已从导航层移除，写第 6 章时从 git 历史取回；BpBinder 正文已并入第 2 章。
 - 内核源码：`/home/libolin/v610/vendor/open_source/common-kernel-6.6`（6.6.47）。
 - 学习路线不再讲知识点；首页 / 笔记库统计为 05 篇，sitemap 8 个 URL。
-- 本地 Prism 1.30.0 按需加载；CSS / JS 版本号 `?v=20261116e`。
+- 本地 Prism 1.30.0 按需加载；CSS / JS 版本号 `?v=20261116f`。
 - 工作区：第 3 章正文已写，等待评审；Cloudflare Pages 自动部署 `main`。
 - 最近关键提交：
   - `9b93b8e` 总览章地图补返回路径、handle 词条改写

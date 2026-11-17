@@ -23,7 +23,7 @@
 <meta name="twitter:image" content="https://home.bolinlab.top/assets/og-image.png">
 <meta name="theme-color" content="#f4f1e9">
 <link rel="icon" href="../avatar.png" type="image/png">
-<link rel="stylesheet" href="../assets/css/site.css?v=20261116e">
+<link rel="stylesheet" href="../assets/css/site.css?v=20261116f">
 <script>
 (function () {
   try {
@@ -147,7 +147,7 @@
 
         <h2>二、binder_ioctl_write_read</h2>
         <p>一次 ioctl 同时带着写缓冲和读缓冲：先把用户空间的 <code>binder_write_read</code> 拿进来，再按 <code>write_size</code> / <code>read_size</code> 分别处理。</p>
-        <pre data-file="drivers/android/binder.c" data-lang="c"><code class="language-c">static int binder_ioctl_write_read(struct file *filp, unsigned long arg,
+        <pre id="ch3-write-read" data-file="drivers/android/binder.c" data-lang="c"><code class="language-c">static int binder_ioctl_write_read(struct file *filp, unsigned long arg,
 				struct binder_thread *thread)
 {
 	int ret = 0;
@@ -210,7 +210,7 @@
 out:
 	return ret;
 }</code></pre>
-        <p><code>binder_ioctl_write_read</code>（5390–5452 行）先 <code>copy_from_user</code> 取第 2 章 <code>talkWithDriver</code> 填的 <code>binder_write_read</code>；<code>write_size &gt; 0</code> 时调用 <code>binder_thread_write</code>，<code>read_size &gt; 0</code> 时调用 <code>binder_thread_read</code>；最后把 <code>write_consumed</code> / <code>read_consumed</code> 写回用户空间，第 2 章靠它清空 <code>mOut</code>、设置 <code>mIn</code>。</p>
+        <p><code>binder_ioctl_write_read</code>（5390–5452 行）先 <code>copy_from_user</code> 取<a href="binder-code-2-native.html#ch2-talkwithdriver">第 2 章 <code>talkWithDriver</code></a> 填的 <code>binder_write_read</code>；<code>write_size &gt; 0</code> 时调用 <code>binder_thread_write</code>，<code>read_size &gt; 0</code> 时调用 <code>binder_thread_read</code>；最后把 <code>write_consumed</code> / <code>read_consumed</code> 写回用户空间，<a href="binder-code-2-native.html#ch2-talkwithdriver">第 2 章</a>靠它清空 <code>mOut</code>、设置 <code>mIn</code>。</p>
         <p><strong>先看写侧：</strong><code>binder_thread_write</code> 怎么把 <code>BC_TRANSACTION</code> 从用户缓冲里取出来？</p>
 
         <h2>三、binder_thread_write</h2>
@@ -278,12 +278,12 @@ out:
 	}
 	return 0;
 }</code></pre>
-        <p><code>binder_thread_write</code>（4121 行）从用户空间循环取命令号；<code>BC_TRANSACTION</code> / <code>BC_REPLY</code> 分支把 <code>binder_transaction_data</code> 拷进来，再调用 <code>binder_transaction</code>。<code>BC_FREE_BUFFER</code> 分支回收第 2 章 <code>freeBuffer</code> 归还的缓冲区。</p>
+        <p><code>binder_thread_write</code>（4121 行）从用户空间循环取命令号；<code>BC_TRANSACTION</code> / <code>BC_REPLY</code> 分支把 <code>binder_transaction_data</code> 拷进来（<code>tr</code> 正是 <a href="binder-code-2-native.html#ch2-writetransactiondata">第 2 章 writeTransactionData</a> 填的 <code>binder_transaction_data</code>），再调用 <code>binder_transaction</code>。<code>BC_FREE_BUFFER</code> 分支回收第 2 章 <code>freeBuffer</code> 归还的缓冲区。</p>
         <p><strong><code>BC_TRANSACTION</code> 的全部工作都在 binder_transaction：</strong>下一节读这个最长函数的主线。</p>
 
         <h2>四、binder_transaction</h2>
         <p>这里只走一次非 reply、非 oneway 的主线：找目标、切缓冲区、拷贝数据、入队唤醒；reply 分支和错误标签群折叠。</p>
-        <pre data-file="drivers/android/binder.c" data-lang="c"><code class="language-c">static void binder_transaction(struct binder_proc *proc,
+        <pre id="ch3-transaction" data-file="drivers/android/binder.c" data-lang="c"><code class="language-c">static void binder_transaction(struct binder_proc *proc,
 			       struct binder_thread *thread,
 			       struct binder_transaction_data *tr, int reply,
 			       binder_size_t extra_buffers_size)
@@ -414,7 +414,7 @@ out:
 }
 </code></pre>
         <p><code>binder_transaction</code>（3184 行）的主线可以拆成四步：<strong>找目标</strong>——<code>handle</code> 查 <code>ref</code>，再从 <code>ref-&gt;node</code> 拿到 <code>target_proc</code>；<strong>切 buffer</strong>——在目标进程的 <code>alloc</code> 里分配；<strong>拷贝</strong>——<code>binder_alloc_copy_user_to_buffer</code> 把偏移表和数据搬过去；<strong>入队</strong>——同步调用先压 <code>transaction_stack</code>，再由 <code>binder_proc_transaction</code>（3024 行）选择目标线程并唤醒。</p>
-        <p>fixup 循环遍历偏移表，把 <code>BINDER_TYPE_BINDER</code> / <code>HANDLE</code> 等对象翻译成目标进程认识的引用；<code>binder_translate_handle</code> 只是这个循环里的一个分支。目标进程的 <code>binder_alloc</code> 就是它启动时 mmap 的区域，所以第 2 章 <code>ipcSetDataReference</code> 能直接接地址。</p>
+        <p>fixup 循环遍历偏移表，把 <code>BINDER_TYPE_BINDER</code> / <code>HANDLE</code> 等对象翻译成目标进程认识的引用；<code>binder_translate_handle</code> 只是这个循环里的一个分支。目标进程的 <code>binder_alloc</code> 就是它启动时 mmap 的区域，所以<a href="binder-code-2-native.html#ch2-ipcsetdataref">第 2 章 <code>ipcSetDataReference</code></a> 能直接接地址。</p>
         <p><strong>ref / node / thread-&gt;todo 长什么样？</strong>下一节集中认这些结构。</p>
 
         <h2>五、中场：五个数据结构</h2>
@@ -486,7 +486,7 @@ out:
 
         <h2>六、binder_thread_read</h2>
         <p>读侧是写侧的镜像：从 <code>todo</code> 取 work，把事务或完成通知转换成 <code>BR_*</code> 写回用户缓冲。</p>
-        <pre data-file="drivers/android/binder.c" data-lang="c"><code class="language-c">static int binder_thread_read(struct binder_proc *proc,
+        <pre id="ch3-threadread" data-file="drivers/android/binder.c" data-lang="c"><code class="language-c">static int binder_thread_read(struct binder_proc *proc,
 			      struct binder_thread *thread,
 			      binder_uintptr_t binder_buffer, size_t size,
 			      binder_size_t *consumed, int non_block)
@@ -592,8 +592,8 @@ retry:
 	*consumed = ptr - buffer;
 	return 0;
 }</code></pre>
-        <p><code>binder_thread_read</code>（4697 行）先用 <code>BR_NOOP</code>（4712 行附近）占住读缓冲；没有工作时 <code>binder_wait_for_work</code>（4743 行附近）让线程睡眠。醒来后从线程或进程的 <code>todo</code> 取 work（4789 行附近）：<code>BR_TRANSACTION_COMPLETE</code> 让同步调用继续等，<code>BINDER_WORK_TRANSACTION</code> 则按 <code>target_node</code> 分成服务端新请求 <code>BR_TRANSACTION</code> 和回程 <code>BR_REPLY</code>（4973 行附近）。</p>
-        <p><code>trd-&gt;data.ptr.buffer = t-&gt;buffer-&gt;user_data</code>（5031 行附近）把目标进程 mmap 区的地址写回用户空间；第 2 章 <code>ipcSetDataReference</code> 接的就是这个地址。</p>
+        <p><code>binder_thread_read</code>（4697 行）先用 <code>BR_NOOP</code>（4712 行附近）占住读缓冲；没有工作时 <code>binder_wait_for_work</code>（4743 行附近）让线程睡眠。醒来后从线程或进程的 <code>todo</code> 取 work（4789 行附近）：<code>BR_TRANSACTION_COMPLETE</code> 让同步调用继续等，<code>BINDER_WORK_TRANSACTION</code> 则按 <code>target_node</code> 分成服务端新请求 <code>BR_TRANSACTION</code> 和回程 <code>BR_REPLY</code>（4973 行附近；也就是<a href="binder-code-2-native.html#ch2-waitforresponse">第 2 章 waitForResponse 等的那条</a>）。</p>
+        <p><code>trd-&gt;data.ptr.buffer = t-&gt;buffer-&gt;user_data</code>（5031 行附近）把目标进程 mmap 区的地址写回用户空间；<a href="binder-code-2-native.html#ch2-ipcsetdataref">第 2 章 <code>ipcSetDataReference</code></a> 接的就是这个地址。</p>
         <p><strong>BR_TRANSACTION 是第 4 章服务端的入口；BR_REPLY 已在第 2 章见过——本章至此闭环。</strong></p>
 
         <h2>下一章</h2>
@@ -638,6 +638,6 @@ retry:
   </div>
 </footer>
 
-<script src="../assets/js/site.js?v=20261116e" defer></script>
+<script src="../assets/js/site.js?v=20261116f" defer></script>
 </body>
 </html>

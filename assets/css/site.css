@@ -736,6 +736,7 @@ pre { margin: 0; }
 .article-body td { padding: 10px 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
 .article-body tr:last-child td { border-bottom: none; }
 .article-body pre { margin: 18px 0; padding: 16px; overflow: auto; border-radius: 9px; background: var(--code-bg); color: var(--code-fg); font-size: 10.5px; line-height: 1.8; }
+.article-body pre { scroll-margin-top: calc(var(--header-h) + 16px); }
 .article-body pre code { padding: 0; border: 0; background: none; color: inherit; font-size: inherit; white-space: pre; }
 .flow-diagram {
   display: flex;
