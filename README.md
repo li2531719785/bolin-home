@@ -2,7 +2,7 @@
 
 Bolin 的个人学习资料站，公开记录 Android、Linux、Binder、Framework 与 Native 开发的学习过程。
 
-面向 Android 系统开发、Framework / Native / Kernel 方向；AIDL 只作为进入 Binder 协议的入口。
+面向 Android 系统开发、Framework / Native / Kernel 方向；Binder 内容以源码阅读路线为主。
 
 **线上地址：** <https://home.bolinlab.top/>
 
@@ -24,18 +24,13 @@ Bolin 的个人学习资料站，公开记录 Android、Linux、Binder、Framewo
 │   └── index.html                   # 关于
 ├── notes/
 │   ├── index.html                   # 笔记库（搜索 / 标签筛选）
-│   ├── binder-learning-path.html    # Binder 学习路线
-│   ├── binder-chapter-0.html        # 第 0 章：Binder 预备知识
-│   ├── binder-chapter-1.html        # 第 1 章：为什么需要 Binder
-│   ├── binder-chapter-2.html        # 第 2 章：Binder 的心智模型
-│   ├── binder-chapter-3.html        # 第 3 章：第一个 AIDL（系统源码 + 真机）
-│   ├── binder-chapter-4.html        # 第 4 章：系统服务里的 AIDL（源码 + 真机）
+│   ├── binder-learning-path.html    # Binder 源码阅读路线
+│   ├── binder-code-1-client.html    # 第 1 章：BinderProxy.transact → BpBinder
 │   └── binder-driver.html           # Binder 驱动数据结构交互图解
 ├── assets/
 │   ├── css/site.css                 # 站点样式
 │   ├── js/site.js                   # 主题、筛选、目录、进度条、代码块
 │   ├── vendor/prism/                # 本地 Prism 1.30.0（按需加载）
-│   ├── img/                         # 文章静态示意图（SVG，明/暗两套）
 │   └── og-image.png                 # 1200×630 社交分享图
 ├── avatar.png
 ├── 404.html
@@ -94,7 +89,7 @@ Cloudflare Pages 配置建议：
 1. 源码引用写清楚文件、函数和行号；代码块使用 `data-file` / `data-lang`。
 2. 终端输出必须是真机原始记录，保留命令和输出；不能确认的内容标“未实测”。
 3. 调用链 / 时序图优先使用 `.flow-diagram`、`.seq-diagram` 等 CSS 组件。
-4. 复杂结构图可以用 `assets/img/` 下的静态 SVG（明 / 暗两套），并配 `figure` / `figcaption`。
+4. 源码阅读章节先贴完整函数，再解释调用链位置；不写概念铺垫章节。
 5. 文章开头放验证环境（Android 版本、AOSP 版本、样本、验证方式、日期）。
 6. 完成后同步更新笔记库、学习路线、sitemap 和 `CHANGELOG.md`。
 
@@ -118,5 +113,5 @@ Cloudflare Pages 配置建议：
 ## 待补充
 
 - 增加 RSS / Atom 订阅。
-- 把学习路线中的“计划中”内容逐步补成正式笔记。
+- 按源码阅读路线继续补第 2–6 章。
 - 如需更完整的分享预览，可继续为每篇长文生成独立 OG 封面。

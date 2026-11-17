@@ -3,23 +3,23 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Android 系统开发的 Binder 学习路线 · Bolin Lab</title>
-<meta name="description" content="面向 Android 系统开发的 Binder 学习路线：先走新手主线，再进 Framework / Native / Kernel。">
+<title>Binder 源码阅读路线 · Bolin Lab</title>
+<meta name="description" content="按一条 Binder 调用链，从 Java 层读到内核驱动。每章只读一个入口，不写概念铺垫。">
 <meta name="author" content="Bolin">
 <link rel="canonical" href="https://home.bolinlab.top/notes/binder-learning-path">
 <meta property="og:site_name" content="Bolin Lab">
-<meta property="og:title" content="Android 系统开发的 Binder 学习路线 · Bolin Lab">
-<meta property="og:description" content="先走新手主线，再进 Framework / Native / 驱动；一条循序渐进的 Binder 学习路线。">
+<meta property="og:title" content="Binder 源码阅读路线 · Bolin Lab">
+<meta property="og:description" content="从 BinderProxy 到 binder.c，按一条调用链读 Binder 源码。">
 <meta property="og:type" content="article">
 <meta property="og:url" content="https://home.bolinlab.top/notes/binder-learning-path">
 <meta property="og:image" content="https://home.bolinlab.top/assets/og-image.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
-<meta property="og:image:alt" content="Android 系统开发的 Binder 学习路线">
+<meta property="og:image:alt" content="Binder 源码阅读路线">
 <meta property="article:published_time" content="2026-11-15">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="Android 系统开发的 Binder 学习路线 · Bolin Lab">
-<meta name="twitter:description" content="从系统服务到 Framework / Native / 驱动，先跑通主线再深入源码。">
+<meta name="twitter:title" content="Binder 源码阅读路线 · Bolin Lab">
+<meta name="twitter:description" content="从 Java 层到内核驱动，按调用链读 Binder 源码。">
 <meta name="twitter:image" content="https://home.bolinlab.top/assets/og-image.png">
 <meta name="theme-color" content="#f4f1e9">
 <link rel="icon" href="../avatar.png" type="image/png">
@@ -72,183 +72,59 @@
   <div class="container">
     <header class="article-hero">
       <div class="breadcrumbs">
-        <a href="../index.html">Bolin Lab</a><span>/</span><a href="./">笔记</a><span>/</span><span>Binder 学习路线</span>
+        <a href="../index.html">Bolin Lab</a><span>/</span><a href="./">笔记</a><span>/</span><span>Binder 源码阅读路线</span>
       </div>
-      <h1>Android 系统开发的<br>Binder 学习路线</h1>
-      <p class="article-lead">这条路线面向 Android 系统开发、Framework / Native / Kernel 方向。AIDL 只作为进入 Binder 协议的入口；主线是系统服务、libbinder、驱动和排障。</p>
+      <h1>Binder<br>源码阅读路线</h1>
+      <p class="article-lead">按一条调用链，从 Java 层读到 Binder 驱动。每章只读一个入口，代码在前，解释在后，不写概念铺垫。</p>
       <div class="article-meta">
-        <span>2026.11.17</span><span class="dot"></span><span>学习路线</span><span class="dot"></span><span>约 14 分钟</span><span class="dot"></span><span>系统开发 / 主线 + 进阶</span>
+        <span>2026.11.17</span><span class="dot"></span><span>源码阅读</span><span class="dot"></span><span>6 章</span><span class="dot"></span><span>Framework → Driver</span>
       </div>
     </header>
 
     <div class="article-layout">
       <article class="article-body">
-        <p>这份路线不是一份“Binder API 大全”，而是一条从系统服务到内核实现的教学顺序。目标是让做 Android 系统开发、Framework、Native 或 Kernel 的读者，最终能画出完整调用链、读懂关键源码，并且知道遇到问题该去哪里查。</p>
-        <p>整条路线分两段：先走<strong>新手主线</strong>，能完整解释一次系统服务调用；再进入 <strong>Framework / Native / 驱动</strong>源码。不需要一次读完 18 章。</p>
-
+        <p>这条路线只做一件事：<strong>按一条 Binder 调用链读源码</strong>。不再用概念章节铺路，每个代码块都是实际源码；读完一段，下一段自然接着读。</p>
         <div class="callout">
           <span class="callout-mark">!</span>
-          <div><strong>读者定位：</strong>Android 系统开发、Framework / Native / Kernel。AIDL 只用来进入协议层；重点放在系统服务、libbinder、Binder 驱动、SELinux 和排障。</div>
+          <div><strong>阅读约定：</strong>源码基于 Android 15；内核代码使用 6.6.47 的 <code>drivers/android/binder.c</code>。每章先贴完整函数，再解释它在链路里的位置。</div>
         </div>
 
-        <div class="callout">
-          <span class="callout-mark">!</span>
-          <div><strong>先记住一句话：</strong>Binder 不是一个函数调用，而是一套跨进程对象访问机制。handle 在客户端，node 在服务端，transaction 和 buffer 负责把一次调用送过去。</div>
-        </div>
-
-        <h2>新手主线：先跑通一次调用</h2>
-        <div class="flow-diagram" aria-label="Binder 新手主线">
-          <div class="flow-step"><span class="flow-label">0-1 / 基础</span><strong>OS 基础 + RPC</strong><span>进程 / fd / ioctl / 一次拷贝</span></div>
-          <div class="flow-arrow" aria-hidden="true"></div>
-          <div class="flow-step"><span class="flow-label">2 / 模型</span><strong>心智模型</strong><span>Proxy / Stub / handle / node</span></div>
-          <div class="flow-arrow" aria-hidden="true"></div>
-          <div class="flow-step"><span class="flow-label">3 / 调用</span><strong>第一次真实调用</strong><span>service check activity</span></div>
-          <div class="flow-arrow" aria-hidden="true"></div>
-          <div class="flow-step"><span class="flow-label">5-6 / 服务</span><strong>注册与对象</strong><span>ServiceManager + 对象模型</span></div>
-          <div class="flow-arrow" aria-hidden="true"></div>
-          <div class="flow-step"><span class="flow-label">9 / 全链路</span><strong>串起来</strong><span>用户态 → libbinder → 驱动</span></div>
-        </div>
-        <p>对应章节：第 0–1 章 → 第 2 章 → 第 3 章 → 第 5–6 章 → 第 9 章。第 5 章目前整理中，恢复后按这个顺序读。</p>
-
-        <h2>第二阶段：Framework → Native → 驱动</h2>
-        <div class="flow-diagram" aria-label="Binder 第二阶段学习路线">
-          <div class="flow-step"><span class="flow-label">7 / Framework</span><strong>Java Binder</strong><span>SystemServer / BinderProxy</span></div>
-          <div class="flow-arrow" aria-hidden="true"></div>
-          <div class="flow-step"><span class="flow-label">8 / Native</span><strong>libbinder</strong><span>ProcessState / IPCThreadState</span></div>
-          <div class="flow-arrow" aria-hidden="true"></div>
-          <div class="flow-step"><span class="flow-label">10-14 / Driver</span><strong>Binder 驱动</strong><span>proc / node / ref / transaction</span></div>
-        </div>
-        <p>先把第 9 章的全链路走通，再按 7 → 8 → 10–14 读源码。第 4 章是选读分支，不影响主线；第 15–18 章放到实战和排障阶段。</p>
-
-        <div class="callout">
-          <span class="callout-mark">!</span>
-          <div><strong>阅读方式：</strong>每章只回答一个核心问题。遇到方向标签、stable AIDL、并发细节等分支先跳过，不影响主线；需要时再回来查。</div>
-        </div>
-
-        <h2>模块 0 · 预备知识</h2>
-
-        <h3>第 0 章：听不懂 Binder，通常不是 Binder 的问题</h3>
-        <p>先把这些前置知识补齐：进程与线程、虚拟内存、文件描述符、系统调用、<code>ioctl</code>、<code>mmap</code>。然后知道 Android 里 zygote、system_server 和普通 app process 的分工。</p>
-        <ul>
-          <li>理解“用户态 / 内核态”和一次系统调用的成本。</li>
-          <li>知道 <code>/dev/binder</code> 是一个字符设备。</li>
-          <li>能说清楚进程隔离为什么让普通函数调用无法直接跨进程。</li>
-        </ul>
-        <p><strong>完整展开：</strong> <a href="binder-chapter-0.html">第 0 章：Binder 的预备知识</a>。里面有进程 / 线程、虚拟内存、fd、ioctl / mmap、Parcel、Android 进程模型、实验和自测题。</p>
-
-        <h2>模块 1 · 建立直觉</h2>
-
-        <h3>第 1 章：Android 为什么需要 Binder</h3>
-        <p>先从 RPC 的四步流程出发：定义服务、注册、获取代理、transact 调用；再解释“一次拷贝”是怎么来的。然后对比 pipe、socket、共享内存，说明 Binder 补上的对象引用、方法调用和 Binder 线程。</p>
-        <p>这一章要解释“一次拷贝”说法的边界，但不要陷入内核细节。读者只需要先建立：Binder 是为 Android 的进程模型和对象模型量身定制的 IPC。</p>
-        <p><strong>完整展开：</strong> <a href="binder-chapter-1.html">第 1 章：Android 为什么需要 Binder</a>。包含 RPC 四步、一次拷贝、3 张示意图和真机 <code>service</code> / <code>maps</code> 输出。</p>
-
-        <h3>第 2 章：Binder 的心智模型</h3>
-        <p>用一张图讲清 Client / Server、Proxy / Stub、handle、Parcel、同步调用和 Binder 线程。示例用 <code>IServiceManager.checkService("activity")</code>。</p>
-        <p><strong>实验：</strong>不写代码，手画一次 shell <code>service</code> 命令调用 servicemanager 的完整链路。</p>
-        <p><strong>完整展开：</strong> <a href="binder-chapter-2.html">第 2 章：Binder 的心智模型</a>。从一次系统服务查找出发，讲清 Proxy / Stub、handle / node、Parcel、同步调用、Binder 线程和 4 个常见误解。</p>
-
-        <h2>模块 2 · 系统服务与 AIDL</h2>
-        <p>这一模块先用系统命令和服务源码跑通一次真实调用，再看 servicemanager 的注册与用户态对象模型。</p>
-
-        <h3>第 3 章：第一个 AIDL</h3>
-        <p>直接用系统自带的 <code>service</code> 命令调用 <code>IServiceManager</code>，看 AIDL 生成的 Proxy / Stub、Parcel 读写顺序、事务码，以及真机上的 Binder 线程和 <code>/dev/binder</code> 映射。</p>
-        <p><strong>完整展开：</strong> <a href="binder-chapter-3.html">第 3 章：第一个 AIDL</a>。包含 AOSP 源码锚点、真实 <code>service call</code> 输出、进程 / 线程 / 映射证据和练习。</p>
-
-        <div class="callout">
-          <span class="callout-mark">→</span>
-          <div><strong>选读分支：</strong><a href="binder-chapter-4.html">第 4 章：系统服务里的 AIDL</a>。讲 Parcelable、oneway、callback 和 DeathRecipient，等主线跑通后再看；方向标签等细节用到再查。</div>
-        </div>
-
-        <h3>第 5 章：ServiceManager 与服务注册</h3>
-        <p>按 servicemanager 的三个场景走：启动与 <code>BINDER_SET_CONTEXT_MGR</code>、<code>addService</code> 注册、<code>getService</code> / <code>listServices</code> 获取，以及和 hwservicemanager 的分工。callback 和死亡通知不在主线，放到选读或后续。</p>
-        <p><strong>整理中：</strong>本章正文暂时下线，后续按“源码 + 真机实验 + 时序图”的标准重写。</p>
-
-        <h3>第 6 章：用户态 Binder 对象模型</h3>
-        <p>把 <code>IBinder</code>、<code>BpBinder</code>、<code>BBinder</code>、Java 的 <code>Binder</code> 和 <code>BinderProxy</code> 放在一起讲。重点解释本地对象和远程代理的区别，以及为什么同一个服务在不同进程里 handle 可以不同。</p>
-
-        <h2>模块 3 · 全链路与 Framework / Native</h2>
-
-        <h3>第 9 章：一次调用的全链路（主线桥接）</h3>
-        <p>这是新手主线的最后一站：把第 0–6 章串成一条线。读完第 6 章就可以看这一章。</p>
-        <pre data-title="一次 Binder 调用的高层链路" data-lang="text"><code class="language-text">AIDL Proxy
-  → BinderProxy
-    → JNI
-      → libbinder / IPCThreadState
-        → ioctl(BINDER_WRITE_READ)
-          → Binder driver
-            → server thread
-              → Stub
-                → 实际方法</code></pre>
-        <p>这一章只回答一个问题：一次调用从用户态到驱动到底经过了哪些边界。第 7、8 章是第二阶段，可以之后再回来。</p>
-
-        <h3>第 7 章：Framework 层：Binder 与 SystemServer</h3>
-        <p>按 Java 层的三个场景走：<code>Binder.java</code> / <code>BinderProxy</code> / <code>Parcel</code> 的初始化，SystemServer 如何注册系统服务，以及客户端如何通过 <code>ServiceManager.getService</code> 获取代理并发起调用。</p>
-
-        <h3>第 8 章：Native Binder（libbinder）</h3>
-        <p>先写一个最小 native client（<code>defaultServiceManager</code> → <code>checkService</code> → <code>transact</code>），再拆 <code>ProcessState</code>、<code>IPCThreadState</code>、<code>BpBinder</code>、<code>BBinder</code>、<code>Parcel</code> 和 <code>talkWithDriver</code>，最后用 JNI 把 Java 层和 Native 层接起来。</p>
-
-        <h2>模块 4 · 第二阶段：内核驱动</h2>
-
-        <h3>第 10 章：Binder 驱动的入口</h3>
-        <p><code>/dev/binder</code>、binderfs、<code>open</code> / <code>mmap</code> / <code>ioctl</code>，以及 <code>binder_proc</code>、<code>binder_thread</code>、<code>binder_alloc</code>、<code>binder_device</code> 和 <code>binder_context</code> 的角色。</p>
-
-        <h3>第 11 章：核心数据结构与关系</h3>
-        <p>这是整个路线里最需要图的一章：<code>binder_proc</code> 的四棵红黑树、两条队列和一个分配器；<code>binder_node</code> 与 <code>binder_ref</code> 的双向登记；<code>binder_transaction</code>、<code>binder_buffer</code> 与 <code>binder_work</code> 的连接。</p>
-        <p>可以配合 <a href="binder-driver.html">《Android Binder 驱动数据结构关系》</a> 的交互图来讲。</p>
-
-        <h3>第 12 章：一次事务的完整生命周期</h3>
-        <p>从 <code>BC_TRANSACTION</code> 开始，走完 handle → ref → node、目标 buffer 分配、work 入队、<code>BR_TRANSACTION</code>、<code>BC_REPLY</code>、<code>BR_REPLY</code> 和 <code>BC_FREE_BUFFER</code>。最后对比同步与 oneway，解释 <code>transaction_stack</code>。</p>
-
-        <h3>第 13 章：引用计数、死亡通知与生命周期</h3>
-        <p>讲清 <code>ref-&gt;data.strong / weak</code>、<code>node-&gt;internal_strong_refs</code>、<code>local_*</code>、<code>tmp_refs</code>，以及 owner 进程死亡后 node 如何变成 dead node、客户端如何收到 <code>BR_DEAD_BINDER</code>。</p>
-
-        <h3>第 14 章：并发、优先级与异常边界</h3>
-        <p>锁顺序、线程池耗尽、嵌套调用死锁、优先级继承、Binder freeze、oneway spam、fd 传递、<code>TransactionTooLargeException</code> 与 <code>BR_FAILED_REPLY</code>。</p>
-
-        <h2>模块 5 · 实战与进阶（第二阶段后）</h2>
-
-        <h3>第 15 章：Binder 调试与排障</h3>
-        <p>使用 dumpsys、binder debugfs、Perfetto 和日志定位问题。把“客户端、服务端还是驱动出问题”变成可以逐步排除的流程，而不是靠猜。</p>
-
-        <h3>第 16 章：安全与系统集成</h3>
-        <p>UID / PID、SELinux、binder context、AIDL HAL、stable AIDL、system / vendor 分区与权限检查。知道 Binder 不只是 IPC，也是 Android 安全边界的一部分。</p>
-
-        <h3>第 17 章：Capstone 实战</h3>
-        <p>选一个真实系统服务（servicemanager 或 ActivityManagerService），追踪它的注册、调用和死亡清理；补 oneway / callback 的原生观察，最后画出客户端 → libbinder → 驱动 → 服务端 Binder 线程的全链路图。</p>
-
-        <h3>第 18 章：知识串联与高频问题</h3>
-        <p>用高频问题检查理解：handle 是全局的吗？node 存在哪？为什么同步调用会阻塞？buffer 属于谁？一次调用为什么会有两笔 transaction？</p>
-
-        <h2>课时不够时，压缩成三条路线</h2>
+        <h2>六章顺序</h2>
         <div class="table-wrap">
           <table>
-            <thead><tr><th>目标</th><th>章节</th><th>大概课时</th></tr></thead>
+            <thead><tr><th>章节</th><th>入口</th><th>下一跳</th></tr></thead>
             <tbody>
-              <tr><td>新手主线：跑通一次调用</td><td>第 0–3、5–6、9 章</td><td>7 章</td></tr>
-              <tr><td>Framework / Native 深入</td><td>主线 + 第 7–8 章</td><td>9 章左右</td></tr>
-              <tr><td>完整驱动</td><td>主线 + 第 7–8、10–14 章</td><td>14 章左右</td></tr>
+              <tr><td><a href="binder-code-1-client.html">第 1 章</a></td><td><code>BinderProxy.transact</code></td><td>JNI → <code>BpBinder::transact</code></td></tr>
+              <tr><td>第 2 章</td><td><code>IPCThreadState::transact</code></td><td><code>writeTransactionData</code> → <code>talkWithDriver</code></td></tr>
+              <tr><td>第 3 章</td><td><code>binder_ioctl</code></td><td><code>binder_transaction</code> → <code>binder_thread_read</code></td></tr>
+              <tr><td>第 4 章</td><td><code>IPCThreadState::executeCommand</code></td><td><code>BBinder::onTransact</code> → Java <code>Binder.execTransact</code></td></tr>
+              <tr><td>第 5 章</td><td><code>servicemanager/main.cpp</code></td><td><code>ServiceManager::addService</code> / <code>checkService</code></td></tr>
+              <tr><td>第 6 章</td><td><code>binder_internal.h</code></td><td><code>binder_proc</code> / <code>node</code> / <code>ref</code> / <code>transaction</code></td></tr>
             </tbody>
           </table>
         </div>
 
-        <h2>教学上最重要的三个建议</h2>
-        <ol>
-          <li><strong>用一个系统服务贯穿全程。</strong>建议选 servicemanager 或 ActivityManagerService；每讲一层，就回到它，看它在 Framework、Native 和驱动里分别长什么样。</li>
-          <li><strong>不要按源码文件顺序讲。</strong>先讲一次调用怎么发生，再解释沿途遇到的结构，而不是从 <code>binder_internal.h</code> 第一行开始念。</li>
-          <li><strong>每章只回答一个问题。</strong>先把主线跑通，再补分支和细节；能画出 Client → Proxy → Binder → Driver → Stub → Server 和 handle → ref → node，基本就讲懂了。</li>
-        </ol>
+        <h2>第 1 章：BinderProxy.transact → BpBinder::transact</h2>
+        <p>从 Java 层入口开始，读三个函数：</p>
+        <ul>
+          <li><code>frameworks/base/core/java/android/os/BinderProxy.java</code>：<code>transact</code></li>
+          <li><code>frameworks/base/core/jni/android_util_Binder.cpp</code>：<code>android_os_BinderProxy_transact</code></li>
+          <li><code>frameworks/native/libs/binder/BpBinder.cpp</code>：<code>BpBinder::transact</code></li>
+        </ul>
+        <p><a href="binder-code-1-client.html">开始读第 1 章 →</a></p>
 
-        <div class="callout">
-          <span class="callout-mark">→</span>
-          <div><strong>下一站：</strong>如果你已经理解整体路线，可以直接打开 <a href="binder-driver.html">Binder 驱动数据结构的交互图解</a>，从 <code>binder_proc</code> 开始看对象关系。</div>
-        </div>
+        <h2>第 2–6 章</h2>
+        <p>第 2–6 章按上表继续往下读，正在整理。每章完成后会把链接放到这里；不写概念铺垫。</p>
+
+        <h2>数据结构参考</h2>
+        <p>读到第 3、6 章时，可以配合 <a href="binder-driver.html">《Android Binder 驱动数据结构关系》</a> 的交互图看 <code>binder_proc</code>、<code>node</code>、<code>ref</code>、<code>transaction</code> 的关系。</p>
 
         <div class="article-end">
           <a class="text-link" href="./">← 返回笔记库</a>
-          <a class="text-link" href="binder-driver.html">阅读 Binder 驱动图解 <span class="arrow" aria-hidden="true">→</span></a>
+          <a class="text-link" href="binder-code-1-client.html">开始第 1 章 <span class="arrow" aria-hidden="true">→</span></a>
         </div>
-        <div class="article-footer-meta">Bolin Lab · 本文会随着学习和讨论持续修订。最后更新：2026.11.17</div>
+        <div class="article-footer-meta">Bolin Lab · Binder 源码阅读路线 · 最后更新 2026.11.17</div>
+
       </article>
 
       <aside class="article-toc" aria-label="文章目录">

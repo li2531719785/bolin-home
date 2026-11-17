@@ -31,31 +31,7 @@
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://home.bolinlab.top/notes/binder-chapter-0</loc>
-    <lastmod>2026-11-17</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://home.bolinlab.top/notes/binder-chapter-1</loc>
-    <lastmod>2026-11-17</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://home.bolinlab.top/notes/binder-chapter-2</loc>
-    <lastmod>2026-11-17</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://home.bolinlab.top/notes/binder-chapter-3</loc>
-    <lastmod>2026-11-17</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://home.bolinlab.top/notes/binder-chapter-4</loc>
+    <loc>https://home.bolinlab.top/notes/binder-code-1-client</loc>
     <lastmod>2026-11-17</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>

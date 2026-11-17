@@ -15,6 +15,53 @@ Bolin Lab 的开发记录。每次完成一轮开发后追加一条，至少包�
 
 ## 2026-11-17
 
+### 删除概念章节，重建 Binder 源码阅读路线
+
+**目标：** 按作者要求删掉所有概念章节，学习路线改为“跟着代码读”，一章只读一个入口。
+
+**改动：**
+
+- 删除旧第 0–4 章；旧 URL（含 `.html`）308 到 `notes/binder-learning-path`。
+- `binder-learning-path.html` 重写为 6 章源码阅读路线：
+  Java → libbinder → 驱动 → 服务端 → servicemanager → 数据结构/全链路。
+- 新增第 1 章 `notes/binder-code-1-client.html`：
+  `BinderProxy.transact` → JNI `android_os_BinderProxy_transact` → `BpBinder::transact`，三段完整函数。
+- 删除不再使用的概念图 SVG；保留 `binder-driver.html` 数据结构交互图。
+- 首页 / 笔记库统计改为 03 篇；sitemap 改为 6 个 URL；旧章节卡片移除。
+- README / AGENTS 同步源码阅读规则和第 1 章状态。
+
+**涉及文件：**
+
+- `notes/binder-chapter-0..4.html`（删除）
+- `notes/binder-learning-path.html`
+- `notes/binder-code-1-client.html`（新增）
+- `notes/index.html`
+- `index.html`
+- `about/index.html`
+- `sitemap.xml`
+- `_redirects`
+- `assets/img/binder-*.svg`（删除）
+- `README.md`
+- `AGENTS.md`
+- `CHANGELOG.md`
+
+**验证：**
+
+- 第 1 章：3 个代码块都是完整函数，带文件路径和行号；无 `service check` 示例。
+- 1440 / 390 无页面级横向溢出，控制台无错误；旧章节链接不再出现。
+- sitemap 6 个 URL；全站链接 88 条，缺失 0。
+- 旧章节 URL 部署后在线上确认 308。
+
+**Commit：** 本次提交（见 GitHub history）。
+
+**部署：** 推送 `main` 后由 Cloudflare Pages 自动部署。
+
+**下一步：** 等作者评审源码阅读路线和第 1 章；通过后写第 2 章 `IPCThreadState`。
+
+---
+
+## 2026-11-17
+
 ### 重写第 3 章叙事：跟着 service check activity 走
 
 **目标：** 解决“知识点堆叠、读起来跳来跳去”的问题，把第 3 章改成一条连续调用线。
@@ -804,19 +851,18 @@ Bolin Lab 的开发记录。每次完成一轮开发后追加一条，至少包�
 
 - 线上地址：<https://home.bolinlab.top/>
 - 最近部署：Cloudflare Pages，`main` 分支自动部署
-- 已发布页面：首页、笔记库、关于、404、Binder 图解、Binder 学习路线、第 0/1/2/3/4 章
-- 第 5 章正文已下线，学习路线中标记“整理中”
+- 已发布页面：首页、笔记库、关于、404、Binder 图解、Binder 源码阅读路线、源码第 1 章
+- 旧第 0–4 章已删除，旧 URL 308 到源码阅读路线
 - 教程定位：Android 系统开发 / Framework / Native / Kernel；默认读者是系统开发者，不再反复做 App 对比
-- GSC：所有权验证成功；sitemap 成功。当前 sitemap 有 10 个 URL，
-  等待 Google 重新抓取；上次读取为 5 个页面
-- 学习路线已重构为“新手主线 `0-1→2→3→5-6→9` + 第二阶段 `7→8→10-14`”，
-  第 4 章标为选读；第 2 章已精简为新手主线，保留 4 张 SVG、真实 `service` / `ps -T` 实验和源码；
-  第 3 章待按主线精简，第 5 章待重写
+- GSC：所有权验证成功；sitemap 成功。当前 sitemap 有 6 个 URL，
+  等待 Google 重新抓取
+- 学习路线已改为 6 章源码阅读顺序：Java → libbinder → 驱动 → 服务端 → servicemanager → 数据结构；
+  第 1 章已写 `BinderProxy` → JNI → `BpBinder`，第 2–6 章待写
 - 代码展示：本地 Prism 1.30.0 按需加载；代码块自动生成代码头、语言标签和复制
   按钮；AIDL 通过 `data-lang="aidl"` 映射到 Java 高亮
 - 写作流程：不再使用 `drafts/`；文章直接写 `notes/*.html`，但必须有源码锚点和
   真实输出，未实测内容明确标注
-- 工作区：第 3 章叙事重写已提交，等待评审
+- 工作区：源码阅读重构已提交，等待评审
 - 已知注意点：
   - 不要删除 Google 验证文件与 `_redirects` 规则。
   - Cloudflare 会把 `*.html` 308 到无扩展名地址；canonical / sitemap 使用最终地址。

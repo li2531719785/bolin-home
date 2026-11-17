@@ -73,7 +73,7 @@
       <h1>笔记库</h1>
       <p>公开的学习工作台。这里放已经整理好的图解、路线和源码笔记；还没想清楚的内容，会先留在“在整理”里。</p>
       <div class="hero-stats">
-        <div class="hero-stat"><b>07</b><span>篇已发布</span></div>
+        <div class="hero-stat"><b>03</b><span>篇已发布</span></div>
         <div class="hero-stat"><b>03</b><span>个主题方向</span></div>
         <div class="hero-stat"><b>UPDATING</b><span>持续修订</span></div>
       </div>
@@ -91,10 +91,27 @@
         <button class="filter-chip" type="button" data-filter="kernel" aria-pressed="false">Kernel</button>
         <button class="filter-chip" type="button" data-filter="roadmap" aria-pressed="false">学习路线</button>
       </div>
-      <span class="mono muted" id="noteCount" aria-live="polite">07 篇笔记</span>
+      <span class="mono muted" id="noteCount" aria-live="polite">03 篇笔记</span>
     </div>
 
     <div class="note-grid" id="noteGrid">
+      <a class="note-card is-featured reveal" href="binder-code-1-client.html" data-note-card data-tags="android binder roadmap" data-search="android binder 源码阅读 第1章 binderproxy transact jni android_util_binder bpbinder transact libbinder">
+        <div class="card-meta">
+          <span class="card-type">Source walk 01 / Client</span>
+          <span class="card-date">2026.11.17</span>
+        </div>
+        <h2><span class="title-line">BinderProxy.transact</span><span class="title-line">→ BpBinder</span></h2>
+        <p>从 Java 层 BinderProxy.transact 到 JNI，再到 BpBinder::transact；完整函数和逐段解释。</p>
+        <div class="card-bottom">
+          <div class="card-tags">
+            <span class="tag">Android</span>
+            <span class="tag">Binder</span>
+            <span class="tag">Source</span>
+          </div>
+          <span class="card-read">约 15 min</span>
+        </div>
+        <span class="card-arrow" aria-hidden="true">↗</span>
+      </a>
       <a class="note-card is-featured reveal" href="binder-driver.html" data-note-card data-tags="android binder kernel" data-search="android binder 驱动 数据结构 内核 proc thread node ref transaction buffer alloc 源码 图解">
         <div class="card-meta">
           <span class="card-type">Deep dive / Interactive</span>
@@ -113,113 +130,27 @@
         <span class="card-arrow" aria-hidden="true">↗</span>
       </a>
 
-      <a class="note-card reveal" href="binder-learning-path.html" data-note-card data-tags="android binder roadmap" data-search="android binder 学习路线 新手主线 系统开发 framework native 内核 驱动 系统服务 servicemanager 课程">
+      <a class="note-card reveal" href="binder-learning-path.html" data-note-card data-tags="android binder roadmap" data-search="android binder 源码阅读 路线 framework native 内核 驱动 bpbinder ipcthreadstate binder.c servicemanager">
         <div class="card-meta">
           <span class="card-type">Learning path</span>
           <span class="card-date">2026.11.17</span>
         </div>
-        <h2><span class="title-line">Android 系统开发的</span><span class="title-line">Binder 学习路线</span></h2>
-        <p>先走 0→1→2→3→5→6→9 新手主线，再进 Framework / Native / 驱动；第 4 章为选读。</p>
+        <h2><span class="title-line">Binder 源码</span><span class="title-line">阅读路线</span></h2>
+        <p>从 BinderProxy.transact 读到 binder.c：6 章源码阅读顺序，每章只读一个入口，不写概念铺垫。</p>
         <div class="card-bottom">
           <div class="card-tags">
             <span class="tag">Android</span>
             <span class="tag">Binder</span>
             <span class="tag">Roadmap</span>
           </div>
-          <span class="card-read">约 14 min</span>
+          <span class="card-read">约 8 min</span>
         </div>
         <span class="card-arrow" aria-hidden="true">↗</span>
       </a>
 
-      <a class="note-card reveal" href="binder-chapter-0.html" data-note-card data-tags="android binder roadmap" data-search="android binder 第0章 预备知识 基础 进程 线程 虚拟内存 文件描述符 fd 系统调用 ioctl mmap parcel zygote system_server servicemanager">
-        <div class="card-meta">
-          <span class="card-type">Chapter 0 / Fundamentals</span>
-          <span class="card-date">2026.11.17</span>
-        </div>
-        <h2><span class="title-line">第 0 章：Binder 的</span><span class="title-line">预备知识</span></h2>
-        <p>进程隔离、虚拟内存、fd、系统调用、ioctl、mmap 和 Android 进程模型。进入 Binder 前先把这些直觉补齐。</p>
-        <div class="card-bottom">
-          <div class="card-tags">
-            <span class="tag">Android</span>
-            <span class="tag">Binder</span>
-            <span class="tag">基础</span>
-          </div>
-          <span class="card-read">约 18 min</span>
-        </div>
-        <span class="card-arrow" aria-hidden="true">↗</span>
-      </a>
 
-      <a class="note-card reveal" href="binder-chapter-1.html" data-note-card data-tags="android binder roadmap" data-search="android binder 第1章 为什么需要 binder rpc ipc pipe socket 共享内存 一次拷贝 service maps">
-        <div class="card-meta">
-          <span class="card-type">Chapter 1 / Intuition</span>
-          <span class="card-date">2026.11.17</span>
-        </div>
-        <h2><span class="title-line">第 1 章：Android</span><span class="title-line">为什么需要 Binder</span></h2>
-        <p>从 RPC 四步和“一次拷贝”讲起，再对比 Linux IPC，看 Binder 多出来的对象引用、方法调用和 Binder 线程。</p>
-        <div class="card-bottom">
-          <div class="card-tags">
-            <span class="tag">Android</span>
-            <span class="tag">Binder</span>
-            <span class="tag">基础</span>
-          </div>
-          <span class="card-read">约 13 min</span>
-        </div>
-        <span class="card-arrow" aria-hidden="true">↗</span>
-      </a>
 
-      <a class="note-card reveal" href="binder-chapter-2.html" data-note-card data-tags="android binder roadmap" data-search="android binder 第2章 心智模型 client server proxy stub handle node parcel 同步调用 binder线程 service ps">
-        <div class="card-meta">
-          <span class="card-type">Chapter 2 / Mental model</span>
-          <span class="card-date">2026.11.17</span>
-        </div>
-        <h2><span class="title-line">第 2 章：Binder 的</span><span class="title-line">心智模型</span></h2>
-        <p>用真实 <code>service</code> 命令、<code>ps -T</code> 和 4 张示意图，讲清 Proxy、Stub、handle/ref/node、Parcel、同步调用和 Binder 线程。</p>
-        <div class="card-bottom">
-          <div class="card-tags">
-            <span class="tag">Android</span>
-            <span class="tag">Binder</span>
-            <span class="tag">基础</span>
-          </div>
-          <span class="card-read">约 17 min</span>
-        </div>
-        <span class="card-arrow" aria-hidden="true">↗</span>
-      </a>
 
-      <a class="note-card reveal" href="binder-chapter-3.html" data-note-card data-tags="android binder roadmap" data-search="android binder 第3章 第一个 aidl 服务 service call servicemanager iservicemanager parcel proxy stub binder线程 dev/binder 真机 系统源码">
-        <div class="card-meta">
-          <span class="card-type">Chapter 3 / Hands-on</span>
-          <span class="card-date">2026.11.17</span>
-        </div>
-        <h2><span class="title-line">第 3 章：第一个</span><span class="title-line">AIDL</span></h2>
-        <p>用系统 service 命令调用 IServiceManager，跟着真实 Parcel、Proxy / Stub、Binder 线程和 /dev/binder 映射走完一次调用。</p>
-        <div class="card-bottom">
-          <div class="card-tags">
-            <span class="tag">Android</span>
-            <span class="tag">Binder</span>
-            <span class="tag">系统源码</span>
-          </div>
-          <span class="card-read">约 18 min</span>
-        </div>
-        <span class="card-arrow" aria-hidden="true">↗</span>
-      </a>
-
-      <a class="note-card reveal" href="binder-chapter-4.html" data-note-card data-tags="android binder roadmap" data-search="android binder 第4章 aidl 系统服务 parcelable in out inout oneway callback deathrecipient servicemanager activitymanager packagemanager 系统源码">
-        <div class="card-meta">
-          <span class="card-type">Chapter 4 / System</span>
-          <span class="card-date">2026.11.17</span>
-        </div>
-        <h2><span class="title-line">第 4 章：系统服务里的</span><span class="title-line">AIDL</span></h2>
-        <p>用 servicemanager、ActivityManagerService 和 IPackageManager 的真实源码，看 Parcelable、out/inout、oneway、callback 与死亡通知。</p>
-        <div class="card-bottom">
-          <div class="card-tags">
-            <span class="tag">Android</span>
-            <span class="tag">Binder</span>
-            <span class="tag">系统源码</span>
-          </div>
-          <span class="card-read">约 30 min</span>
-        </div>
-        <span class="card-arrow" aria-hidden="true">↗</span>
-      </a>
 
     </div>
 

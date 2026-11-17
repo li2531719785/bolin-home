@@ -32,17 +32,12 @@
 ├── about/index.html                 # 关于
 ├── notes/index.html                 # 笔记库（搜索 / 标签筛选）
 ├── notes/binder-driver.html         # Binder 驱动数据结构交互长文（自包含）
-├── notes/binder-learning-path.html  # Binder 学习路线
-├── notes/binder-chapter-0.html      # Binder 学习路线第 0 章：预备知识
-├── notes/binder-chapter-1.html      # Binder 学习路线第 1 章：为什么需要 Binder
-├── notes/binder-chapter-2.html      # Binder 学习路线第 2 章：心智模型
-├── notes/binder-chapter-3.html      # Binder 学习路线第 3 章：第一个 AIDL（系统源码 + 真机）
-├── notes/binder-chapter-4.html      # Binder 学习路线第 4 章：系统服务里的 AIDL
+├── notes/binder-learning-path.html  # Binder 源码阅读路线
+├── notes/binder-code-1-client.html  # 第 1 章：BinderProxy.transact → BpBinder
 ├── assets/
 │   ├── css/site.css                 # 全站样式（含深色主题、代码块）
 │   ├── js/site.js                   # 主题、筛选、TOC、阅读进度、代码块
 │   ├── vendor/prism/                # 本地 Prism 1.30.0（按需加载，含 LICENSE）
-│   ├── img/                         # 文章静态示意图（SVG，明/暗两套）
 │   └── og-image.png                 # 1200×630 社交分享图
 ├── avatar.png                       # 站点头像 / favicon
 ├── 404.html
@@ -107,32 +102,19 @@
   `data-search`，否则搜索和筛选找不到它。
 - 笔记页：文章类页面使用 `.article-hero` + `.article-layout` + `.article-body`
   结构，自动生成 TOC 和阅读进度。
-- 内容必须以源码或真机证据为准：源码写清文件 / 函数 / 行号，终端输出保留原始
-  记录；没有跑过的内容标“未实测”，不要写“你应该看到类似日志”。
-- 文档中不要写具体硬件平台、产品型号、build fingerprint、内核字符串或内部 AOSP 树名；
-  只写 Android 版本（例如 Android 15）。终端输出中的厂商服务名要过滤掉。
-- 文章开头放验证环境卡（设备、Android 版本、build fingerprint、AOSP 树、日期），
-  并使用 `.article-env` / `.env-badge` 组件。
-- 新文章不设 `drafts/` 草稿流程；直接在 `notes/*.html` 写，但必须先有源码锚点和
-  真实输出。历史 `drafts/` 已删除，不要再引用。
-- 代码块必须带 `data-file` / `data-title` 和 `data-lang`；`site.js` 统一加代码头、
-  语法高亮和复制按钮。AIDL 用 `data-lang="aidl"`，由 `PRISM_ALIASES` 映射到 Java
-  高亮，代码头显示 AIDL。
-- 调用链 / 时序图优先使用 `.flow-diagram`（线性）和 `.seq-diagram`（时序 / 泳道），
-  移动端会自动折叠；不要手写复杂 SVG 坐标。
-- 复杂结构图可以用预生成的静态 SVG 放在 `assets/img/`，同时提供明 / 暗两套，
-  用 `figure` + `figcaption` 引用；不要依赖外部图片 CDN。
-- 目前正式笔记有七篇：
+- 内容以源码阅读为主：每章只读一个入口，先贴完整函数或足够上下文，再解释它在调用链里的位置；不写概念铺垫章节。
+- 源码引用写清文件 / 函数 / 行号；不要编造运行输出。需要运行证据时少量保留，不要用 `adb shell service check` 这类命令示例。
+- 文档中不要写具体硬件平台、产品型号、build fingerprint、内核字符串或内部 AOSP 树名；只写 Android / 内核版本。
+- 代码块必须带 `data-file` / `data-title` 和 `data-lang`；`site.js` 统一加代码头、语法高亮和复制按钮。
+- 不再新增概念示意图；`notes/binder-driver.html` 保留为数据结构交互图，不要重写其内部逻辑。
+- 旧第 0–4 章已删除，旧 URL 由 `_redirects` 308 到 `notes/binder-learning-path`；第 5 章旧链接同样处理。
+- 目前正式笔记有三篇：
   1. `notes/binder-driver.html` — Binder 驱动数据结构图解
-  2. `notes/binder-learning-path.html` — Binder 学习路线
-  3. `notes/binder-chapter-0.html` — 第 0 章：Binder 的预备知识
-  4. `notes/binder-chapter-1.html` — 第 1 章：Android 为什么需要 Binder
-  5. `notes/binder-chapter-2.html` — 第 2 章：Binder 的心智模型
-  6. `notes/binder-chapter-3.html` — 第 3 章：第一个 AIDL（系统源码 + 真机）
-  7. `notes/binder-chapter-4.html` — 第 4 章：系统服务里的 AIDL（源码 + 真机）
-- 第 5 章已暂时下线，学习路线中标注“整理中”，后续按同一标准重写。
-- 首页和笔记库里的统计数字（07 篇、04 个方向等）必须与真实内容一致。
-- 不要把“计划中”的内容写成已完成；不确定的内容标注为整理中。
+  2. `notes/binder-learning-path.html` — Binder 源码阅读路线（6 章目录）
+  3. `notes/binder-code-1-client.html` — 第 1 章：BinderProxy.transact → BpBinder
+- 新源码章节命名：`notes/binder-code-<n>-<slug>.html`；第 2–6 章按路线继续写。
+- 首页和笔记库统计数字（03 篇）必须与真实内容一致。
+- 读者默认是系统开发者，不要反复做 App 对比。
 - 作者信息以仓库现有内容为准：Bolin、GitHub `li2531719785`、
   `2531719785@qq.com`。不要编造公司、学历或项目经历。
 
@@ -147,11 +129,7 @@
   - 关于：`https://home.bolinlab.top/about/`
   - Binder 图解：`https://home.bolinlab.top/notes/binder-driver`
   - Binder 路线：`https://home.bolinlab.top/notes/binder-learning-path`
-  - Binder 第 0 章：`https://home.bolinlab.top/notes/binder-chapter-0`
-  - Binder 第 1 章：`https://home.bolinlab.top/notes/binder-chapter-1`
-  - Binder 第 2 章：`https://home.bolinlab.top/notes/binder-chapter-2`
-  - Binder 第 3 章：`https://home.bolinlab.top/notes/binder-chapter-3`
-  - Binder 第 4 章：`https://home.bolinlab.top/notes/binder-chapter-4`
+  - Binder 源码第 1 章：`https://home.bolinlab.top/notes/binder-code-1-client`
 - 页面内部链接仍可保留 `.html`，方便 `python -m http.server` 本地预览；
   线上会 308 跳转，功能正常。
 - 新增页面后必须：
@@ -187,7 +165,7 @@
    打开 <http://127.0.0.1:8123/>。
 
 2. 修改后检查：
-   - 首页、笔记库、关于页、七篇笔记、404
+   - 首页、笔记库、关于页、三篇笔记、404
    - 桌面宽度（1440）和手机宽度（390）无横向溢出
    - 控制台无 JS 错误
    - 主题切换、搜索、筛选、TOC 正常
@@ -204,42 +182,31 @@
 5. 每次完成后更新 `CHANGELOG.md`；如果项目状态有变化，同步更新本文件的
    “当前状态”和“下一步”。
 
-## 9. 当前状态（2026-11-17，返工中）
+## 9. 当前状态（2026-11-17，源码阅读重构）
 
-- 首页 / 笔记库 / 关于 / 404 / 七篇笔记可访问；第 5 章正文已下线，学习路线中标记“整理中”。
-- 浅色 + 深色主题、移动端适配、搜索筛选、文章 TOC、阅读进度均已实现。
-- 第 1 章已重写：RPC 四步、一次拷贝、3 张 SVG 和真机输出；第 2 章为新手主线；
-  第 3 章已按 `service check activity` 连续叙事重写；第 4 章待精简（选读）。
-- 第 4 章以 servicemanager 为样本，讲 Parcelable、in/out/inout、oneway、callback、DeathRecipient；
-  其中 Parcelable 有 `service call manager 14` 真机实验，其余为源码走读。
-- 学习路线改为“新手主线 + 第二阶段”：主线 `0-1→2→3→5-6→9`，
-  第二阶段 `7→8→10-14`；第 4 章标为选读，不再挡主线。教程默认读者是系统开发者，不再反复做 App 对比。
-- 第 3 章使用 Android 15 真机采集：
-  `service list` 240 个服务、servicemanager / system_server PID、`binder:3139_N` 线程、
-  `/dev/binder` / `/dev/hwbinder` 映射、`binder/stats`、`service call` 原始 Parcel。
-- 新增 `.seq-diagram`（CSS 时序 / 泳道，移动端折叠）和 `.article-env` 环境卡；
-  代码块支持 `data-label`，AIDL 代码头显示 AIDL、高亮走 Java。
-- `drafts/` 目录已删除，不再使用 Markdown 草稿流程；文章直接写 `notes/*.html`，
-  但必须先有源码锚点和真实输出。
-- 本地 Prism 1.30.0 仍按需加载；CSS / JS 版本号为 `?v=20261116d`。
-- sitemap 现有 10 个 URL（第 5 章已移除），等待 Google 重新抓取。
-- 工作区：第 3 章叙事重写已提交，等待评审；Cloudflare Pages 自动部署 `main`。
-- 最近关键提交（返工前）：
-  - `486010c` 记录代码框架交接
-  - `f2f878c` 为代码框架加资源缓存版本号
-  - `111aff8` 搭建代码优先写作框架
-  - `56a766a` 发布 Binder 第 4 章
-  - `b5c2904` 固定 Google 验证文件的 200 路径
+- 首页 / 笔记库 / 关于 / 404 / 三篇笔记可访问：Binder 驱动图、源码阅读路线、源码第 1 章。
+- 旧第 0–4 章已删除，旧 URL 308 到源码阅读路线；第 5 章旧链接同样 308。
+- 源码阅读路线固定 6 章：Java → libbinder → 驱动 → 服务端 → servicemanager → 数据结构/全链路。
+- 第 1 章已写：`BinderProxy.transact` → JNI `android_os_BinderProxy_transact` → `BpBinder::transact`，每段都是完整函数。
+- 内核源码：`/home/libolin/v610/vendor/open_source/common-kernel-6.6`（6.6.47）。
+- 学习路线不再讲知识点；首页 / 笔记库统计为 03 篇，sitemap 6 个 URL。
+- 本地 Prism 1.30.0 按需加载；CSS / JS 版本号 `?v=20261116d`。
+- 工作区：源码阅读重构已提交，等待评审；Cloudflare Pages 自动部署 `main`。
+- 最近关键提交：
+  - `a40b303` 第 3 章连续叙事
+  - `9de62c1` 第 3 章 Stub 上下文
+  - `2d42390` 第 3 章精简
+  - `cbf6e28` 第 1 章重写
 
 ## 10. 下一步建议
 
-1. 第 3 章已精简，等待作者评审；通过后再精简第 4 章（选读）。
-2. 重写第 5 章：先拆 5.1 ServiceManager 启动、5.2 addService、5.3 getService，再恢复入口。
-3. 第 4 章已改为系统服务 AIDL；后续补 oneway / callback 的原生客户端实验（当前为源码走读）。
-4. 重写第 0 章：补真实 `ps` / `fd` / `maps` / `ioctl` 输出和对比实验；第 1 章已补 RPC / 一次拷贝。
-5. 继续写第 6 章：用户态 Binder 对象模型（`IBinder`、`BpBinder`、`BBinder`、`Binder`、`BinderProxy`）。
-6. 可选：RSS / Atom、每篇文章独立 OG 封面、Bing Webmaster。
-7. 新笔记优先保证：证据密度 > 可读性 > 结构图 > SEO；禁止编造运行输出。
+1. 等作者评审源码阅读路线和第 1 章；通过后再写第 2 章 `IPCThreadState`。
+2. 第 2 章：`IPCThreadState::transact` → `writeTransactionData` → `talkWithDriver` → `waitForResponse`。
+3. 第 3 章：`binder_ioctl` / `binder_ioctl_write_read` / `binder_transaction` / `binder_thread_read`。
+4. 第 4 章：`executeCommand` → `BBinder::transact` / `onTransact` → `Binder.execTransact`。
+5. 第 5 章：servicemanager main / `ServiceManager::addService` / `checkService`。
+6. 第 6 章：`binder_internal.h` 数据结构与全链路。
+7. 继续保证：代码完整上下文 > 解释 > 运行证据；不写概念章节，不用 `service check` 示例。
 
 ## 11. 给下一个 AI 的启动提示
 
