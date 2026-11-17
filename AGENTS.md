@@ -213,8 +213,8 @@ AIDL 只作为进入 Binder 协议的入口。内容应真实、清楚，不写�
   补真实 `service` / `ps -T` 实验和 4 张明/暗 SVG 示意图；第 3、4 章为系统源码 + 真机实测版。
 - 第 4 章以 servicemanager 为样本，讲 Parcelable、in/out/inout、oneway、callback、DeathRecipient；
   其中 Parcelable 有 `service call manager 14` 真机实验，其余为源码走读。
-- 学习路线改为系统开发视角：模块 2 改名“系统服务与 AIDL”，第 7 章改为 Framework / SystemServer，
-  Capstone 改为真实系统服务追踪；首页 / 笔记库 / 关于同步。
+- 学习路线改为“新手主线 + 第二阶段”：主线 `0-1→2→3→5-6→9`，
+  第二阶段 `7→8→10-14`；第 4 章标为选读，不再挡主线。
 - 第 3 章使用 Android 15 真机采集：
   `service list` 240 个服务、servicemanager / system_server PID、`binder:3139_N` 线程、
   `/dev/binder` / `/dev/hwbinder` 映射、`binder/stats`、`service call` 原始 Parcel。
@@ -224,7 +224,7 @@ AIDL 只作为进入 Binder 协议的入口。内容应真实、清楚，不写�
   但必须先有源码锚点和真实输出。
 - 本地 Prism 1.30.0 仍按需加载；CSS / JS 版本号为 `?v=20261116d`。
 - sitemap 现有 10 个 URL（第 5 章已移除），等待 Google 重新抓取。
-- 工作区：本轮改动已提交，Cloudflare Pages 自动部署 `main`。
+- 工作区：学习路线重构已提交，等待评审；Cloudflare Pages 自动部署 `main`。
 - 最近关键提交（返工前）：
   - `486010c` 记录代码框架交接
   - `f2f878c` 为代码框架加资源缓存版本号
@@ -234,7 +234,7 @@ AIDL 只作为进入 Binder 协议的入口。内容应真实、清楚，不写�
 
 ## 10. 下一步建议
 
-1. 第 2 章已精简并部署，等待作者评审；通过后再精简第 3 章。
+1. 学习路线已重构，等待作者评审；通过后再按主线精简第 3 章。
 2. 重写第 5 章：先拆 5.1 ServiceManager 启动、5.2 addService、5.3 getService，再恢复入口。
 3. 第 4 章已改为系统服务 AIDL；后续补 oneway / callback 的原生客户端实验（当前为源码走读）。
 4. 重写第 0 章：补真实 `ps` / `fd` / `maps` / `ioctl` 输出和对比实验；第 1 章已补 RPC / 一次拷贝。
