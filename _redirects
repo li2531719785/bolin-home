@@ -14,6 +14,10 @@
 /notes/binder-chapter-5       /notes/binder-learning-path  308
 /notes/binder-chapter-5.html  /notes/binder-learning-path  308
 
+# Chapter 1 was renamed to the overview chapter in the native-first route.
+/notes/binder-code-1-client       /notes/binder-code-1-overview  308
+/notes/binder-code-1-client.html  /notes/binder-code-1-overview  308
+
 # Keep the exact .html path for Google Search Console file verification.
 # Cloudflare Pages otherwise issues a 308 redirect to the extensionless URL.
 /google85aa571083e49c47.html  /google85aa571083e49c47.txt  200

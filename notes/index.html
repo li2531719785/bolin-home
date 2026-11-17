@@ -95,20 +95,20 @@
     </div>
 
     <div class="note-grid" id="noteGrid">
-      <a class="note-card is-featured reveal" href="binder-code-1-client.html" data-note-card data-tags="android binder roadmap" data-search="android binder 源码阅读 第1章 binderproxy transact jni android_util_binder bpbinder transact libbinder">
+      <a class="note-card is-featured reveal" href="binder-code-1-overview.html" data-note-card data-tags="android binder roadmap" data-search="android binder 源码阅读 第1章 总览 调用链 地图 名词速查 阅读约定 binderproxy bpbinder ipcthreadstate jni">
         <div class="card-meta">
-          <span class="card-type">Source walk 01 / Client</span>
+          <span class="card-type">Source walk 01 / Overview</span>
           <span class="card-date">2026.11.17</span>
         </div>
-        <h2><span class="title-line">BinderProxy.transact</span><span class="title-line">→ BpBinder</span></h2>
-        <p>从 Java 层 BinderProxy.transact 到 JNI，再到 BpBinder::transact；完整函数和逐段解释。</p>
+        <h2><span class="title-line">第 1 章：调用链</span><span class="title-line">总览</span></h2>
+        <p>一次 Binder 调用经过哪些层：六章地图、名词速查和阅读约定。</p>
         <div class="card-bottom">
           <div class="card-tags">
             <span class="tag">Android</span>
             <span class="tag">Binder</span>
             <span class="tag">Source</span>
           </div>
-          <span class="card-read">约 15 min</span>
+          <span class="card-read">约 5 min</span>
         </div>
         <span class="card-arrow" aria-hidden="true">↗</span>
       </a>
@@ -130,13 +130,13 @@
         <span class="card-arrow" aria-hidden="true">↗</span>
       </a>
 
-      <a class="note-card reveal" href="binder-learning-path.html" data-note-card data-tags="android binder roadmap" data-search="android binder 源码阅读 路线 framework native 内核 驱动 bpbinder ipcthreadstate binder.c servicemanager">
+      <a class="note-card reveal" href="binder-learning-path.html" data-note-card data-tags="android binder roadmap" data-search="android binder 源码阅读 路线 framework native 内核 驱动 总览 cpp bpbinder ipcthreadstate binder.c servicemanager ontransact jni">
         <div class="card-meta">
           <span class="card-type">Learning path</span>
           <span class="card-date">2026.11.17</span>
         </div>
         <h2><span class="title-line">Binder 源码</span><span class="title-line">阅读路线</span></h2>
-        <p>从 BinderProxy.transact 读到 binder.c：6 章源码阅读顺序，每章只读一个入口，不写概念铺垫。</p>
+        <p>从总览、C++ 客户端、驱动、服务端、servicemanager 读到 Java/JNI：6 章源码阅读顺序，每章只读一个入口。</p>
         <div class="card-bottom">
           <div class="card-tags">
             <span class="tag">Android</span>

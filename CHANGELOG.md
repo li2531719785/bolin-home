@@ -15,6 +15,49 @@ Bolin Lab 的开发记录。每次完成一轮开发后追加一条，至少包�
 
 ## 2026-11-17
 
+### 路线重排：本体先行，入口收尾
+
+**目标：** 按作者决定重排 Binder 源码阅读路线：不再从 Java 层开始，改为总览 → C++ 客户端 → 驱动 → 服务端 → servicemanager → Java/JNI 收尾。本次只做导航层，不写第 2–6 章正文。
+
+**改动：**
+
+- 新增第 1 章 `notes/binder-code-1-overview.html`：调用链地图、7 条名词速查、阅读约定；正文只做导航。
+- 删除旧第 1 章 `notes/binder-code-1-client.html`；该页已随上一轮提交上线，`_redirects` 增加 308 到总览章，避免旧链接 404。
+- `binder-learning-path.html`：六章表格换新顺序，列名“下一跳”改为“本章链路”，第 3 章链路补上 `binder_thread_write`；第 1 章简介改总览；删除独立的“数据结构参考”小节，改为表格后一句话；页面描述、og 描述和 article-end 同步。
+- 旧第 1 章的 BinderProxy / JNI / BpBinder 正文未搬运，留待第 2、6 章从 git 历史取回。
+- 首页 latest-note、笔记库第 1 章卡片和路线卡片描述、关于页时间线、sitemap URL 同步新路由。
+- AGENTS.md / README.md 的目录、正式笔记列表、SEO 地址、当前状态和下一步按新 6 章顺序重写。
+
+**涉及文件：**
+
+- `notes/binder-code-1-overview.html`（新增）
+- `notes/binder-code-1-client.html`（删除）
+- `notes/binder-learning-path.html`
+- `notes/index.html`
+- `index.html`
+- `about/index.html`
+- `sitemap.xml`
+- `_redirects`
+- `README.md`
+- `AGENTS.md`
+- `CHANGELOG.md`
+
+**验证：**
+
+- `python -m http.server 8123` 本地预览：首页、笔记库、关于、路线页、总览页、404 均 200；旧第 1 章本地 404，线上由 `_redirects` 308 到总览章。
+- HTML 标签配对检查通过；站内链接 64 条，缺失 0；sitemap XML 解析通过。
+- 总览页唯一代码块带 `data-title` / `data-lang`，代码头和复制按钮由 `site.js` 生成；未改 `site.css` / `site.js`，资源版本保持 `?v=20261116e`。
+- 地图为 `pre` 文本块，窄屏在代码块内部横向滚动，不产生页面级溢出。
+- 全仓库无指向旧页面的站内链接；`binder-code-1-client` 仅保留在 `_redirects` 和本文件历史记录中。
+
+**遗留：** 第 2–6 章正文待写；第 2 章从 `BpBinder::transact` / `IPCThreadState` 开始，第 6 章回到 AIDL / JNI 收尾。
+
+**Commit：** 本次提交（见 GitHub history）。
+
+---
+
+## 2026-11-17
+
 ### 第 1 章补场景、链路地图和名词速查
 
 **目标：** 解决读者反馈的 3 个卡点：不知道调用从哪发起、不知道整条链有多长、参数名词看不懂。
@@ -883,13 +926,14 @@ Bolin Lab 的开发记录。每次完成一轮开发后追加一条，至少包�
 - 教程定位：Android 系统开发 / Framework / Native / Kernel；默认读者是系统开发者，不再反复做 App 对比
 - GSC：所有权验证成功；sitemap 成功。当前 sitemap 有 6 个 URL，
   等待 Google 重新抓取
-- 学习路线已改为 6 章源码阅读顺序：Java → libbinder → 驱动 → 服务端 → servicemanager → 数据结构；
-  第 1 章已写 `BinderProxy` → JNI → `BpBinder`，第 2–6 章待写
+- 学习路线已改为 6 章源码阅读顺序：总览 → C++ 客户端 → 驱动 → 服务端 → servicemanager → Java/JNI；
+  第 1 章为总览（地图、名词速查、阅读约定），第 2–6 章待写
+- 旧第 1 章 `binder-code-1-client` 已由 `_redirects` 308 到总览章
 - 代码展示：本地 Prism 1.30.0 按需加载；代码块自动生成代码头、语言标签和复制
   按钮；AIDL 通过 `data-lang="aidl"` 映射到 Java 高亮
 - 写作流程：不再使用 `drafts/`；文章直接写 `notes/*.html`，但必须有源码锚点和
   真实输出，未实测内容明确标注
-- 工作区：源码阅读重构已提交，等待评审
+- 工作区：路线重排已提交，等待评审
 - 已知注意点：
   - 不要删除 Google 验证文件与 `_redirects` 规则。
   - Cloudflare 会把 `*.html` 308 到无扩展名地址；canonical / sitemap 使用最终地址。
@@ -904,12 +948,16 @@ Bolin Lab 的开发记录。每次完成一轮开发后追加一条，至少包�
 - [x] 下线第 5 章，删除 `drafts/` 流程
 - [x] 第 2 章精简为新手主线，保留 `service` / `ps -T` 实验和 4 张 SVG
 - [x] 学习路线重构为“新手主线 + 第二阶段”，第 4 章改为选读
-- [ ] 第 5 章拆成 5.1 ServiceManager 启动、5.2 addService、5.3 getService 后重写
+- [x] 路线重排为“本体先行、入口收尾”，第 1 章改为调用链总览
+- [ ] 第 2 章 C++ 客户端：`BpBinder::transact` → `IPCThreadState` → 驱动入口
+- [ ] 第 3 章驱动：`binder_ioctl` → `binder_thread_write` → `binder_transaction` → `binder_thread_read`
+- [ ] 第 4 章服务端：`executeCommand` → `onTransact` → `Binder.execTransact`
+- [ ] 第 5 章 servicemanager：`addService` / `checkService`
+- [ ] 第 6 章 Java + JNI：AIDL `Stub.Proxy` → `BinderProxy.transact` → JNI → `BpBinder`
 - [ ] 第 4 章补 oneway / callback / DeathRecipient 的原生客户端实验（当前为源码走读）
 - [x] 第 1 章重写：RPC 四步、一次拷贝、3 张 SVG 和真机输出
 - [x] 第 3 章精简为一次 AIDL 调用主线
-- [ ] 重写第 0 章：补真实 `ps` / `fd` / `maps` / `ioctl` 输出
-- [ ] 写 Binder 学习路线第 6 章：用户态 Binder 对象模型
+- [x] 删除旧概念章节（第 0–4 章），旧 URL 308 到源码阅读路线
 - [ ] 评估把旧 Binder 长图中的静态关系图迁移到 D2
 - [ ] 增加 RSS / Atom
 - [ ] 补齐“在整理中”的 Linux 驱动、Framework、JNI 笔记

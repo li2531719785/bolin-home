@@ -25,7 +25,7 @@ Bolin 的个人学习资料站，公开记录 Android、Linux、Binder、Framewo
 ├── notes/
 │   ├── index.html                   # 笔记库（搜索 / 标签筛选）
 │   ├── binder-learning-path.html    # Binder 源码阅读路线
-│   ├── binder-code-1-client.html    # 第 1 章：BinderProxy.transact → BpBinder
+│   ├── binder-code-1-overview.html  # 第 1 章：调用链总览
 │   └── binder-driver.html           # Binder 驱动数据结构交互图解
 ├── assets/
 │   ├── css/site.css                 # 站点样式
