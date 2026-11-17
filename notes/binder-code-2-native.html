@@ -99,8 +99,10 @@
         <p>第 1 章的地图停在 <code>BpBinder::transact</code> 的 <code>else</code> 分支最后一行：<code>IPCThreadState::self()-&gt;transact(binderHandle(), code, data, reply, flags)</code>。本章从这一行接着读。</p>
         <p><code>IPCThreadState</code> 是每个线程自己的 Binder 连接：一个进程里，每个调用 Binder 的线程各有一份，持有 <code>mOut</code> / <code>mIn</code> 两块缓冲区。<code>mOut</code> 攒要写给驱动的命令，<code>mIn</code> 接驱动返回的命令。</p>
         <p>下面四个完整函数来自 <code>frameworks/native/libs/binder/IPCThreadState.cpp</code>：<code>transact</code>（808 行）、<code>writeTransactionData</code>（1215 行）、<code>talkWithDriver</code>（1092 行）、<code>waitForResponse</code>（987 行）。先看调用入口，再按一次同步调用实际发生的顺序往下读。</p>
+        <p>为方便阅读，下面代码块里的 <code>// ←</code> 是本站添加的阅读标注，原源码没有；代码本身保持原样。</p>
 
         <h2>一、BpBinder::transact</h2>
+        <p>这个函数唯一要做的事：检查代理是否还活着、处理 flags 和 stability，然后把调用交给 IPCThreadState。读的时候只看最后那个 <code>else</code> 分支。</p>
         <pre data-file="frameworks/native/libs/binder/BpBinder.cpp" data-lang="cpp"><code class="language-cpp">status_t BpBinder::transact(
     uint32_t code, const Parcel&amp; data, Parcel* reply, uint32_t flags)
 {
@@ -128,7 +130,7 @@
         }
 
         status_t status;
-        if (isRpcBinder()) [[unlikely]] {
+        if (isRpcBinder()) [[unlikely]] { // ← 另一条 RPC Binder 路径，本章不走
             status = rpcSession()-&gt;transact(sp&lt;IBinder&gt;::fromExisting(this), code, data, reply,
                                             flags);
         } else {
@@ -137,7 +139,7 @@
                 return INVALID_OPERATION;
             }
 
-            status = IPCThreadState::self()-&gt;transact(binderHandle(), code, data, reply, flags);
+            status = IPCThreadState::self()-&gt;transact(binderHandle(), code, data, reply, flags); // ← 交给线程自己的 Binder 连接，本章从这里接着读
         }
         if (data.dataSize() &gt; LOG_TRANSACTIONS_OVER_SIZE) {
             RpcMutexUniqueLock _l(mLock);
@@ -145,7 +147,7 @@
                   data.dataSize(), String8(mDescriptorCache).c_str(), code);
         }
 
-        if (status == DEAD_OBJECT) mAlive = 0;
+        if (status == DEAD_OBJECT) mAlive = 0; // ← 对端已死，这个代理永久失效
 
         return status;
     }
@@ -156,6 +158,7 @@
         <p><strong>谁真正把 Parcel 写进驱动？</strong><code>BpBinder</code> 只做对象和路径判断；真正打包、写进驱动、等回复的是 <code>IPCThreadState</code>。下一节从它的 <code>transact</code> 开始。</p>
 
         <h2>二、IPCThreadState::transact</h2>
+        <p>只有两条主路：把调用写进 <code>mOut</code>，然后要么等回复、要么不等。日志和 CallRestriction 检查是噪声，扫一眼就跳过。</p>
         <pre data-file="frameworks/native/libs/binder/IPCThreadState.cpp" data-lang="cpp"><code class="language-cpp">status_t IPCThreadState::transact(int32_t handle,
                                   uint32_t code, const Parcel&amp; data,
                                   Parcel* reply, uint32_t flags)
@@ -164,7 +167,7 @@
 
     status_t err;
 
-    flags |= TF_ACCEPT_FDS;
+    flags |= TF_ACCEPT_FDS; // ← 允许 Parcel 携带文件描述符
 
     IF_LOG_TRANSACTIONS() {
         std::ostringstream logStream;
@@ -176,7 +179,7 @@
 
     LOG_ONEWAY(&quot;&gt;&gt;&gt;&gt; SEND from pid %d uid %d %s&quot;, getpid(), getuid(),
         (flags &amp; TF_ONE_WAY) == 0 ? &quot;READ REPLY&quot; : &quot;ONE WAY&quot;);
-    err = writeTransactionData(BC_TRANSACTION, flags, handle, code, data, nullptr);
+    err = writeTransactionData(BC_TRANSACTION, flags, handle, code, data, nullptr); // ← 组装成一条命令写进 mOut
 
     if (err != NO_ERROR) {
         if (reply) reply-&gt;setError(err);
@@ -202,7 +205,7 @@
         }
 #endif
         if (reply) {
-            err = waitForResponse(reply);
+            err = waitForResponse(reply); // ← 同步调用：阻塞等 BR_REPLY
         } else {
             Parcel fakeReply;
             err = waitForResponse(&amp;fakeReply);
@@ -227,7 +230,7 @@
             ALOGI(&quot;%s&quot;, message.c_str());
         }
     } else {
-        err = waitForResponse(nullptr, nullptr);
+        err = waitForResponse(nullptr, nullptr); // ← oneway：只等驱动确认，不等结果
     }
 
     return err;
@@ -243,14 +246,15 @@
         <p><strong>writeTransactionData 究竟把什么写进了 mOut？</strong>下一节看这个函数。</p>
 
         <h2>三、writeTransactionData</h2>
+        <p>只做两件事：填 <code>binder_transaction_data</code>，再追加到 <code>mOut</code>。结构体定义留到第 3 章，本章只需知道每个字段填的是什么。</p>
         <pre data-file="frameworks/native/libs/binder/IPCThreadState.cpp" data-lang="cpp"><code class="language-cpp">status_t IPCThreadState::writeTransactionData(int32_t cmd, uint32_t binderFlags,
     int32_t handle, uint32_t code, const Parcel&amp; data, status_t* statusBuffer)
 {
     binder_transaction_data tr;
 
     tr.target.ptr = 0; /* Don&#x27;t pass uninitialized stack data to a remote process */
-    tr.target.handle = handle;
-    tr.code = code;
+    tr.target.handle = handle; // ← 目标 Binder 的数字句柄
+    tr.code = code; // ← 方法编号，服务端靠它分派
     tr.flags = binderFlags;
     tr.cookie = 0;
     tr.sender_pid = 0;
@@ -259,9 +263,9 @@
     const status_t err = data.errorCheck();
     if (err == NO_ERROR) {
         tr.data_size = data.ipcDataSize();
-        tr.data.ptr.buffer = data.ipcData();
+        tr.data.ptr.buffer = data.ipcData(); // ← 直接指向 Parcel 内存，不复制
         tr.offsets_size = data.ipcObjectsCount()*sizeof(binder_size_t);
-        tr.data.ptr.offsets = data.ipcObjects();
+        tr.data.ptr.offsets = data.ipcObjects(); // ← Binder 对象的偏移表
     } else if (statusBuffer) {
         tr.flags |= TF_STATUS_CODE;
         *statusBuffer = err;
@@ -273,7 +277,7 @@
         return (mLastError = err);
     }
 
-    mOut.writeInt32(cmd);
+    mOut.writeInt32(cmd); // ← BC_TRANSACTION + 结构体，此时驱动还没见到
     mOut.write(&amp;tr, sizeof(tr));
 
     return NO_ERROR;
@@ -290,6 +294,7 @@
         <p><strong>mOut 只是内存，什么时候真正送到驱动？</strong>下一节看 <code>talkWithDriver</code>。</p>
 
         <h2>四、talkWithDriver</h2>
+        <p>把 <code>mOut</code> / <code>mIn</code> 接到一个 <code>binder_write_read</code> 上，发一次 ioctl。抓三个点：写什么、读什么、返回后怎么清理。</p>
         <pre data-file="frameworks/native/libs/binder/IPCThreadState.cpp" data-lang="cpp"><code class="language-cpp">status_t IPCThreadState::talkWithDriver(bool doReceive)
 {
     if (mProcess-&gt;mDriverFD &lt; 0) {
@@ -307,7 +312,7 @@
     const size_t outAvail = (!doReceive || needRead) ? mOut.dataSize() : 0;
 
     bwr.write_size = outAvail;
-    bwr.write_buffer = (uintptr_t)mOut.data();
+    bwr.write_buffer = (uintptr_t)mOut.data(); // ← 写缓冲接 mOut，读缓冲接 mIn
 
     // This is what we&#x27;ll read.
     if (doReceive &amp;&amp; needRead) {
@@ -348,7 +353,7 @@
             ALOGI(&quot;%s&quot;, message.c_str());
         }
 #if defined(__ANDROID__)
-        if (ioctl(mProcess-&gt;mDriverFD, BINDER_WRITE_READ, &amp;bwr) &gt;= 0)
+        if (ioctl(mProcess-&gt;mDriverFD, BINDER_WRITE_READ, &amp;bwr) &gt;= 0) // ← 一次系统调用：写 BC_*、读回 BR_*
             err = NO_ERROR;
         else
             err = -errno;
@@ -364,7 +369,7 @@
             std::string message = logStream.str();
             ALOGI(&quot;%s&quot;, message.c_str());
         }
-    } while (err == -EINTR);
+    } while (err == -EINTR); // ← 被信号打断就重试
 
     IF_LOG_COMMANDS() {
         std::ostringstream logStream;
@@ -389,7 +394,7 @@
             }
         }
         if (bwr.read_consumed &gt; 0) {
-            mIn.setDataSize(bwr.read_consumed);
+            mIn.setDataSize(bwr.read_consumed); // ← 驱动读回多少，mIn 就有多少
             mIn.setDataPosition(0);
         }
         IF_LOG_COMMANDS() {
@@ -423,18 +428,19 @@
         <p><strong>ioctl 返回后 mIn 里是驱动发回的 BR_* 命令，谁解析它们？</strong>下一节 <code>waitForResponse</code>。</p>
 
         <h2>五、waitForResponse</h2>
+        <p>同步调用的等待循环：<code>talkWithDriver</code> 取回命令，读一个 <code>cmd</code>，按类型处理。主线只有 <code>BR_REPLY</code>；<code>default</code> 分支是嵌套调用，第 4 章再读。</p>
         <pre data-file="frameworks/native/libs/binder/IPCThreadState.cpp" data-lang="cpp"><code class="language-cpp">status_t IPCThreadState::waitForResponse(Parcel *reply, status_t *acquireResult)
 {
     uint32_t cmd;
     int32_t err;
 
     while (1) {
-        if ((err=talkWithDriver()) &lt; NO_ERROR) break;
+        if ((err=talkWithDriver()) &lt; NO_ERROR) break; // ← 去驱动拿命令
         err = mIn.errorCheck();
         if (err &lt; NO_ERROR) break;
         if (mIn.dataAvail() == 0) continue;
 
-        cmd = (uint32_t)mIn.readInt32();
+        cmd = (uint32_t)mIn.readInt32(); // ← mIn 开头是命令号
 
         IF_LOG_COMMANDS() {
             std::ostringstream logStream;
@@ -449,7 +455,7 @@
             CallStack::logStack(&quot;oneway spamming&quot;, CallStack::getCurrent().get(),
                     ANDROID_LOG_ERROR);
             [[fallthrough]];
-        case BR_TRANSACTION_COMPLETE:
+        case BR_TRANSACTION_COMPLETE: // ← oneway 的完成标志
             if (!reply &amp;&amp; !acquireResult) goto finish;
             break;
 
@@ -479,7 +485,7 @@
             }
             goto finish;
 
-        case BR_REPLY:
+        case BR_REPLY: // ← 主线：服务端把结果送回来了
             {
                 binder_transaction_data tr;
                 err = mIn.read(&amp;tr, sizeof(tr));
@@ -488,7 +494,7 @@
 
                 if (reply) {
                     if ((tr.flags &amp; TF_STATUS_CODE) == 0) {
-                        reply-&gt;ipcSetDataReference(
+                        reply-&gt;ipcSetDataReference( // ← 驱动缓冲区直接挂给 Parcel，零拷贝
                             reinterpret_cast&lt;const uint8_t*&gt;(tr.data.ptr.buffer),
                             tr.data_size,
                             reinterpret_cast&lt;const binder_size_t*&gt;(tr.data.ptr.offsets),
@@ -511,7 +517,7 @@
             goto finish;
 
         default:
-            err = executeCommand(cmd);
+            err = executeCommand(cmd); // ← 嵌套调用，第 4 章
             if (err != NO_ERROR) goto finish;
             break;
         }
