@@ -134,7 +134,7 @@
       <a class="note-card reveal" href="binder-chapter-0.html" data-note-card data-tags="android binder roadmap" data-search="android binder 第0章 预备知识 基础 进程 线程 虚拟内存 文件描述符 fd 系统调用 ioctl mmap parcel zygote system_server servicemanager">
         <div class="card-meta">
           <span class="card-type">Chapter 0 / Fundamentals</span>
-          <span class="card-date">2026.11.15</span>
+          <span class="card-date">2026.11.17</span>
         </div>
         <h2><span class="title-line">第 0 章：Binder 的</span><span class="title-line">预备知识</span></h2>
         <p>进程隔离、虚拟内存、fd、系统调用、ioctl、mmap 和 Android 进程模型。进入 Binder 前先把这些直觉补齐。</p>
@@ -152,17 +152,17 @@
       <a class="note-card reveal" href="binder-chapter-1.html" data-note-card data-tags="android binder roadmap" data-search="android binder 第1章 为什么需要 binder linux ipc pipe socket 共享内存 对象 生命周期 安全 线程 rpc">
         <div class="card-meta">
           <span class="card-type">Chapter 1 / Intuition</span>
-          <span class="card-date">2026.11.15</span>
+          <span class="card-date">2026.11.17</span>
         </div>
         <h2><span class="title-line">第 1 章：Android</span><span class="title-line">为什么需要 Binder</span></h2>
-        <p>从 Linux 已有 IPC 出发，看 Binder 多出来的对象引用、方法调用、生命周期、安全和线程模型。</p>
+        <p>从 RPC 四步和“一次拷贝”讲起，再对比 Linux IPC，看 Binder 多出来的对象引用、方法调用、生命周期、安全和线程模型。</p>
         <div class="card-bottom">
           <div class="card-tags">
             <span class="tag">Android</span>
             <span class="tag">Binder</span>
             <span class="tag">基础</span>
           </div>
-          <span class="card-read">约 14 min</span>
+          <span class="card-read">约 16 min</span>
         </div>
         <span class="card-arrow" aria-hidden="true">↗</span>
       </a>
@@ -170,10 +170,10 @@
       <a class="note-card reveal" href="binder-chapter-2.html" data-note-card data-tags="android binder roadmap" data-search="android binder 第2章 心智模型 client server proxy stub handle node parcel 同步 oneway 线程池 死锁 aidl">
         <div class="card-meta">
           <span class="card-type">Chapter 2 / Mental model</span>
-          <span class="card-date">2026.11.15</span>
+          <span class="card-date">2026.11.17</span>
         </div>
         <h2><span class="title-line">第 2 章：Binder 的</span><span class="title-line">心智模型</span></h2>
-        <p>Proxy、Stub、handle、Parcel、同步与 oneway、Binder 线程池。把一次跨进程调用在脑子里跑起来。</p>
+        <p>用 <code>IServiceManager.checkService("activity")</code> 做例子，讲清 Proxy、Stub、handle、Parcel、同步与 oneway、Binder 线程池。</p>
         <div class="card-bottom">
           <div class="card-tags">
             <span class="tag">Android</span>
@@ -188,7 +188,7 @@
       <a class="note-card reveal" href="binder-chapter-3.html" data-note-card data-tags="android binder roadmap" data-search="android binder 第3章 第一个 aidl 服务 service call servicemanager iservicemanager parcel proxy stub binder线程 dev/binder 真机 系统源码">
         <div class="card-meta">
           <span class="card-type">Chapter 3 / Hands-on</span>
-          <span class="card-date">2026.11.16</span>
+          <span class="card-date">2026.11.17</span>
         </div>
         <h2><span class="title-line">第 3 章：第一个</span><span class="title-line">AIDL</span></h2>
         <p>不写 App，用系统 service 命令调用 IServiceManager，跟着真实 Parcel、Proxy / Stub、Binder 线程和 /dev/binder 映射走完一次调用。</p>

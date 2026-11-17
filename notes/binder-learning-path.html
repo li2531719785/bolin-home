@@ -109,14 +109,14 @@
         <h2>模块 1 · 建立直觉</h2>
 
         <h3>第 1 章：Android 为什么需要 Binder</h3>
-        <p>从 Linux 已有 IPC 出发：pipe、socket、共享内存、信号各自解决什么问题，又为什么不够。然后讲 Binder 的设计目标：性能、安全、面向对象语义、引用计数和死亡通知。</p>
+        <p>先从 RPC 的四步流程出发：定义服务、注册、获取代理、transact 调用；再解释“一次拷贝”是怎么来的。然后对比 pipe、socket、共享内存、信号，讲 Binder 的性能、安全、对象语义、引用计数和死亡通知。</p>
         <p>这一章要解释“一次拷贝”说法的边界，但不要陷入内核细节。读者只需要先建立：Binder 是为 Android 的进程模型和对象模型量身定制的 IPC。</p>
-        <p><strong>完整展开：</strong> <a href="binder-chapter-1.html">第 1 章：Android 为什么需要 Binder</a>。从 Linux IPC、对象引用、生命周期、安全和线程模型几个角度比较，最后给出 Binder 的适用边界。</p>
+        <p><strong>完整展开：</strong> <a href="binder-chapter-1.html">第 1 章：Android 为什么需要 Binder</a>。包含 RPC 四步、一次拷贝路径、Linux IPC 对比、对象引用和适用边界。</p>
 
         <h3>第 2 章：Binder 的心智模型</h3>
-        <p>用一张图讲清 Client / Server、Proxy / Stub、handle、Parcel、同步调用、oneway 和线程池。可以先用“寄快递”比喻：进程是邮局，handle 是取件码，node 是收件人，transaction 是包裹。</p>
+        <p>用一张图讲清 Client / Server、Proxy / Stub、handle、Parcel、同步调用、oneway 和线程池。示例用 <code>IServiceManager.checkService("activity")</code>，不写 App。</p>
         <p><strong>实验：</strong>不写代码，手画一次 shell <code>service</code> 命令调用 servicemanager 的完整链路。</p>
-        <p><strong>完整展开：</strong> <a href="binder-chapter-2.html">第 2 章：Binder 的心智模型</a>。从一次天气查询出发，讲清 Proxy / Stub、handle / node、同步与 oneway、线程池和常见误解。</p>
+        <p><strong>完整展开：</strong> <a href="binder-chapter-2.html">第 2 章：Binder 的心智模型</a>。从一次系统服务查找出发，讲清 Proxy / Stub、handle / node、同步与 oneway、线程池和常见误解。</p>
 
         <h2>模块 2 · 系统服务与 AIDL</h2>
         <p>这一模块不写 App：先用系统命令和服务源码跑通一次真实调用，再看 servicemanager 的注册与用户态对象模型。</p>
@@ -130,7 +130,7 @@
         <p><strong>完整展开：</strong> <a href="binder-chapter-4.html">第 4 章：系统服务里的 AIDL</a>。包含 ServiceDebugInfo 真机实验、方向标签、oneway 生成代码、注册回调和 servicemanager 的死亡清理。</p>
 
         <h3>第 5 章：ServiceManager 与服务注册</h3>
-        <p>讲 servicemanager 的启动、<code>BINDER_SET_CONTEXT_MGR</code>、handle 0、<code>addService</code> / <code>getService</code> / <code>listServices</code>，以及 servicemanager 和 hwservicemanager 的分工。callback 和 DeathRecipient 已在第 4 章展开。</p>
+        <p>按 servicemanager 的三个场景走：启动与 <code>BINDER_SET_CONTEXT_MGR</code>、<code>addService</code> 注册、<code>getService</code> / <code>listServices</code> 获取，以及和 hwservicemanager 的分工。callback 和 DeathRecipient 已在第 4 章展开。</p>
         <p><strong>整理中：</strong>本章正文暂时下线，后续按“源码 + 真机实验 + 时序图”的标准重写。</p>
 
         <h3>第 6 章：用户态 Binder 对象模型</h3>
@@ -139,10 +139,10 @@
         <h2>模块 3 · Framework 与 Native 层</h2>
 
         <h3>第 7 章：Framework 层：Binder 与 SystemServer</h3>
-        <p>从 <code>Binder.java</code>、<code>BinderProxy</code>、<code>Parcel</code> 和 <code>ServiceManager</code> 往下走，重点看 SystemServer 如何注册系统服务、BinderProxy 何时创建，以及 framework 内部的调用路径。</p>
+        <p>按 Java 层的三个场景走：<code>Binder.java</code> / <code>BinderProxy</code> / <code>Parcel</code> 的初始化，SystemServer 如何注册系统服务，以及客户端如何通过 <code>ServiceManager.getService</code> 获取代理并发起调用。</p>
 
         <h3>第 8 章：Native Binder（libbinder）</h3>
-        <p>讲 <code>ProcessState</code>、<code>IPCThreadState</code>、<code>BpBinder</code>、<code>BBinder</code>、<code>Parcel</code> 和 <code>talkWithDriver</code>，最后用 JNI 把 Java 层和 Native 层接起来。</p>
+        <p>先写一个最小 native client（<code>defaultServiceManager</code> → <code>checkService</code> → <code>transact</code>），再拆 <code>ProcessState</code>、<code>IPCThreadState</code>、<code>BpBinder</code>、<code>BBinder</code>、<code>Parcel</code> 和 <code>talkWithDriver</code>，最后用 JNI 把 Java 层和 Native 层接起来。</p>
 
         <h3>第 9 章：一次调用的全链路</h3>
         <p>把前八章串成一条线：</p>

@@ -75,9 +75,9 @@
         <a href="../index.html">Bolin Lab</a><span>/</span><a href="./">笔记</a><span>/</span><a href="binder-learning-path.html">Binder 学习路线</a><span>/</span><span>第 1 章</span>
       </div>
       <h1>第 1 章：Android<br>为什么需要 Binder</h1>
-      <p class="article-lead">Linux 已经有 pipe、Unix socket、共享内存，为什么 Android 还要专门做一个 Binder？这一章不急着看驱动，而是从“一个 App 调用系统服务”这样的真实需求出发，看看通用 IPC 缺了什么。</p>
+      <p class="article-lead">Linux 已经有 pipe、Unix socket、共享内存，为什么 Android 还要专门做一个 Binder？这一章不急着看驱动，而是从“一个客户端进程调用系统服务”这样的真实需求出发，看看通用 IPC 缺了什么。</p>
       <div class="article-meta">
-        <span>2026.11.15</span><span class="dot"></span><span>Binder 学习路线 · 第 1 章</span><span class="dot"></span><span>约 14 分钟</span><span class="dot"></span><span>建立直觉</span>
+        <span>2026.11.17</span><span class="dot"></span><span>Binder 学习路线 · 第 1 章</span><span class="dot"></span><span>约 16 分钟</span><span class="dot"></span><span>建立直觉</span>
       </div>
     </header>
 
@@ -90,16 +90,30 @@
           <div><strong>先给结论：</strong>Binder 的价值不只是“能跨进程传字节”，而是把<strong>对象引用、方法调用、权限、生命周期和线程调度</strong>一起标准化了。socket 能传字节，但不会告诉你“这个字节代表哪个对象、对象死了没有、调用者是谁”。</div>
         </div>
 
+        <h2>先把 Binder 放回 RPC</h2>
+        <p>Binder 本质上是一个<strong>本机 RPC 框架</strong>：让 A 进程像调用本地函数一样调用 B 进程里的方法。它没有发明新的系统调用，而是把“打包参数、找到目标对象、投递事务、等待结果、处理死亡”这一整套流程标准化了。</p>
+        <p>一个最小的 Binder 程序通常有四步：</p>
+        <div class="flow-diagram" aria-label="Binder RPC 的四个步骤">
+          <div class="flow-step"><span class="flow-label">1 / Define</span><strong>定义服务</strong><span>接口 + 实现，例如 IServiceManager</span></div>
+          <div class="flow-arrow" aria-hidden="true"></div>
+          <div class="flow-step"><span class="flow-label">2 / Register</span><strong>注册到 servicemanager</strong><span>名字 → IBinder</span></div>
+          <div class="flow-arrow" aria-hidden="true"></div>
+          <div class="flow-step"><span class="flow-label">3 / Lookup</span><strong>客户端获取代理</strong><span>按名字拿到 handle / Proxy</span></div>
+          <div class="flow-arrow" aria-hidden="true"></div>
+          <div class="flow-step"><span class="flow-label">4 / Call</span><strong>transact 调用</strong><span>Parcel → 驱动 → Binder 线程</span></div>
+        </div>
+        <p>后面的章节基本都围绕这四步展开：第 3 章跑通一次调用，第 4 章看系统服务的 AIDL 能力，第 5 章拆 servicemanager 的注册与查找，再往后进入 libbinder 和驱动。</p>
+
         <h2>先看一个真实需求</h2>
-        <p>假设你的 App 要查询当前前台 Activity，最终会调用到 system_server 里的 ActivityManagerService。这个调用大致要完成：</p>
+        <p>假设一个客户端进程要查询当前前台 Activity，最终会调用到 system_server 里的 ActivityManagerService。这个调用大致要完成：</p>
         <ul>
-          <li>App 在本地拿到一个“系统服务代理”。</li>
+          <li>客户端在本地拿到一个“系统服务代理”。</li>
           <li>代理把参数打包，交给内核里的 Binder 驱动。</li>
           <li>驱动找到 system_server 里的目标对象，把请求投递给某个 Binder 线程。</li>
           <li>服务端执行方法，把结果沿反方向送回。</li>
-          <li>如果 system_server 挂了，App 要能收到通知，而不是永远阻塞。</li>
+          <li>如果 system_server 挂了，客户端要能收到通知，而不是永远阻塞。</li>
         </ul>
-        <p>如果只用 socket，这些能力大多要靠应用层自己实现：定义协议、维护请求 ID、处理超时、检测对端死亡、验证调用者身份、管理线程池。每个系统服务都重复造一遍，既容易出错，也很难统一安全边界。</p>
+        <p>如果只用 socket，这些能力大多要靠客户端自己实现：定义协议、维护请求 ID、处理超时、检测对端死亡、验证调用者身份、管理线程池。每个系统服务都重复造一遍，既容易出错，也很难统一安全边界。</p>
 
         <h2>Linux 已经有哪些 IPC</h2>
         <div class="table-wrap">
@@ -115,7 +129,7 @@
             </tbody>
           </table>
         </div>
-        <p>注意：Binder 不是要取代所有 IPC。Android 里 zygote 仍然使用 socket，属性服务、日志、图形缓冲等也各有自己的机制。Binder 主要解决的是<strong>应用与系统服务、服务与服务之间的对象化调用</strong>。</p>
+        <p>注意：Binder 不是要取代所有 IPC。Android 里 zygote 仍然使用 socket，属性服务、日志、图形缓冲等也各有自己的机制。Binder 主要解决的是<strong>客户端进程与系统服务、服务与服务之间的对象化调用</strong>。</p>
 
         <h2>Binder 多出来的四件事</h2>
         <h3>1. 对象引用，而不是一串字节</h3>
@@ -196,6 +210,19 @@
           <li><strong>简单通知</strong>：Intent、广播或其他轻量机制可能更合适。</li>
         </ul>
 
+        <h2>“一次拷贝”是怎么来的</h2>
+        <p>传统 IPC 常见做法是两次拷贝：发送方用户态 <code>copy_from_user</code> 到内核缓冲区，接收方再从内核 <code>copy_to_user</code> 到用户态。Binder 的做法是让接收方提前把一块 buffer 映射到自己的用户空间，发送方只需把数据拷贝到这块 buffer：</p>
+        <div class="flow-diagram" aria-label="Binder 的一次拷贝路径">
+          <div class="flow-step"><span class="flow-label">Sender</span><strong>发送方用户态</strong><span>参数 / Parcel</span></div>
+          <div class="flow-arrow" aria-hidden="true"></div>
+          <div class="flow-step"><span class="flow-label">Copy</span><strong>copy_from_user</strong><span>只拷贝一次</span></div>
+          <div class="flow-arrow" aria-hidden="true"></div>
+          <div class="flow-step"><span class="flow-label">Kernel</span><strong>接收方 Binder buffer</strong><span>由驱动分配 / 管理</span></div>
+          <div class="flow-arrow" aria-hidden="true"></div>
+          <div class="flow-step"><span class="flow-label">Receiver</span><strong>接收方用户态</strong><span>通过 mmap 直接访问</span></div>
+        </div>
+        <p>所以“一次拷贝”是相对传统两次拷贝而言，不是零拷贝。大块数据仍然会受事务 buffer 上限影响；音视频帧这类数据通常改用 ashmem / memfd / 图形缓冲，而不是硬塞进 Binder 事务。</p>
+
         <h2>Android 里的 Binder 在哪里</h2>
         <p>你已经见过这些角色，这里把它们和 Binder 连起来：</p>
         <div class="table-wrap">
@@ -214,14 +241,14 @@
 
         <h2>动手实验</h2>
         <h3>实验 1：数一数系统服务</h3>
-        <pre><code>adb shell service list | wc -l
+        <pre data-title="命令：观察系统服务" data-lang="bash"><code class="language-bash">adb shell service list | wc -l
 adb shell service list | grep -E "activity|package|window"</code></pre>
         <p>你会看到 activity、package、window 等服务。它们中的很多最终由 system_server 提供。</p>
 
         <h3>实验 2：确认 system_server 在跑</h3>
-        <pre><code>adb shell ps -A | grep system_server
+        <pre data-title="命令：确认 system_server" data-lang="bash"><code class="language-bash">adb shell ps -A | grep system_server
 adb shell dumpsys activity activities | head -n 30</code></pre>
-        <p>把进程 PID 和 dumpsys 输出里的服务对应起来，体会“App 调用系统服务”并不是调用一个本地函数。</p>
+        <p>把进程 PID 和 dumpsys 输出里的服务对应起来，体会“进程调用系统服务”并不是调用一个本地函数。</p>
 
         <h3>实验 3：找一个大块数据的例子</h3>
         <p>想一想：图片、视频帧、大文件为什么通常不直接塞进 Binder 事务？如果一次 Binder 调用传 50MB，会发生什么？把你的答案写下来，后面讲 buffer 限制时会用到。</p>
@@ -267,7 +294,7 @@ adb shell dumpsys activity activities | head -n 30</code></pre>
           <a class="text-link" href="binder-chapter-0.html">← 第 0 章：预备知识</a>
           <a class="text-link" href="binder-learning-path.html">返回学习路线 <span class="arrow" aria-hidden="true">→</span></a>
         </div>
-        <div class="article-footer-meta">Bolin Lab · Binder 学习路线第 1 章 · 最后更新 2026.11.15<br>参考：Linux IPC 基础、Android Binder / libbinder 公开源码与 Android 进程模型。</div>
+        <div class="article-footer-meta">Bolin Lab · Binder 学习路线第 1 章 · 最后更新 2026.11.17<br>参考：Linux IPC 基础、Android Binder / libbinder 公开源码、<a href="http://ahaoframework.tech/Framework/" target="_blank" rel="noopener">ahaoframework Binder 专题</a> 的 RPC / 一次拷贝讲法。</div>
       </article>
 
       <aside class="article-toc" aria-label="文章目录">

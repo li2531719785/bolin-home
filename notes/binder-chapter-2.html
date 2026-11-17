@@ -77,7 +77,7 @@
       <h1>第 2 章：Binder 的<br>心智模型</h1>
       <p class="article-lead">这一章不追源码，先把一次调用在脑子里跑起来：客户端手里的代理到底是什么？handle 为什么不是全局 ID？同步调用阻塞了谁？服务端又是哪个线程在干活？</p>
       <div class="article-meta">
-        <span>2026.11.15</span><span class="dot"></span><span>Binder 学习路线 · 第 2 章</span><span class="dot"></span><span>约 16 分钟</span><span class="dot"></span><span>建立直觉</span>
+        <span>2026.11.17</span><span class="dot"></span><span>Binder 学习路线 · 第 2 章</span><span class="dot"></span><span>约 16 分钟</span><span class="dot"></span><span>建立直觉</span>
       </div>
     </header>
 
@@ -92,14 +92,14 @@
           <div><strong>本章目标：</strong>看到一段 AIDL 调用时，能说出“谁在调用谁、参数怎么过去、阻塞了哪个线程、失败时怎么知道”。不需要记住驱动的字段和红黑树。</div>
         </div>
 
-        <h2>先讲一个故事：查天气</h2>
+        <h2>先讲一个故事：查一个系统服务</h2>
         <p>假设有一个远程服务：</p>
-        <pre><code>interface IWeatherService {
-    String getWeather(String city);
+        <pre data-title="AIDL 接口（概念示例）" data-lang="aidl" data-label="AIDL"><code class="language-java">interface IServiceManager {
+    IBinder checkService(String name);
 }</code></pre>
         <p>客户端代码写的是：</p>
-        <pre><code>String weather = weatherService.getWeather("Beijing");</code></pre>
-        <p>看起来像一次普通 Java 方法调用，但实际上客户端进程里并没有真正的 <code>WeatherService</code> 对象。它拿到的是一个 <strong>Proxy</strong>，这个 Proxy 会把调用翻译成一次 Binder 事务。</p>
+        <pre data-title="客户端调用（概念示例）" data-lang="java"><code class="language-java">IBinder activity = serviceManager.checkService("activity");</code></pre>
+        <p>看起来像一次普通 Java 方法调用，但实际上客户端进程里并没有真正的 <code>IServiceManager</code> 服务对象。它拿到的是一个 <strong>Proxy</strong>，这个 Proxy 会把调用翻译成一次 Binder 事务。</p>
 
         <h2>五个角色</h2>
         <div class="table-wrap">
@@ -135,7 +135,7 @@
           <div class="flow-step">
             <span class="flow-label">Server</span>
             <strong>Stub → 服务对象</strong>
-            <span>真正的 WeatherService</span>
+            <span>真正的 IServiceManager</span>
           </div>
         </div>
         <p class="flow-note">图是概念映射，不是对象在内核里的真实内存布局。</p>
@@ -149,7 +149,7 @@
         <p>所以不要把 handle 理解成“全局服务 ID”。它更像一张本地取件码：同一个包裹，在不同快递站可能有不同的编号。</p>
 
         <h2>一次同步调用，经过了什么</h2>
-        <p>还是查天气：</p>
+        <p>还是查服务：</p>
 
         <div class="flow-diagram" aria-label="Binder 同步调用的执行路径">
           <div class="flow-step">
@@ -186,14 +186,14 @@
 
         <h3>为什么要 Parcel</h3>
         <p>第 0 章说过，进程之间不能传指针。Proxy 会把方法参数写进 Parcel：</p>
-        <pre><code>// 概念伪代码
-parcel.writeInterfaceToken("IWeatherService");
-parcel.writeString("Beijing");
+        <pre data-title="Parcel 读写（概念伪代码）" data-lang="java"><code class="language-java">// 概念伪代码
+parcel.writeInterfaceToken("android.os.IServiceManager");
+parcel.writeString("activity");
 
-binder.transact(GET_WEATHER, parcel, reply, 0);
+binder.transact(CHECK_SERVICE, parcel, reply, 0);
 
-String weather = reply.readString();</code></pre>
-        <p>服务端 Stub 做相反的事：读取接口标识、读取参数、调用真正的 <code>getWeather()</code>，再把结果写回 reply Parcel。</p>
+IBinder service = reply.readStrongBinder();</code></pre>
+        <p>服务端 Stub 做相反的事：读取接口标识、读取参数、调用真正的 <code>checkService()</code>，再把结果写回 reply Parcel。</p>
         <p>AIDL 生成的代码就是替你写这些读写逻辑。<strong>AIDL 不是传输层</strong>，它只是把接口翻译成 Proxy / Stub 和 Parcel 代码。</p>
 
         <h2>同步 vs oneway</h2>
@@ -225,7 +225,7 @@ String weather = reply.readString();</code></pre>
 
         <h3>嵌套调用与死锁</h3>
         <p>同步调用允许嵌套：A 调用 B，B 在处理过程中又调用 A 的回调。如果 A 和 B 都没有空闲线程，双方就可能互相等待。</p>
-        <pre><code>A 的线程 1 ──同步调用──▶ B
+        <pre data-title="嵌套同步调用死锁（概念图）" data-lang="text"><code class="language-text">A 的线程 1 ──同步调用──▶ B
                          B 的线程 1 ──同步回调──▶ A
 A 的线程 1 还在等 B，无法处理回调
 B 的线程 1 还在等 A，无法返回
@@ -273,7 +273,7 @@ B 的线程 1 还在等 A，无法返回
 
         <h3>实验 2：观察线程名</h3>
         <p>在服务方法的第一行打印：</p>
-        <pre><code>Log.d("BinderDemo", "thread = " + Thread.currentThread().getName());</code></pre>
+        <pre data-title="服务端线程名（Android 日志示例）" data-lang="java"><code class="language-java">Log.d("BinderDemo", "thread = " + Thread.currentThread().getName());</code></pre>
         <p>从主线程发起同步调用，观察服务端日志里的线程名。它通常不是服务端主线程。</p>
 
         <h3>实验 3：画对象图</h3>
@@ -324,7 +324,7 @@ B 的线程 1 还在等 A，无法返回
           <a class="text-link" href="binder-chapter-1.html">← 第 1 章：为什么需要 Binder</a>
           <a class="text-link" href="binder-learning-path.html">返回学习路线 <span class="arrow" aria-hidden="true">→</span></a>
         </div>
-        <div class="article-footer-meta">Bolin Lab · Binder 学习路线第 2 章 · 最后更新 2026.11.15<br>参考：Android Binder / AIDL 公开文档与 libbinder 用户态模型。</div>
+        <div class="article-footer-meta">Bolin Lab · Binder 学习路线第 2 章 · 最后更新 2026.11.17<br>参考：Android Binder / AIDL 公开文档与 libbinder 用户态模型。</div>
       </article>
 
       <aside class="article-toc" aria-label="文章目录">

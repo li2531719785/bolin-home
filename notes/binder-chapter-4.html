@@ -90,12 +90,10 @@
             <span>验证环境 / 2026-11-17</span>
           </div>
           <dl class="article-env-grid">
-            <div class="env-item"><dt>设备</dt><dd>VST610 / smart_vision</dd></div>
             <div class="env-item"><dt>Android</dt><dd>15 / SDK 35</dd></div>
-            <div class="env-item"><dt>Build</dt><dd>AP3A.240905.015.A2<br>userdebug</dd></div>
-            <div class="env-item"><dt>Kernel</dt><dd>6.6.47shaolinfist+<br>armv8l</dd></div>
-            <div class="env-item"><dt>AOSP 树</dt><dd>v610 / Android 15</dd></div>
+            <div class="env-item"><dt>AOSP</dt><dd>Android 15</dd></div>
             <div class="env-item"><dt>样本</dt><dd>servicemanager<br>IServiceManager</dd></div>
+            <div class="env-item"><dt>验证方式</dt><dd>源码走读 + root adb</dd></div>
           </dl>
         </div>
 
@@ -148,11 +146,6 @@
         <pre data-title="输出：Parcel（真机，节选）" data-lang="text"><code class="language-text">Result: Parcel(
 0x00000000: 00000000 000000f1 00000001 00000028 '............(...'
 0x00000010: 0000000c 006f0044 006b0063 0062004f '....D.o.c.k.O.b.'
-0x00000020: 00650073 00760072 00720065 00000000 's.e.r.v.e.r.....'
-0x00000030: 00000c43 00000001 00000038 00000014 'C.......8.......'
-0x00000040: 006e0049 00750070 00540074 00610072 'I.n.p.u.t.T.r.a.'
-0x00000050: 0073006e 00650066 00530072 00720065 'n.s.f.e.r.S.e.r.'
-0x00000060: 00690076 00650063 00000000 00000b53 'v.i.c.e.....S...'
 ...</code></pre>
         <p><code>service</code> 只打印 Parcel 的十六进制，不做类型解码。按 <code>ServiceDebugInfo { name, debugPid }</code> 的字段顺序解析后，部分条目如下（抓取时刻）：</p>
         <div class="table-wrap">
@@ -160,11 +153,10 @@
             <thead><tr><th>服务名</th><th>debugPid</th><th>说明</th></tr></thead>
             <tbody>
               <tr><td><code>DockObserver</code></td><td>3139</td><td>system_server 里的 Java 服务</td></tr>
-              <tr><td><code>InputTransferService</code></td><td>2899</td><td>厂商输入服务</td></tr>
               <tr><td><code>SurfaceFlinger</code></td><td>2907</td><td>native 图形合成服务</td></tr>
               <tr><td><code>SurfaceFlingerAIDL</code></td><td>2907</td><td>SurfaceFlinger 的 AIDL 实例</td></tr>
-              <tr><td><code>VnAudioManager</code></td><td>4708</td><td>厂商音频服务</td></tr>
               <tr><td><code>activity</code></td><td>3139</td><td>ActivityManagerService</td></tr>
+              <tr><td><code>media.player</code></td><td>2989</td><td>native 媒体服务</td></tr>
               <tr><td><code>android.hardware.light.ILights/default</code></td><td>2870</td><td>HAL 实例</td></tr>
               <tr><td><code>android.hardware.tv.input.ITvInput/default</code></td><td>2876</td><td>TV Input HAL</td></tr>
             </tbody>
@@ -371,16 +363,10 @@ if (binder-&gt;remoteBinder() != nullptr &amp;&amp;
 thread.asBinder().linkToDeath(adr, 0);
 app.setDeathRecipient(adr);</code></pre>
         <p>真机上的 <code>dumpsys activity processes</code> 能看到 AMS 持有的 <code>IApplicationThread$Stub$Proxy</code> 和对应 PID：</p>
-        <pre data-title="命令：查看进程与 IApplicationThread 代理" data-lang="bash"><code class="language-bash">adb shell 'dumpsys activity processes | grep -E "ProcessRecord|thread=|pid=" | head -n 12'</code></pre>
-        <pre data-title="输出：dumpsys activity processes（真机，节选）" data-lang="text"><code class="language-text">  *PERS* UID 1000 ProcessRecord{cb4bb51 4678:com.huanglong.tv.service/1000}
-    thread=android.app.IApplicationThread$Stub$Proxy@29f10e7
-    pid=4678
-  *APP* UID 1000 ProcessRecord{f96863b 5195:com.android.tv.settings/1000}
-    thread=android.app.IApplicationThread$Stub$Proxy@2afbf32
-    pid=5195
-  *PERS* UID 1000 ProcessRecord{2e91424 4695:com.vst.xnlauncher/1000}
-    thread=android.app.IApplicationThread$Stub$Proxy@27354f5
-    pid=4695</code></pre>
+        <pre data-title="命令：查看进程与 IApplicationThread 代理" data-lang="bash"><code class="language-bash">adb shell "dumpsys activity processes | grep -A30 'ProcessRecord.*com.android.systemui' | grep -E 'ProcessRecord|thread=|pid=' | head -n 3"</code></pre>
+        <pre data-title="输出：dumpsys activity processes（真机，节选）" data-lang="text"><code class="language-text">  *PERS* UID 10044 ProcessRecord{5cf78e5 3741:com.android.systemui/u0a44}
+    thread=android.app.IApplicationThread$Stub$Proxy@a68068d
+    pid=3741</code></pre>
         <p><code>thread=...Stub$Proxy</code> 就是这个进程的 Binder 代理；<code>AppDeathRecipient</code> 通过 <code>linkToDeath</code> 挂在这个代理上。进程死亡时，<code>binderDied</code> 触发 <code>appDiedLocked</code>，AMS 才开始清理进程记录。</p>
 
         <h2>六、把注册、回调和死亡通知串起来</h2>
@@ -505,7 +491,7 @@ app.setDeathRecipient(adr);</code></pre>
           <a class="text-link" href="./">← 返回笔记库</a>
           <a class="text-link" href="binder-learning-path.html">返回 Binder 学习路线 <span class="arrow" aria-hidden="true">→</span></a>
         </div>
-        <div class="article-footer-meta">Bolin Lab · Binder 学习路线第 4 章 · 最后更新 2026.11.17<br>验证设备：VST610 / Android 15 / AP3A.240905.015.A2；源码：AOSP v610。</div>
+        <div class="article-footer-meta">Bolin Lab · Binder 学习路线第 4 章 · 最后更新 2026.11.17<br>验证环境：Android 15；源码：AOSP 15。</div>
       </article>
 
       <aside class="article-toc" aria-label="文章目录">

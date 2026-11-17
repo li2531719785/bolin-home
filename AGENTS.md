@@ -109,6 +109,8 @@ AIDL 只作为进入 Binder 协议的入口。内容应真实、清楚，不写�
   结构，自动生成 TOC 和阅读进度。
 - 内容必须以源码或真机证据为准：源码写清文件 / 函数 / 行号，终端输出保留原始
   记录；没有跑过的内容标“未实测”，不要写“你应该看到类似日志”。
+- 文档中不要写具体硬件平台、产品型号、build fingerprint、内核字符串或内部 AOSP 树名；
+  只写 Android 版本（例如 Android 15）。终端输出中的厂商服务名要过滤掉。
 - 文章开头放验证环境卡（设备、Android 版本、build fingerprint、AOSP 树、日期），
   并使用 `.article-env` / `.env-badge` 组件。
 - 新文章不设 `drafts/` 草稿流程；直接在 `notes/*.html` 写，但必须先有源码锚点和
@@ -204,12 +206,13 @@ AIDL 只作为进入 Binder 协议的入口。内容应真实、清楚，不写�
 
 - 首页 / 笔记库 / 关于 / 404 / 七篇笔记可访问；第 5 章正文已下线，学习路线中标记“整理中”。
 - 浅色 + 深色主题、移动端适配、搜索筛选、文章 TOC、阅读进度均已实现。
-- 第 1、2 章使用 CSS flex 流程图（`.flow-diagram`）；第 3、4 章已改为系统源码 + 真机实测版。
+- 第 1 章新增 RPC 四步和“一次拷贝”流程图；第 2 章改用 `IServiceManager.checkService` 示例；
+  第 3、4 章为系统源码 + 真机实测版。
 - 第 4 章以 servicemanager 为样本，讲 Parcelable、in/out/inout、oneway、callback、DeathRecipient；
   其中 Parcelable 有 `service call manager 14` 真机实验，其余为源码走读。
 - 学习路线改为系统开发视角：模块 2 改名“系统服务与 AIDL”，第 7 章改为 Framework / SystemServer，
   Capstone 改为真实系统服务追踪；首页 / 笔记库 / 关于同步。
-- 第 3 章使用真实设备 VST610（Android 15，adb `192.168.51.6:5555`）采集：
+- 第 3 章使用 Android 15 真机采集：
   `service list` 240 个服务、servicemanager / system_server PID、`binder:3139_N` 线程、
   `/dev/binder` / `/dev/hwbinder` 映射、`binder/stats`、`service call` 原始 Parcel。
 - 新增 `.seq-diagram`（CSS 时序 / 泳道，移动端折叠）和 `.article-env` 环境卡；
