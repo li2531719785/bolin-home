@@ -23,6 +23,7 @@ Bolin Lab 的开发记录。每次完成一轮开发后追加一条，至少包�
 
 - 删除 `drafts/` 目录（README、模板、5.1 草稿）和 `_headers` 的 `/drafts/*` noindex 规则。
 - 下线 `notes/binder-chapter-5.html`，同步移除首页、笔记库、学习路线、sitemap、AGENTS、README 中的入口与统计。
+- `_redirects` 增加第 5 章旧链接到学习路线的 308，避免边缘缓存继续返回旧页面。
 - 第 3 章改为“不写 App”的系统层路线：以 `IServiceManager.aidl`、`service` 命令、
   `servicemanager` 和 v610 Android 15 源码为主线。
 - 新增真实设备证据：VST610 / Android 15 / 240 个服务 / servicemanager 与 system_server PID /

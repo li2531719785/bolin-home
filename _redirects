@@ -1,3 +1,7 @@
+# Chapter 5 is temporarily offline; keep old links from serving the archived page.
+/notes/binder-chapter-5       /notes/binder-learning-path  308
+/notes/binder-chapter-5.html  /notes/binder-learning-path  308
+
 # Keep the exact .html path for Google Search Console file verification.
 # Cloudflare Pages otherwise issues a 308 redirect to the extensionless URL.
 /google85aa571083e49c47.html  /google85aa571083e49c47.txt  200
