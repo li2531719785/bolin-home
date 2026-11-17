@@ -27,6 +27,7 @@ Bolin Lab 的开发记录。每次完成一轮开发后追加一条，至少包�
 - 旧第 1 章的 BinderProxy / JNI / BpBinder 正文未搬运，留待第 2、6 章从 git 历史取回。
 - 首页 latest-note、笔记库第 1 章卡片和路线卡片描述、关于页时间线、sitemap URL 同步新路由。
 - AGENTS.md / README.md 的目录、正式笔记列表、SEO 地址、当前状态和下一步按新 6 章顺序重写。
+- 总览章地图补同步返回路径（服务端回填 reply → 调用方 waitForResponse 醒来），handle 词条改为不涉及驱动层名词的表述。
 
 **涉及文件：**
 

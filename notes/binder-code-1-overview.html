@@ -108,7 +108,8 @@
             └─ BpBinder::transact  // native 代理           ← 第 2 章
                 └─ IPCThreadState   // 打包、ioctl 进驱动   ← 第 2 章
                     └─ binder.c 驱动 // 找到目标、唤醒对端   ← 第 3 章
-                        └─ 服务端 onTransact → 回填 reply    ← 第 4 章</code></pre>
+                        └─ 服务端 onTransact → 回填 reply    ← 第 4 章
+reply 沿原路返回，调用方 waitForResponse 醒来                ← 第 2、3 章</code></pre>
         <p>第 5 章是横切：服务怎么注册、怎么查找。第 3 章会把驱动数据结构并进来，读的时候可以配合 <a href="binder-driver.html">《Android Binder 驱动数据结构关系》</a> 的交互图。</p>
 
         <h2>名词一句话速查</h2>
@@ -118,7 +119,7 @@
           <dt>flags</dt><dd>同步调用会阻塞等回复；<code>FLAG_ONEWAY</code> 表示不等待回复。</dd>
           <dt>BpBinder</dt><dd>Bp = Binder Proxy，是 Java <code>BinderProxy</code> 在 native 侧的真实对象。</dd>
           <dt>JNI</dt><dd>Java 调 C++ 的转换桥，负责把 Java 对象转成 native 指针。</dd>
-          <dt>handle</dt><dd>native 侧的数字句柄，进程内用它索引 <code>binder_ref</code>。</dd>
+          <dt>handle</dt><dd>native 侧用来指代远程 Binder 的数字句柄，第 3 章讲它在驱动里的对应。</dd>
           <dt>驱动</dt><dd><code>drivers/android/binder.c</code>，负责找到目标进程、把事务放上队列、唤醒接收线程。</dd>
         </dl>
 
