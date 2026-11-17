@@ -22,7 +22,8 @@ Bolin Lab 的开发记录。每次完成一轮开发后追加一条，至少包�
 **改动：**
 
 - 章节压成 9 个 h2：service check、AIDL 接口、生成代码、手写 Proxy、调用链、真机证据、失败场景、自测、小结。
-- 代码块 36→18；保留 `IServiceManager.aidl`、生成 Proxy/Stub、`service.cpp`、`BpBinder` / `IPCThreadState`、`ps -T` / `maps`。
+- 代码块 36→19；保留 `IServiceManager.aidl`、生成 Proxy/Stub、`service.cpp`、`BpBinder` / `IPCThreadState`、`ps -T` / `maps`。
+- Stub 部分补类骨架（`asInterface` / `asBinder`）和完整 `onTransact` 分发（get/check + default），不再只放一个 case。
 - 新增 `binder-aidl-generated-*` SVG，并复用 `binder-architecture-*`；共 2 张图。
 - 删除 lazy service、dumpPriority、VINTF/isDeclared、binder/stats、binder_calls_stats、code 7/8/999 细节和 Java 侧长段源码。
 - 失败场景从 4 个压到 2 个：服务不存在、事务码非法。
@@ -38,7 +39,7 @@ Bolin Lab 的开发记录。每次完成一轮开发后追加一条，至少包�
 
 **验证：**
 
-- 第 3 章：18 个代码块全部有 `data-title`/`data-file` + `data-lang`；2 张图明/暗切换正常。
+- 第 3 章：19 个代码块全部有 `data-title`/`data-file` + `data-lang`；2 张图明/暗切换正常。
 - 1440 / 390 无页面级横向溢出，控制台无错误；图片全部加载。
 - 线上/本地均无 `lazy`、`VINTF`、`dumpPriority`、`binder/stats`、`binder_calls_stats`。
 - 全站链接 174 条，缺失 0；SVG 通过 `xmllint`。

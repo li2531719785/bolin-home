@@ -167,16 +167,71 @@ static final int TRANSACTION_checkService = (android.os.IBinder.FIRST_CALL_TRANS
     }
     return _result;
 }</code></pre>
-        <p>服务端 Stub 的 <code>onTransact</code>：</p>
-        <pre data-title="IServiceManager.java（Stub.onTransact）" data-lang="java"><code class="language-java">case TRANSACTION_checkService:
+        <p>服务端 Stub 先看类骨架：<code>asInterface</code> 先判断本地对象，<code>asBinder</code> 返回自己。</p>
+        <pre data-title="IServiceManager.java（Stub 骨架，aidl 生成）" data-lang="java"><code class="language-java">public static abstract class Stub extends android.os.Binder implements android.os.IServiceManager
 {
-    java.lang.String _arg0;
-    _arg0 = data.readString();
-    android.os.IBinder _result = this.checkService(_arg0);
-    reply.writeNoException();
-    reply.writeStrongBinder(_result);
-    break;
+  @SuppressWarnings("this-escape")
+  public Stub()
+  {
+    this.attachInterface(this, DESCRIPTOR);
+  }
+
+  public static android.os.IServiceManager asInterface(android.os.IBinder obj)
+  {
+    if ((obj==null)) {
+      return null;
+    }
+    android.os.IInterface iin = obj.queryLocalInterface(DESCRIPTOR);
+    if (((iin!=null)&amp;&amp;(iin instanceof android.os.IServiceManager))) {
+      return ((android.os.IServiceManager)iin);
+    }
+    return new android.os.IServiceManager.Stub.Proxy(obj);
+  }
+
+  @Override public android.os.IBinder asBinder()
+  {
+    return this;
+  }
+  // ... onTransact 在下面
 }</code></pre>
+        <p>再看 <code>onTransact</code> 怎么按 code 分发。这里保留 <code>getService</code> 和 <code>checkService</code> 两个分支，其他方法的 case 用注释省略：</p>
+        <pre data-title="IServiceManager.java（Stub.onTransact，aidl 生成）" data-lang="java"><code class="language-java">@Override public boolean onTransact(int code, android.os.Parcel data,
+        android.os.Parcel reply, int flags) throws android.os.RemoteException
+{
+  java.lang.String descriptor = DESCRIPTOR;
+  if (code &gt;= android.os.IBinder.FIRST_CALL_TRANSACTION
+          &amp;&amp; code &lt;= android.os.IBinder.LAST_CALL_TRANSACTION) {
+    data.enforceInterface(descriptor);
+  }
+  if (code == INTERFACE_TRANSACTION) {
+    reply.writeString(descriptor);
+    return true;
+  }
+  switch (code)
+  {
+    case TRANSACTION_getService:
+    {
+      java.lang.String _arg0 = data.readString();
+      android.os.IBinder _result = this.getService(_arg0);
+      reply.writeNoException();
+      reply.writeStrongBinder(_result);
+      break;
+    }
+    case TRANSACTION_checkService:
+    {
+      java.lang.String _arg0 = data.readString();
+      android.os.IBinder _result = this.checkService(_arg0);
+      reply.writeNoException();
+      reply.writeStrongBinder(_result);
+      break;
+    }
+    // ... 其他方法的 case
+    default:
+      return super.onTransact(code, data, reply, flags);
+  }
+  return true;
+}</code></pre>
+        <p><code>onTransact</code> 的顺序很固定：先 <code>enforceInterface</code> 校验接口标识，处理 <code>INTERFACE_TRANSACTION</code>，再按 code 进入参数读取和方法调用，最后 <code>writeNoException</code> 写回结果。<code>addService</code> 等其他分支只是参数不同，结构完全一样。</p>
         <p>把两段对上：写 interface token → 按顺序写参数 → <code>transact(code)</code> → 服务端按 code 分发 → 返回值写回 reply。AIDL 生成的代码没有魔法，就是替你写这些 Parcel 读写。</p>
         <p>对照着读：<code>writeInterfaceToken</code> 写接口标识，<code>writeString</code> 写参数，<code>transact</code> 带上 code 和 handle；服务端先 <code>enforceInterface</code> 校验接口，再按 code 进入分支，最后 <code>writeNoException</code>、<code>writeStrongBinder</code> 把结果写回。你以后排查 AIDL 问题，入口就是这两段生成代码。</p>
 
